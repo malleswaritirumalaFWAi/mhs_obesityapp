@@ -1,0 +1,55 @@
+# ===== Node / backend =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.*.local
+*.log
+
+# ===== Flutter / Dart (app/) =====
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+**/build/
+*.iml
+.idea/
+.vscode/
+
+# Flutter generated
+**/generated_plugin_registrant.*
+**/GeneratedPluginRegistrant.*
+.flutter-versions
+
+# ===== Android =====
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/key.properties
+**/android/app/release/
+**/android/.cxx/
+*.keystore
+*.jks
+
+# ===== iOS =====
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/ephemeral/
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/DerivedData/
+*.xcuserstate
+**/*.xcworkspace/xcuserdata/
+
+# ===== Misc =====
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp

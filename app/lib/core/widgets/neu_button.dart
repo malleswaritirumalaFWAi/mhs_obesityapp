@@ -1,0 +1,117 @@
+import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../theme/neu.dart';
+
+/// A neumorphic button that visually "presses in" on tap.
+class NeuButton extends StatefulWidget {
+  const NeuButton({
+    super.key,
+    required this.child,
+    this.onPressed,
+    this.color,
+    this.foreground,
+    this.expand = false,
+    this.padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    this.radius = Neu.rPill,
+    this.filled = true,
+    this.loading = false,
+  });
+
+  /// Primary CTA: coral filled pill.
+  factory NeuButton.primary(
+    String label, {
+    Key? key,
+    VoidCallback? onPressed,
+    bool expand = true,
+    bool loading = false,
+    Widget? trailing,
+  }) {
+    return NeuButton(
+      key: key,
+      onPressed: onPressed,
+      color: AppColors.coral,
+      foreground: Colors.white,
+      expand: expand,
+      filled: true,
+      loading: loading,
+      child: _LabelRow(label: label, trailing: trailing, color: Colors.white),
+    );
+  }
+
+  final Widget child;
+  final VoidCallback? onPressed;
+  final Color? color;
+  final Color? foreground;
+  final bool expand;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  final bool filled;
+  final bool loading;
+
+  @override
+  State<NeuButton> createState() => _NeuButtonState();
+}
+
+class _NeuButtonState extends State<NeuButton> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onPressed != null && !widget.loading;
+    final bg = widget.filled ? (widget.color ?? AppColors.surface) : AppColors.surface;
+
+    Widget child = widget.loading
+        ? const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+          )
+        : DefaultTextStyle.merge(
+            style: TextStyle(
+              color: widget.foreground ?? AppColors.ink,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
+            child: IconTheme.merge(
+              data: IconThemeData(color: widget.foreground ?? AppColors.ink),
+              child: widget.child,
+            ),
+          );
+
+    return GestureDetector(
+      onTapDown: enabled ? (_) => setState(() => _down = true) : null,
+      onTapUp: enabled ? (_) => setState(() => _down = false) : null,
+      onTapCancel: enabled ? () => setState(() => _down = false) : null,
+      onTap: enabled ? widget.onPressed : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 110),
+        width: widget.expand ? double.infinity : null,
+        padding: widget.padding,
+        alignment: widget.expand ? Alignment.center : null,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(widget.radius),
+          boxShadow: _down || !enabled ? Neu.small() : Neu.raised(depth: 0.6),
+        ),
+        child: Opacity(opacity: enabled ? 1 : 0.55, child: Center(child: child)),
+      ),
+    );
+  }
+}
+
+class _LabelRow extends StatelessWidget {
+  const _LabelRow({required this.label, this.trailing, required this.color});
+  final String label;
+  final Widget? trailing;
+  final Color color;
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label),
+        if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+      ],
+    );
+  }
+}
