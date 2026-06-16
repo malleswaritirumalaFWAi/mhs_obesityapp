@@ -13,8 +13,8 @@ class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: AppColors.bg,
       colorScheme: base.colorScheme.copyWith(
-        primary: AppColors.coral,
-        secondary: AppColors.sage,
+        primary: AppColors.orange,
+        secondary: AppColors.teal,
         surface: AppColors.surface,
         onSurface: AppColors.ink,
       ),

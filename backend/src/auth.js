@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 const SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 export function signToken(user) {
-  return jwt.sign({ uid: user.id, phone: user.phone }, SECRET, { expiresIn: '60d' });
+  return jwt.sign({ uid: Number(user.id), phone: user.phone }, SECRET, { expiresIn: '60d' });
 }
 
 export function authMiddleware(req, res, next) {

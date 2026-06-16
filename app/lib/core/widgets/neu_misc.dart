@@ -120,19 +120,25 @@ class NeuTextField extends StatelessWidget {
     this.hint,
     this.keyboardType,
     this.prefix,
+    this.suffix,
     this.maxLines = 1,
     this.style,
     this.onChanged,
     this.textAlign = TextAlign.start,
+    this.obscureText = false,
+    this.textCapitalization = TextCapitalization.none,
   });
   final TextEditingController? controller;
   final String? hint;
   final TextInputType? keyboardType;
   final Widget? prefix;
+  final Widget? suffix;
   final int maxLines;
   final TextStyle? style;
   final ValueChanged<String>? onChanged;
   final TextAlign textAlign;
+  final bool obscureText;
+  final TextCapitalization textCapitalization;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +155,8 @@ class NeuTextField extends StatelessWidget {
               maxLines: maxLines,
               onChanged: onChanged,
               textAlign: textAlign,
+              obscureText: obscureText,
+              textCapitalization: textCapitalization,
               style: style ??
                   const TextStyle(
                       color: AppColors.ink, fontWeight: FontWeight.w600, fontSize: 16),
@@ -161,6 +169,7 @@ class NeuTextField extends StatelessWidget {
               ),
             ),
           ),
+          if (suffix != null) ...[const SizedBox(width: 8), suffix!],
         ],
       ),
     );

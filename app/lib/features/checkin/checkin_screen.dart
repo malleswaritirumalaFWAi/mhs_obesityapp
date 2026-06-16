@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/router.dart';
+import '../plan/tasks_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_button.dart';
@@ -12,12 +13,46 @@ import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
 
 const _moods = [
-  (emoji: '😞', label: 'Low'),
-  (emoji: '😕', label: 'Meh'),
-  (emoji: '🙂', label: 'Okay'),
-  (emoji: '😀', label: 'Good'),
-  (emoji: '🤩', label: 'Great'),
+  (emoji: '😞', label: 'Low',   color: Color(0xFFE57373)),
+  (emoji: '😕', label: 'Meh',   color: Color(0xFFFFB74D)),
+  (emoji: '🙂', label: 'Okay',  color: Color(0xFFFFD54F)),
+  (emoji: '😀', label: 'Good',  color: Color(0xFF81C784)),
+  (emoji: '🤩', label: 'Great', color: Color(0xFF4DB6AC)),
 ];
+
+class _CheckinEntry {
+  _CheckinEntry({
+    required this.mood,
+    this.weight,
+    this.notes,
+    required this.createdAt,
+  });
+  final int mood;
+  final double? weight;
+  final String? notes;
+  final DateTime createdAt;
+
+  bool get isToday {
+    final now = DateTime.now();
+    return createdAt.year == now.year &&
+        createdAt.month == now.month &&
+        createdAt.day == now.day;
+  }
+
+  String get relativeDate {
+    final now = DateTime.now();
+    final diff = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(
+            createdAt.year, createdAt.month, createdAt.day))
+        .inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    return '${createdAt.day}/${createdAt.month}/${createdAt.year}';
+  }
+
+  String get timeLabel =>
+      '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
+}
 
 class CheckinScreen extends ConsumerStatefulWidget {
   const CheckinScreen({super.key});
@@ -26,10 +61,22 @@ class CheckinScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckinScreenState extends ConsumerState<CheckinScreen> {
-  int _mood = 3;
-  final _weight = TextEditingController(text: '74.2');
+  int _mood = 2;
+  final _weight = TextEditingController();
   final _notes = TextEditingController();
   bool _busy = false;
+  bool _loadingHistory = true;
+  List<_CheckinEntry> _history = [];
+
+  // Derived from profile — populated after load
+  double? _startWeight;
+  double? _targetWeight;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
 
   @override
   void dispose() {
@@ -38,34 +85,156 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
     super.dispose();
   }
 
+  Future<void> _loadData() async {
+    final api = ref.read(apiClientProvider);
+    try {
+      // Load check-in history and profile in parallel.
+      final results = await Future.wait([
+        api.getJson('/checkins'),
+        api.getJson('/profile'),
+      ]);
+
+      final raw = (results[0]['checkins'] as List?) ?? [];
+      final entries = raw.map((c) {
+        final m = Map<String, dynamic>.from(c as Map);
+        return _CheckinEntry(
+          mood: (m['mood'] as num?)?.toInt() ?? 2,
+          weight: m['weight'] != null
+              ? double.tryParse(m['weight'].toString())
+              : null,
+          notes: m['notes'] as String?,
+          createdAt: (DateTime.tryParse(m['created_at'] as String? ?? '') ??
+              DateTime.now()).toLocal(),
+        );
+      }).toList();
+
+      final user = results[1]['user'] as Map?;
+      _startWeight = user?['start_weight'] != null
+          ? double.tryParse(user!['start_weight'].toString())
+          : null;
+      _targetWeight = user?['target_weight'] != null
+          ? double.tryParse(user!['target_weight'].toString())
+          : null;
+
+      if (!mounted) return;
+      setState(() {
+        _history = entries;
+        _loadingHistory = false;
+        // Pre-fill form with last recorded values.
+        if (entries.isNotEmpty) {
+          _mood = entries.first.mood.clamp(0, 4);
+          if (entries.first.weight != null) {
+            _weight.text = entries.first.weight!.toStringAsFixed(1);
+          }
+        }
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingHistory = false);
+    }
+  }
+
   Future<void> _save() async {
     setState(() => _busy = true);
     try {
-      await ref.read(apiClientProvider).postJson('/checkins', {
+      final res = await ref.read(apiClientProvider).postJson('/checkins', {
         'mood': _mood,
         'weight': double.tryParse(_weight.text.trim()),
         'notes': _notes.text.trim(),
       });
-    } catch (_) {
-      await Future.delayed(const Duration(milliseconds: 500)); // demo fallback
+      if (!mounted) return;
+      setState(() => _busy = false);
+      // Refresh task completion state so the check-in task shows as done.
+      ref.invalidate(tasksProvider);
+      // Reload history so the new entry shows immediately.
+      await _loadData();
+      if (!mounted) return;
+      if (res['badge_earned'] == true && res['badge'] != null) {
+        context.pushReplacement(Routes.badge,
+            extra: Map<String, dynamic>.from(res['badge'] as Map));
+      } else {
+        context.pop();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save check-in. Check your connection and try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
-    if (!mounted) return;
-    setState(() => _busy = false);
-    // Celebrate a streak milestone.
-    context.pushReplacement(Routes.badge);
+  }
+
+  String _weightProgress(double current) {
+    if (_startWeight == null) return '';
+    final diff = _startWeight! - current;
+    final sign = diff >= 0 ? '↓' : '↑';
+    final target =
+        _targetWeight != null ? ' · target ${_targetWeight!.toStringAsFixed(0)} kg' : '';
+    return '$sign ${diff.abs().toStringAsFixed(1)} kg from start (${_startWeight!.toStringAsFixed(1)} kg)$target';
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentWeight = double.tryParse(_weight.text.trim());
+    final progressText =
+        currentWeight != null ? _weightProgress(currentWeight) : '';
+
+    // Today's last check-in (if any) shown as a status card
+    final todayEntry = _history.isNotEmpty && _history.first.isToday
+        ? _history.first
+        : null;
+
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              NeuTopBar(title: 'Daily check-in', onBack: () => context.pop()),
-              const SizedBox(height: 24),
+              NeuTopBar(title: 'Morning check-in', onBack: () => context.pop()),
+              const SizedBox(height: 20),
+
+              // ── Today's status card (if already checked in) ──
+              if (todayEntry != null) ...[
+                NeuCard(
+                  color: AppColors.sageSoft,
+                  child: Row(children: [
+                    Text(_moods[todayEntry.mood.clamp(0, 4)].emoji,
+                        style: const TextStyle(fontSize: 28)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Today's check-in saved",
+                              style: T.title(context)
+                                  .copyWith(color: AppColors.sageDark)),
+                          Text(
+                            [
+                              _moods[todayEntry.mood.clamp(0, 4)].label,
+                              if (todayEntry.weight != null)
+                                '${todayEntry.weight!.toStringAsFixed(1)} kg',
+                            ].join(' · '),
+                            style: T.small(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Symbols.check_circle_rounded,
+                        color: AppColors.sage, fill: 1),
+                  ]),
+                ),
+                const SizedBox(height: 14),
+                Text('Update today\'s check-in',
+                    style: T.small(context)
+                        .copyWith(color: AppColors.inkSoft)),
+                const SizedBox(height: 10),
+              ],
+
+              // ── Mood picker ──
               Text('How do you feel today?', style: T.title(context)),
               const SizedBox(height: 14),
               Row(
@@ -79,43 +248,70 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: _mood == i ? AppColors.coralSoft : AppColors.surface,
+                          color: _mood == i
+                              ? AppColors.coralSoft
+                              : AppColors.surface,
                           shape: BoxShape.circle,
-                          boxShadow: _mood == i ? null : null,
                           border: Border.all(
-                              color: _mood == i ? AppColors.coral : AppColors.line,
+                              color: _mood == i
+                                  ? AppColors.coral
+                                  : AppColors.line,
                               width: _mood == i ? 2 : 1),
                         ),
                         alignment: Alignment.center,
-                        child: Text(_moods[i].emoji, style: const TextStyle(fontSize: 24)),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_moods[i].emoji,
+                                style: const TextStyle(fontSize: 22)),
+                            if (_mood == i)
+                              Text(_moods[i].label,
+                                  style: const TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.coral)),
+                          ],
+                        ),
                       ),
                     ),
                 ],
               ),
               const SizedBox(height: 28),
-              Text("Morning weight", style: T.title(context)),
+
+              // ── Weight ──
+              Text('Morning weight', style: T.title(context)),
               const SizedBox(height: 12),
               NeuCard(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Row(
-                  children: [
-                    const Icon(Symbols.scale_rounded, color: AppColors.coral),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _weight,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: T.h2(context),
-                        decoration: const InputDecoration(border: InputBorder.none),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(children: [
+                  const Icon(Symbols.scale_rounded, color: AppColors.coral),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _weight,
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                      style: T.h2(context),
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Enter weight',
+                        hintStyle: T.body(context)
+                            .copyWith(color: AppColors.inkSoft),
                       ),
                     ),
-                    Text('kg', style: T.body(context)),
-                  ],
-                ),
+                  ),
+                  Text('kg', style: T.body(context)),
+                ]),
               ),
-              const SizedBox(height: 8),
-              Text('Down 1.8 kg from start (76.0 kg) · target 68 kg', style: T.small(context)),
+              if (progressText.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(progressText, style: T.small(context)),
+              ],
               const SizedBox(height: 28),
+
+              // ── Coach notes ──
               Text('Notes for your coach', style: T.title(context)),
               const SizedBox(height: 12),
               NeuTextField(
@@ -123,15 +319,103 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                 hint: 'Slept well, felt energetic…',
                 maxLines: 3,
               ),
-              const Spacer(),
+              const SizedBox(height: 28),
+
+              // ── Save button ──
               NeuButton.primary(
                 'Save check-in',
                 loading: _busy,
                 trailing: const Icon(Symbols.check_rounded, size: 20),
                 onPressed: _save,
               ),
+
+              // ── Recent history ──
+              if (_loadingHistory) ...[
+                const SizedBox(height: 32),
+                const Center(child: CircularProgressIndicator()),
+              ] else if (_history.isNotEmpty) ...[
+                const SizedBox(height: 32),
+                Text('Recent check-ins', style: T.title(context)),
+                const SizedBox(height: 12),
+                ..._history.take(7).map((e) => _HistoryCard(entry: e)),
+              ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryCard extends StatelessWidget {
+  const _HistoryCard({required this.entry});
+  final _CheckinEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final mood = _moods[entry.mood.clamp(0, 4)];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: NeuCard(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Mood circle
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.coralSoft,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(mood.emoji,
+                  style: const TextStyle(fontSize: 22)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text(mood.label,
+                        style: T.title(context).copyWith(fontSize: 14)),
+                    const Spacer(),
+                    Text(entry.relativeDate,
+                        style: T.small(context)
+                            .copyWith(color: AppColors.inkSoft, fontSize: 11)),
+                    const SizedBox(width: 6),
+                    Text('· ${entry.timeLabel}',
+                        style: T.small(context).copyWith(
+                            color: AppColors.coral,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700)),
+                  ]),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    if (entry.weight != null) ...[
+                      const Icon(Symbols.scale_rounded,
+                          size: 14, color: AppColors.inkSoft),
+                      const SizedBox(width: 4),
+                      Text('${entry.weight!.toStringAsFixed(1)} kg',
+                          style: T.small(context)
+                              .copyWith(fontWeight: FontWeight.w700)),
+                    ],
+                  ]),
+                  if (entry.notes != null && entry.notes!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      entry.notes!,
+                      style: T.small(context).copyWith(fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

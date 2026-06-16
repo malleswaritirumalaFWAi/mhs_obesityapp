@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/api/api_client.dart';
 import '../../core/router.dart';
 import '../../core/state/session.dart';
 import '../../core/theme/app_colors.dart';
@@ -20,10 +21,79 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _push = true;
   bool _coachDigest = true;
   bool _leaderboard = false;
+  String _language = 'en';
+  bool _savingLang = false;
 
   Future<void> _logout() async {
     await ref.read(sessionProvider.notifier).signOut();
     if (mounted) context.go(Routes.welcome);
+  }
+
+  Future<void> _setLanguage(String lang) async {
+    setState(() { _language = lang; _savingLang = true; });
+    try {
+      await ref.read(apiClientProvider).postJson('/settings/language', {'language': lang});
+    } catch (_) {}
+    if (mounted) setState(() => _savingLang = false);
+  }
+
+  Future<void> _requestDataExport() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Export your data'),
+        content: const Text(
+          'We will prepare a copy of all your data and notify you when it\'s ready. '
+          'This may take up to 24 hours.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Request')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await ref.read(apiClientProvider).postJson('/compliance/data-export', {});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data export requested. You\'ll be notified when ready.'),
+          backgroundColor: AppColors.sage));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.coral));
+    }
+  }
+
+  Future<void> _requestDataDeletion() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete your data'),
+        content: const Text(
+          'This will permanently delete all your data including progress, meals, and badges. '
+          'This action cannot be undone. Are you sure?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.coral),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete my data')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await ref.read(apiClientProvider).postJson('/compliance/data-delete', {});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data deletion request submitted.'),
+            backgroundColor: AppColors.sage));
+        await ref.read(sessionProvider.notifier).signOut();
+        if (mounted) context.go(Routes.welcome);
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.coral));
+    }
   }
 
   @override
@@ -35,6 +105,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             NeuTopBar(title: 'Settings', onBack: () => context.pop()),
             const SizedBox(height: 20),
+
+            Text('LANGUAGE', style: T.label(context)),
+            const SizedBox(height: 12),
+            NeuCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  const Icon(Symbols.language_rounded, color: AppColors.inkMid, size: 22),
+                  const SizedBox(width: 14),
+                  Text('App language', style: T.title(context).copyWith(fontSize: 15)),
+                  if (_savingLang) ...[
+                    const Spacer(),
+                    const SizedBox(width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  ],
+                ]),
+                const SizedBox(height: 14),
+                Row(children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _setLanguage('en'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _language == 'en' ? AppColors.coral : AppColors.bg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _language == 'en' ? AppColors.coral : AppColors.line),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text('English',
+                          style: TextStyle(
+                            color: _language == 'en' ? Colors.white : AppColors.inkMid,
+                            fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _setLanguage('ta'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _language == 'ta' ? AppColors.coral : AppColors.bg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _language == 'ta' ? AppColors.coral : AppColors.line),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text('தமிழ்',
+                          style: TextStyle(
+                            color: _language == 'ta' ? Colors.white : AppColors.inkMid,
+                            fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ),
+                ]),
+              ]),
+            ),
+            const SizedBox(height: 22),
+
             Text('NOTIFICATIONS', style: T.label(context)),
             const SizedBox(height: 12),
             NeuCard(
@@ -59,13 +189,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ]),
             ),
             const SizedBox(height: 22),
+
             Text('ACCOUNT', style: T.label(context)),
             const SizedBox(height: 12),
             _LinkRow(icon: Symbols.favorite_rounded, label: 'Health goals'),
-            _LinkRow(icon: Symbols.lock_rounded, label: 'Privacy & data'),
             _LinkRow(icon: Symbols.help_rounded, label: 'Help & support'),
             _LinkRow(icon: Symbols.description_rounded, label: 'Terms & conditions'),
             const SizedBox(height: 22),
+
+            Text('PRIVACY & DATA (DPDP ACT 2023)', style: T.label(context)),
+            const SizedBox(height: 12),
+            NeuCard(
+              onTap: _requestDataExport,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(children: [
+                const Icon(Symbols.download_rounded, color: AppColors.inkMid),
+                const SizedBox(width: 14),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Export my data', style: T.title(context).copyWith(fontSize: 15)),
+                  Text('Get a copy of all your data', style: T.small(context)),
+                ])),
+                const Icon(Symbols.chevron_right_rounded, color: AppColors.inkSoft),
+              ]),
+            ),
+            const SizedBox(height: 10),
+            NeuCard(
+              onTap: _requestDataDeletion,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(children: [
+                const Icon(Symbols.delete_rounded, color: AppColors.coral),
+                const SizedBox(width: 14),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Delete my data', style: T.title(context).copyWith(fontSize: 15, color: AppColors.coral)),
+                  Text('Permanently remove all your data', style: T.small(context)),
+                ])),
+                const Icon(Symbols.chevron_right_rounded, color: AppColors.inkSoft),
+              ]),
+            ),
+            const SizedBox(height: 22),
+
             NeuCard(
               onTap: _logout,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -103,9 +265,7 @@ class _Toggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        border: last
-            ? null
-            : const Border(bottom: BorderSide(color: AppColors.line)),
+        border: last ? null : const Border(bottom: BorderSide(color: AppColors.line)),
       ),
       child: Row(children: [
         Icon(icon, color: AppColors.inkMid, size: 22),

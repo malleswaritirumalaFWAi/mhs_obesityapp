@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/router.dart';
+import '../../core/state/session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/neu.dart';
 
@@ -21,7 +23,7 @@ const _tabs = [
   _Tab(Symbols.person_rounded, 'Profile', Routes.profile),
 ];
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
   final Widget child;
 
@@ -31,7 +33,14 @@ class AppShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // If the session goes signedOut (e.g. 401 interceptor), redirect to welcome.
+    ref.listen<SessionState>(sessionProvider, (_, s) {
+      if (s.status == AuthStatus.signedOut) {
+        context.go(Routes.welcome);
+      }
+    });
+
     final location = GoRouterState.of(context).uri.path;
     final current = _indexFor(location);
 
@@ -72,7 +81,7 @@ class _NavItem extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppColors.coral : Colors.transparent,
+          color: selected ? AppColors.orange : Colors.transparent,
           borderRadius: BorderRadius.circular(Neu.rPill),
           boxShadow: selected ? Neu.small() : null,
         ),

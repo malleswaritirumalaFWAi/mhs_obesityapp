@@ -17,7 +17,8 @@ class BadgeUnlockScreen extends StatefulWidget {
 class _BadgeUnlockScreenState extends State<BadgeUnlockScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..forward();
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+        ..forward();
 
   @override
   void dispose() {
@@ -27,6 +28,13 @@ class _BadgeUnlockScreenState extends State<BadgeUnlockScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Badge data passed via GoRouter extra from CheckinScreen.
+    final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
+    final emoji = extra?['emoji'] as String? ?? '🏅';
+    final name = extra?['name'] as String? ?? 'Badge Unlocked';
+    final xp = extra?['xp'] as int? ?? 0;
+    final streak = extra?['streak'] as int? ?? 0;
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -56,30 +64,42 @@ class _BadgeUnlockScreenState extends State<BadgeUnlockScreen>
                         decoration: const BoxDecoration(
                             color: AppColors.goldSoft, shape: BoxShape.circle),
                         alignment: Alignment.center,
-                        child: const Text('🔥', style: TextStyle(fontSize: 56)),
+                        child: Text(emoji, style: const TextStyle(fontSize: 56)),
                       ),
                       const SizedBox(height: 16),
-                      Text('LV. 3', style: T.label(context).copyWith(color: AppColors.goldDark)),
+                      if (streak > 0)
+                        Text('$streak day streak',
+                            style: T.label(context).copyWith(color: AppColors.goldDark)),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 28),
-              Text('🎉 Badge unlocked', style: T.small(context)),
+              Text('Badge unlocked', style: T.small(context)),
               const SizedBox(height: 8),
-              Text('Streak Master', style: T.h1(context)),
+              Text(name, style: T.h1(context)),
               const SizedBox(height: 10),
-              Text("25 days in a row. You're officially unstoppable.",
-                  textAlign: TextAlign.center, style: T.body(context)),
+              Text(
+                streak >= 30
+                    ? "$streak days in a row. You're officially unstoppable."
+                    : "$streak days straight — keep the momentum going!",
+                textAlign: TextAlign.center,
+                style: T.body(context),
+              ),
               const SizedBox(height: 18),
               NeuCard(
                 color: AppColors.goldSoft,
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Symbols.military_tech_rounded, color: AppColors.goldDark, fill: 1),
+                  const Icon(Symbols.military_tech_rounded,
+                      color: AppColors.goldDark, fill: 1),
                   const SizedBox(width: 10),
-                  Text('Reward earned · +200 XP',
-                      style: T.title(context).copyWith(color: AppColors.goldDark, fontSize: 15)),
+                  Text(
+                    xp > 0 ? 'Reward earned · +$xp XP' : 'Badge earned!',
+                    style: T.title(context)
+                        .copyWith(color: AppColors.goldDark, fontSize: 15),
+                  ),
                 ]),
               ),
               const Spacer(),
@@ -98,7 +118,8 @@ class _BadgeUnlockScreenState extends State<BadgeUnlockScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: NeuButton.primary('Continue', onPressed: () => context.go(Routes.home)),
+                  child: NeuButton.primary('Continue',
+                      onPressed: () => context.go(Routes.home)),
                 ),
               ]),
             ],

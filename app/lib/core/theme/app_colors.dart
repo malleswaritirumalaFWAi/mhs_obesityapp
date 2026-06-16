@@ -30,4 +30,29 @@ class AppColors {
   static const ink = Color(0xFF2B2A28);
   static const inkMid = Color(0xFF4B4945);
   static const inkSoft = Color(0xFF6B6863);
+
+  // ── Vibrant design tokens (PDF v2) ──
+  static const orange = Color(0xFFFF6B35);
+  static const amber = Color(0xFFFFB800);
+  static const teal = Color(0xFF1B4F72);
+  static const tealLight = Color(0xFF2E86AB);
+  static const orangeSoft = Color(0xFFFFEDE6);
+
+  static const LinearGradient orangeGrad = LinearGradient(
+    colors: [orange, amber],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
+
+  static const LinearGradient tealGrad = LinearGradient(
+    colors: [teal, tealLight],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient splashGrad = LinearGradient(
+    colors: [teal, Color(0xFF1565C0), orange],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
 }

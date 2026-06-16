@@ -49,6 +49,16 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
 
   Future<void> _pay() async {
     setState(() => _busy = true);
+
+    // In demo mode (no real Razorpay key configured), skip the backend call
+    // entirely and show the demo checkout immediately.
+    if (AppConfig.demoMode ||
+        AppConfig.razorpayKeyId == 'rzp_test_xxxxxxxx') {
+      await _confirmDemoPayment();
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
+
     final api = ref.read(apiClientProvider);
     try {
       // Ask backend to create a Razorpay order (amount in paise).
@@ -64,12 +74,7 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
         'theme': {'color': '#FF7A6B'},
       });
     } catch (_) {
-      // No backend / demo mode — simulate a successful payment.
-      if (AppConfig.demoMode) {
-        await _confirmDemoPayment();
-      } else {
-        _toast('Could not start payment. Try again.');
-      }
+      _toast('Could not start payment. Try again.');
       if (mounted) setState(() => _busy = false);
     }
   }
@@ -108,7 +113,7 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
         'signature': r.signature,
       });
     } catch (_) {/* verified server-side best-effort */}
-    _grantAccess();
+    await _grantAccess();
   }
 
   void _onError(PaymentFailureResponse r) {
@@ -116,7 +121,10 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
     _toast('Payment failed (${r.code}). Please try again.');
   }
 
-  void _grantAccess() {
+  Future<void> _grantAccess() async {
+    try {
+      await ref.read(apiClientProvider).postJson('/profile/onboarded', null);
+    } catch (_) {/* best-effort — session state updated locally too */}
     ref.read(sessionProvider.notifier).completeOnboarding();
     if (mounted) context.go(Routes.home);
   }

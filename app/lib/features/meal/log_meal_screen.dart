@@ -1,5 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,11 +9,35 @@ import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/api/api_client.dart';
+import '../../core/providers/tasks_provider.dart';
+import 'web_camera.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
+
+// ── Meal type data ─────────────────────────────────────────────────────────────
+
+const _mealTypes = [
+  (emoji: '🍳', label: 'Breakfast'),
+  (emoji: '🥗', label: 'Lunch'),
+  (emoji: '🍪', label: 'Snacks'),
+  (emoji: '🍲', label: 'Dinner'),
+];
+
+String _emojiFor(String mealType) {
+  switch (mealType.toLowerCase()) {
+    case 'breakfast': return '🍳';
+    case 'lunch':     return '🥗';
+    case 'snacks':
+    case 'snack':     return '🍪';
+    case 'dinner':    return '🍲';
+    default:          return '🍽️';
+  }
+}
+
+// ── Models ────────────────────────────────────────────────────────────────────
 
 class MealAnalysis {
   MealAnalysis({
@@ -46,79 +72,287 @@ class MealAnalysis {
       );
 }
 
-const _mealTypes = [
-  (emoji: '🍳', label: 'Breakfast'),
-  (emoji: '🥗', label: 'Lunch'),
-  (emoji: '🍪', label: 'Snack'),
-  (emoji: '🍲', label: 'Dinner'),
-];
+class _MealEntry {
+  _MealEntry({
+    required this.id,
+    required this.mealType,
+    required this.items,
+    required this.calories,
+    required this.carbs,
+    required this.protein,
+    required this.fat,
+    required this.createdAt,
+  });
+  final int id;
+  final String mealType;
+  final List<String> items;
+  final int calories, carbs, protein, fat;
+  final DateTime createdAt;
+
+  String get relativeDate {
+    final now = DateTime.now();
+    final diff = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(createdAt.year, createdAt.month, createdAt.day))
+        .inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    return '$diff days ago';
+  }
+
+  String get timeLabel =>
+      '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 class LogMealScreen extends ConsumerStatefulWidget {
-  const LogMealScreen({super.key});
+  const LogMealScreen({super.key, this.mealType});
+  final String? mealType; // unused for locking; kept for API compatibility
   @override
   ConsumerState<LogMealScreen> createState() => _LogMealScreenState();
 }
 
 class _LogMealScreenState extends ConsumerState<LogMealScreen> {
-  File? _photo;
+  // Meal type selector (free — user picks)
+  int _mealType = 0; // default Breakfast
+
+  // Photo / analysis
+  Uint8List? _photoBytes;
   MealAnalysis? _result;
   bool _analyzing = false;
-  int _mealType = 0;
+  String? _analysisError;
 
-  Future<void> _pick(ImageSource source) async {
-    final x = await ImagePicker().pickImage(source: source, imageQuality: 70, maxWidth: 1280);
-    if (x == null) return;
-    setState(() {
-      _photo = File(x.path);
-      _analyzing = true;
-      _result = null;
-    });
-    await _analyze(x);
+  // History
+  List<_MealEntry> _history = [];
+  bool _loadingHistory = true;
+  String? _historyError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
   }
 
-  Future<void> _analyze(XFile x) async {
+  Future<void> _loadHistory() async {
+    try {
+      final res = await ref.read(apiClientProvider).getJson('/meals');
+      final raw = (res['meals'] as List?) ?? [];
+      final entries = raw.map((m) {
+        final map = Map<String, dynamic>.from(m as Map);
+        final items = _parseItems(map['items']);
+        int toInt(dynamic v) => v == null ? 0 : int.tryParse(v.toString()) ?? 0;
+        return _MealEntry(
+          id: toInt(map['id']),
+          mealType: map['meal_type'] as String? ?? '',
+          items: items,
+          calories: toInt(map['calories']),
+          carbs: toInt(map['carbs']),
+          protein: toInt(map['protein']),
+          fat: toInt(map['fat']),
+          createdAt: (DateTime.tryParse(map['created_at'] as String? ?? '') ??
+              DateTime.now()).toLocal(),
+        );
+      }).toList();
+      if (mounted) setState(() { _history = entries; _loadingHistory = false; });
+    } catch (_) {
+      if (mounted) setState(() { _loadingHistory = false; _historyError = 'Could not load history. Check your connection.'; });
+    }
+  }
+
+  static List<String> _parseItems(dynamic v) {
+    if (v is List) return v.map((e) => e.toString()).toList();
+    if (v is String) {
+      try {
+        final decoded = jsonDecode(v);
+        if (decoded is List) return decoded.map((e) => e.toString()).toList();
+      } catch (_) {}
+    }
+    return [];
+  }
+
+  Future<void> _pick(ImageSource source) async {
+    Uint8List? bytes;
+    String mime = 'image/jpeg';
+
+    if (kIsWeb && source == ImageSource.camera) {
+      final (b, m) = await captureImageFromCamera();
+      if (b == null) return;
+      bytes = b; mime = m;
+    } else {
+      final x = await ImagePicker().pickImage(
+          source: source, imageQuality: 30, maxWidth: 480);
+      if (x == null) return;
+      bytes = await x.readAsBytes();
+      mime = x.mimeType?.isNotEmpty == true ? x.mimeType! : 'image/jpeg';
+    }
+
+    setState(() {
+      _photoBytes = bytes;
+      _analyzing = true;
+      _result = null;
+      _analysisError = null;
+    });
+    await _analyzeBytes(bytes!, mime);
+  }
+
+  Future<void> _analyzeBytes(Uint8List bytes, String mime) async {
     final api = ref.read(apiClientProvider);
     try {
-      final bytes = await x.readAsBytes();
       final res = await api.postJson('/meals/analyze', {
         'image_base64': base64Encode(bytes),
-        'mime': 'image/jpeg',
+        'mime': mime,
       });
       if (!mounted) return;
-      setState(() {
-        _result = MealAnalysis.fromJson(res);
-        _analyzing = false;
-      });
-    } catch (_) {
+
+      if (res['_mock'] == true) {
+        // Dev mode — no API key configured, show mock data with a note.
+        setState(() {
+          _result = MealAnalysis.fromJson(res);
+          _analyzing = false;
+          _analysisError = 'Demo mode: no AI key set. Showing sample data.';
+        });
+      } else {
+        // Real Claude response — show it with no error.
+        setState(() {
+          _result = MealAnalysis.fromJson(res);
+          _analyzing = false;
+          _analysisError = null;
+        });
+      }
+    } catch (e) {
+      // Backend returned an HTTP error (rate limit, overload, auth, etc.) or is unreachable.
+      // Do NOT show mock food items — show the real error with a Retry option instead.
       if (!mounted) return;
-      // Demo fallback — Claude key/backend not configured.
-      await Future.delayed(const Duration(milliseconds: 700));
-      if (!mounted) return;
+      String msg = 'Analysis failed. Please try again.';
+
+      if (e is DioException) {
+        final status = e.response?.statusCode;
+        final data = e.response?.data;
+        // Extract actual server error message if available.
+        final serverMsg = (data is Map) ? (data['message'] as String?) : null;
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          msg = serverMsg;
+        } else if (status == 401) {
+          msg = 'AI service authentication failed. Please contact support.';
+        } else if (status == 429) {
+          msg = 'Rate limit reached. Please wait a moment and try again.';
+        } else if (status == 529 || status == 503) {
+          msg = 'AI service is busy. Please try again in a few seconds.';
+        } else if (e.type == DioExceptionType.connectionTimeout ||
+                   e.type == DioExceptionType.receiveTimeout) {
+          msg = 'Request timed out. Please check your connection and retry.';
+        }
+      } else {
+        final errStr = e.toString();
+        if (errStr.contains('rate limit') || errStr.contains('rate_limit')) {
+          msg = 'Rate limit reached. Please wait a moment and try again.';
+        } else if (errStr.contains('overloaded') || errStr.contains('529')) {
+          msg = 'AI service is busy. Please try again in a few seconds.';
+        }
+      }
+
       setState(() {
-        _result = MealAnalysis.demo();
+        _result = null;       // no mock data shown
         _analyzing = false;
+        _analysisError = msg;
       });
     }
   }
 
   void _removeItem(int i) => setState(() => _result?.items.removeAt(i));
 
+  /// Shows a simple dialog to enter meal details manually when AI analysis fails.
+  Future<void> _enterManually() async {
+    final foodCtrl = TextEditingController();
+    final calCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log manually'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: foodCtrl,
+            decoration: const InputDecoration(
+              labelText: 'What did you eat?',
+              hintText: 'e.g. Idli 3 pcs, Sambar, Chutney',
+            ),
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: calCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Estimated calories (optional)',
+              hintText: '400',
+            ),
+            keyboardType: TextInputType.number,
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Log meal'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final food = foodCtrl.text.trim();
+    if (food.isEmpty) return;
+    final cal = int.tryParse(calCtrl.text.trim()) ?? 400;
+    setState(() {
+      _result = MealAnalysis(
+        items: food.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+        calories: cal,
+        confidence: 0,
+        carbs: 50,
+        protein: 25,
+        fat: 25,
+      );
+      _analysisError = null;
+    });
+  }
+
   Future<void> _save() async {
     final r = _result;
+    final selectedType = _mealTypes[_mealType].label;
+    final api = ref.read(apiClientProvider);
+
     try {
-      await ref.read(apiClientProvider).postJson('/meals', {
-        'meal_type': _mealTypes[_mealType].label,
+      await api.postJson('/meals', {
+        'meal_type': selectedType,
         'items': r?.items,
         'calories': r?.calories,
         'carbs': r?.carbs,
         'protein': r?.protein,
         'fat': r?.fat,
       });
-    } catch (_) {/* demo mode — backend optional */}
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save meal. Check your connection and try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    ref.invalidate(tasksProvider);
+    setState(() {
+      _photoBytes = null;
+      _result = null;
+      _analysisError = null;
+      _loadingHistory = true;
+      _historyError = null;
+    });
+    await _loadHistory();
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Meal logged · +15 XP 🎉')));
-      context.pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$selectedType logged · +5 XP')));
     }
   }
 
@@ -126,25 +360,71 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               NeuTopBar(title: 'Log meal', onBack: () => context.pop()),
-              const SizedBox(height: 18),
-              // photo / preview
+              const SizedBox(height: 20),
+
+              // ── Meal type selector (always free) ──
+              Text('Meal type', style: T.title(context)),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  for (var i = 0; i < _mealTypes.length; i++)
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(right: i == _mealTypes.length - 1 ? 0 : 8),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _mealType = i),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 120),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: _mealType == i ? AppColors.coralSoft : AppColors.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color: _mealType == i ? AppColors.coral : AppColors.line),
+                            ),
+                            child: Column(children: [
+                              Text(_mealTypes[i].emoji,
+                                  style: const TextStyle(fontSize: 20)),
+                              const SizedBox(height: 4),
+                              Text(_mealTypes[i].label,
+                                  style: T.small(context).copyWith(
+                                      fontSize: 11,
+                                      color: _mealType == i
+                                          ? AppColors.coral
+                                          : AppColors.inkMid,
+                                      fontWeight: _mealType == i
+                                          ? FontWeight.w700
+                                          : FontWeight.w400)),
+                            ]),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // ── Photo / preview ──
+              Text('Snap your meal', style: T.title(context)),
+              const SizedBox(height: 10),
               AspectRatio(
                 aspectRatio: 16 / 10,
                 child: NeuCard(
                   padding: EdgeInsets.zero,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
-                    child: _photo == null
-                        ? _PickPrompt(onCamera: () => _pick(ImageSource.camera),
+                    child: _photoBytes == null
+                        ? _PickPrompt(
+                            onCamera: () => _pick(ImageSource.camera),
                             onGallery: () => _pick(ImageSource.gallery))
                         : Stack(fit: StackFit.expand, children: [
-                            Image.file(_photo!, fit: BoxFit.cover),
+                            Image.memory(_photoBytes!, fit: BoxFit.cover),
                             if (_analyzing)
                               Container(
                                 color: Colors.black.withValues(alpha: 0.35),
@@ -155,27 +435,24 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                                       CircularProgressIndicator(color: Colors.white),
                                       SizedBox(height: 12),
                                       Text('AI analyzing…',
-                                          style: TextStyle(
-                                              color: Colors.white, fontWeight: FontWeight.w700)),
+                                          style: TextStyle(color: Colors.white,
+                                              fontWeight: FontWeight.w700)),
                                     ],
                                   ),
                                 ),
                               )
-                            else
+                            else if (_result != null)
                               Positioned(
-                                top: 12,
-                                left: 12,
+                                top: 12, left: 12,
                                 child: NeuPill(
                                   color: Colors.black.withValues(alpha: 0.55),
                                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                                     const Icon(Symbols.auto_awesome_rounded,
                                         color: Colors.white, size: 16, fill: 1),
                                     const SizedBox(width: 6),
-                                    Text('AI detected · ${_result?.confidence ?? 0}%',
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 12)),
+                                    Text('AI · ${_result!.confidence}%',
+                                        style: const TextStyle(color: Colors.white,
+                                            fontWeight: FontWeight.w700, fontSize: 12)),
                                   ]),
                                 ),
                               ),
@@ -183,9 +460,71 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+
+              // ── Error banner / retry ──
+              if (_analysisError != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.shade300),
+                  ),
+                  child: Row(children: [
+                    Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_analysisError!,
+                          style: TextStyle(fontSize: 12, color: Colors.orange.shade800)),
+                    ),
+                    // Show retry + manual entry when analysis failed (no result)
+                    if (_result == null && _photoBytes != null) ...[
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() { _analyzing = true; _analysisError = null; });
+                          _analyzeBytes(_photoBytes!, 'image/jpeg');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.coral,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text('Retry',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: _enterManually,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade600,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text('Manual',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                    ],
+                  ]),
+                ),
+              ],
+
+              // ── Analysis result ──
               if (_result != null) ...[
-                Expanded(child: _resultBody(context)),
+                const SizedBox(height: 18),
+                _resultBody(context),
+                const SizedBox(height: 16),
                 Row(children: [
                   Expanded(
                     child: NeuButton(
@@ -197,11 +536,17 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     flex: 2,
-                    child: NeuButton.primary('Save · +15 XP', onPressed: _save),
+                    child: NeuButton.primary(
+                      'Save · +5 XP',
+                      onPressed: _save,
+                    ),
                   ),
                 ]),
-              ] else
-                const Spacer(),
+              ],
+
+              // ── Meal history ──
+              const SizedBox(height: 32),
+              _buildHistory(context),
             ],
           ),
         ),
@@ -211,7 +556,8 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
   Widget _resultBody(BuildContext context) {
     final r = _result!;
-    return ListView(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
           Text('Detected items', style: T.title(context)),
@@ -220,8 +566,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
         ]),
         const SizedBox(height: 10),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 8, runSpacing: 8,
           children: [
             for (var i = 0; i < r.items.length; i++)
               NeuPill(
@@ -259,10 +604,8 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                 const NeuPill(
                   color: AppColors.sageSoft,
                   child: Text('WITHIN TARGET',
-                      style: TextStyle(
-                          color: AppColors.sageDark,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11)),
+                      style: TextStyle(color: AppColors.sageDark,
+                          fontWeight: FontWeight.w800, fontSize: 11)),
                 ),
               ]),
               const SizedBox(height: 6),
@@ -272,42 +615,65 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildHistory(BuildContext context) {
+    if (_loadingHistory) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_history.isEmpty) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Meal history', style: T.title(context)),
         const SizedBox(height: 16),
-        Text('Meal type', style: T.title(context)),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            for (var i = 0; i < _mealTypes.length; i++)
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(right: i == _mealTypes.length - 1 ? 0 : 8),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _mealType = i),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: _mealType == i ? AppColors.coralSoft : AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                            color: _mealType == i ? AppColors.coral : AppColors.line),
-                      ),
-                      child: Column(children: [
-                        Text(_mealTypes[i].emoji, style: const TextStyle(fontSize: 20)),
-                        const SizedBox(height: 4),
-                        Text(_mealTypes[i].label,
-                            style: T.small(context).copyWith(fontSize: 11)),
-                      ]),
-                    ),
-                  ),
-                ),
-              ),
-          ],
+        NeuCard(
+          child: Center(
+            child: Column(children: [
+              const Icon(Symbols.no_meals_rounded, size: 36, color: AppColors.inkSoft),
+              const SizedBox(height: 8),
+              Text('No meals logged yet', style: T.small(context)),
+              Text('Snap your first meal above', style: T.small(context)),
+              if (_historyError != null) ...[
+                const SizedBox(height: 8),
+                Text(_historyError!,
+                    style: T.small(context).copyWith(fontSize: 10, color: Colors.red)),
+              ],
+            ]),
+          ),
         ),
-        const SizedBox(height: 12),
+      ]);
+    }
+
+    // Group all meals by relative date
+    final Map<String, List<_MealEntry>> grouped = {};
+    for (final e in _history) {
+      (grouped[e.relativeDate] ??= []).add(e);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Text('Meal history', style: T.title(context)),
+          const Spacer(),
+          Text('${_history.length} logged',
+              style: T.small(context).copyWith(color: AppColors.inkSoft)),
+        ]),
+        const SizedBox(height: 14),
+        for (final dateLabel in grouped.keys) ...[
+          _DayHeader(dateLabel: dateLabel, entries: grouped[dateLabel]!),
+          const SizedBox(height: 8),
+          for (final entry in grouped[dateLabel]!)
+            _MealHistoryCard(entry: entry),
+          const SizedBox(height: 16),
+        ],
       ],
     );
   }
 }
+
+// ── Pick prompt ───────────────────────────────────────────────────────────────
 
 class _PickPrompt extends StatelessWidget {
   const _PickPrompt({required this.onCamera, required this.onGallery});
@@ -352,6 +718,110 @@ class _PickPrompt extends StatelessWidget {
   }
 }
 
+// ── History widgets ───────────────────────────────────────────────────────────
+
+class _DayHeader extends StatelessWidget {
+  const _DayHeader({required this.dateLabel, required this.entries});
+  final String dateLabel;
+  final List<_MealEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final totalCal = entries.fold<int>(0, (sum, e) => sum + e.calories);
+    return Row(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+            color: AppColors.coralSoft, borderRadius: BorderRadius.circular(20)),
+        child: Text(dateLabel,
+            style: T.small(context).copyWith(
+                color: AppColors.coral, fontWeight: FontWeight.w800, fontSize: 12)),
+      ),
+      const SizedBox(width: 10),
+      Text('$totalCal kcal total',
+          style: T.small(context).copyWith(color: AppColors.inkSoft, fontSize: 12)),
+    ]);
+  }
+}
+
+class _MealHistoryCard extends StatelessWidget {
+  const _MealHistoryCard({required this.entry});
+  final _MealEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: NeuCard(
+        padding: const EdgeInsets.all(14),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 46, height: 46,
+            decoration: const BoxDecoration(
+                color: AppColors.coralSoft, shape: BoxShape.circle),
+            alignment: Alignment.center,
+            child: Text(_emojiFor(entry.mealType),
+                style: const TextStyle(fontSize: 22)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Text(entry.mealType,
+                    style: T.title(context).copyWith(fontSize: 14)),
+                const Spacer(),
+                Text(entry.timeLabel,
+                    style: T.small(context)
+                        .copyWith(color: AppColors.inkSoft, fontSize: 11)),
+              ]),
+              const SizedBox(height: 4),
+              if (entry.items.isNotEmpty)
+                Text(
+                  entry.items.take(4).join(', ') +
+                      (entry.items.length > 4 ? ' +${entry.items.length - 4} more' : ''),
+                  style: T.small(context).copyWith(fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              const SizedBox(height: 8),
+              Row(children: [
+                _Chip(color: AppColors.coralSoft,
+                    text: '${entry.calories} kcal', textColor: AppColors.coral),
+                const SizedBox(width: 6),
+                _Chip(color: AppColors.sageSoft,
+                    text: 'C ${entry.carbs}%', textColor: AppColors.sageDark),
+                const SizedBox(width: 6),
+                _Chip(color: AppColors.sageSoft,
+                    text: 'P ${entry.protein}%', textColor: AppColors.sageDark),
+                const SizedBox(width: 6),
+                _Chip(color: const Color(0xFFF3E5F5),
+                    text: 'F ${entry.fat}%', textColor: AppColors.berry),
+              ]),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({required this.color, required this.text, required this.textColor});
+  final Color color, textColor;
+  final String text;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+            color: color, borderRadius: BorderRadius.circular(8)),
+        child: Text(text,
+            style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700, color: textColor)),
+      );
+}
+
+// ── Macro bar ─────────────────────────────────────────────────────────────────
+
 class _MacroBar extends StatelessWidget {
   const _MacroBar({required this.carbs, required this.protein, required this.fat});
   final int carbs, protein, fat;
@@ -362,15 +832,15 @@ class _MacroBar extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(999),
           child: Row(children: [
-            Expanded(flex: carbs, child: Container(height: 12, color: AppColors.gold)),
-            Expanded(flex: protein, child: Container(height: 12, color: AppColors.sage)),
-            Expanded(flex: fat, child: Container(height: 12, color: AppColors.berry)),
+            Expanded(flex: carbs.clamp(1, 100),   child: Container(height: 12, color: AppColors.gold)),
+            Expanded(flex: protein.clamp(1, 100), child: Container(height: 12, color: AppColors.sage)),
+            Expanded(flex: fat.clamp(1, 100),     child: Container(height: 12, color: AppColors.berry)),
           ]),
         ),
         const SizedBox(height: 10),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          _legend(context, AppColors.gold, 'Carbs $carbs%'),
-          _legend(context, AppColors.sage, 'Protein $protein%'),
+          _legend(context, AppColors.gold,  'Carbs $carbs%'),
+          _legend(context, AppColors.sage,  'Protein $protein%'),
           _legend(context, AppColors.berry, 'Fat $fat%'),
         ]),
       ],
@@ -378,7 +848,8 @@ class _MacroBar extends StatelessWidget {
   }
 
   Widget _legend(BuildContext c, Color color, String label) => Row(children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(width: 10, height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),
         Text(label, style: T.small(c).copyWith(fontSize: 12)),
       ]);

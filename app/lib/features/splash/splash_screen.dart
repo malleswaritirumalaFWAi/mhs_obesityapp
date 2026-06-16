@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/router.dart';
 import '../../core/state/session.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/widgets/neu_card.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -24,12 +21,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1600), _route);
+    // Check immediately after first frame in case bootstrap already completed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final s = ref.read(sessionProvider);
+      if (s.status != AuthStatus.unknown) _route(s);
+    });
   }
 
-  void _route() {
+  void _route(SessionState s) {
     if (!mounted) return;
-    final s = ref.read(sessionProvider);
     if (s.status == AuthStatus.signedIn) {
       context.go(s.onboarded ? Routes.home : Routes.quiz);
     } else {
@@ -45,28 +46,66 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Route as soon as bootstrap finishes (status leaves unknown).
+    ref.listen<SessionState>(sessionProvider, (_, s) {
+      if (s.status != AuthStatus.unknown) _route(s);
+    });
+
     return Scaffold(
-      body: Center(
-        child: FadeTransition(
-          opacity: _c,
-          child: ScaleTransition(
-            scale: Tween(begin: 0.85, end: 1.0).animate(
-              CurvedAnimation(parent: _c, curve: Curves.easeOutBack),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                NeuCard(
-                  padding: const EdgeInsets.all(28),
-                  radius: 34,
-                  child: const Icon(Symbols.eco_rounded,
-                      size: 64, color: AppColors.sage, fill: 1),
-                ),
-                const SizedBox(height: 28),
-                Text('FitQuest', style: T.h1(context).copyWith(fontSize: 34)),
-                const SizedBox(height: 8),
-                Text('Real coach. Real results.', style: T.body(context)),
-              ],
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppColors.splashGrad),
+        child: Center(
+          child: FadeTransition(
+            opacity: _c,
+            child: ScaleTransition(
+              scale: Tween(begin: 0.85, end: 1.0).animate(
+                CurvedAnimation(parent: _c, curve: Curves.easeOutBack),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: Colors.white.withOpacity(0.5), width: 2),
+                    ),
+                    child: const Center(
+                      child: Text('🏆', style: TextStyle(fontSize: 56)),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'FitQuest',
+                    style: TextStyle(
+                        fontSize: 42,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -0.5),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Your 12-Week Weight Loss Game',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withOpacity(0.85)),
+                  ),
+                  const SizedBox(height: 48),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white.withOpacity(0.7)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
