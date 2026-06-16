@@ -14,7 +14,7 @@ class AppConfig {
     if (_apiBaseEnv.isNotEmpty) return _apiBaseEnv;
     // ignore: do_not_use_environment
     const isWeb = bool.fromEnvironment('dart.library.html', defaultValue: false);
-    return isWeb ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
+    return isWeb ? 'https://mhs-obesityapp.vercel.app' : 'https://mhs-obesityapp.vercel.app';
   }
 
   /// Razorpay public key id (test mode). Safe to ship in the app.
