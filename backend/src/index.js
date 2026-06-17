@@ -21,13 +21,109 @@ import recipesRoutes      from './routes/recipes.js';
 import exercisesRoutes    from './routes/exercises.js';
 import coachRoutes        from './routes/coach.js';
 import adminRoutes, { runWeeklyReset } from './routes/admin.js';
+import migrateRoutes      from './routes/migrate.js';
 
 dotenv.config();
 
 import { pool } from './db.js';
-async function runMigrations() {
+
+// Ensure the fitquest schema exists before any migration runs. Without this,
+// every CREATE/ALTER below silently fails (search_path points at a missing schema).
+async function ensureSchema() {
   const client = await pool.connect();
   try {
+    await client.query('CREATE SCHEMA IF NOT EXISTS fitquest');
+  } finally {
+    client.release();
+  }
+}
+
+async function runMigrations() {
+  await ensureSchema().catch(e => console.warn('  ensureSchema:', e.message));
+  const client = await pool.connect();
+  try {
+    // Base tables (mirror schema.sql) — must exist before the ALTERs below.
+    const baseTables = [
+      `CREATE TABLE IF NOT EXISTS users (
+        id BIGSERIAL PRIMARY KEY, phone TEXT UNIQUE NOT NULL, name TEXT,
+        email TEXT UNIQUE, password_hash TEXT,
+        onboarded BOOLEAN NOT NULL DEFAULT FALSE, xp INTEGER NOT NULL DEFAULT 0,
+        streak INTEGER NOT NULL DEFAULT 0, start_weight NUMERIC(5,1),
+        target_weight NUMERIC(5,1), created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`,
+      `CREATE TABLE IF NOT EXISTS otps (
+        phone TEXT PRIMARY KEY, code TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS profiles (
+        user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        gender TEXT, activity TEXT, goal TEXT, food_pref TEXT, challenge TEXT
+      )`,
+      `CREATE TABLE IF NOT EXISTS coaches (
+        id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, title TEXT,
+        rating NUMERIC(2,1), avatar TEXT
+      )`,
+      `CREATE TABLE IF NOT EXISTS groups (
+        id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL,
+        coach_id BIGINT REFERENCES coaches(id), starts_on DATE
+      )`,
+      `CREATE TABLE IF NOT EXISTS group_members (
+        group_id BIGINT REFERENCES groups(id) ON DELETE CASCADE,
+        user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        weekly_xp INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (group_id, user_id)
+      )`,
+      `CREATE TABLE IF NOT EXISTS tasks (
+        id BIGSERIAL PRIMARY KEY, user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        day_index INTEGER NOT NULL, slot TEXT NOT NULL, time TEXT, icon TEXT,
+        title TEXT NOT NULL, subtitle TEXT, xp INTEGER NOT NULL DEFAULT 0,
+        done BOOLEAN NOT NULL DEFAULT FALSE, completed_at TIMESTAMPTZ
+      )`,
+      `CREATE TABLE IF NOT EXISTS checkins (
+        id BIGSERIAL PRIMARY KEY, user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        mood INTEGER, weight NUMERIC(5,1), notes TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`,
+      `CREATE TABLE IF NOT EXISTS meals (
+        id BIGSERIAL PRIMARY KEY, user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        meal_type TEXT, items JSONB, calories INTEGER, carbs INTEGER,
+        protein INTEGER, fat INTEGER, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`,
+      `CREATE TABLE IF NOT EXISTS posts (
+        id BIGSERIAL PRIMARY KEY, group_id BIGINT REFERENCES groups(id) ON DELETE CASCADE,
+        user_id BIGINT REFERENCES users(id) ON DELETE CASCADE, body TEXT, emoji TEXT,
+        coach_pick BOOLEAN NOT NULL DEFAULT FALSE, likes INTEGER NOT NULL DEFAULT 0,
+        fires INTEGER NOT NULL DEFAULT 0, comments INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`,
+      `CREATE TABLE IF NOT EXISTS badges (
+        id BIGSERIAL PRIMARY KEY, code TEXT UNIQUE NOT NULL, emoji TEXT,
+        name TEXT, xp INTEGER NOT NULL DEFAULT 0
+      )`,
+      `CREATE TABLE IF NOT EXISTS user_badges (
+        user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        badge_id BIGINT REFERENCES badges(id) ON DELETE CASCADE,
+        earned_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, badge_id)
+      )`,
+      `CREATE TABLE IF NOT EXISTS lessons (
+        id BIGSERIAL PRIMARY KEY, week INTEGER NOT NULL, title TEXT NOT NULL,
+        author TEXT, minutes INTEGER, xp INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'locked'
+      )`,
+      `CREATE TABLE IF NOT EXISTS chat_messages (
+        id BIGSERIAL PRIMARY KEY, user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        from_coach BOOLEAN NOT NULL DEFAULT FALSE, text TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`,
+      `CREATE TABLE IF NOT EXISTS daily_stats (
+        user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        date DATE NOT NULL DEFAULT CURRENT_DATE, steps INTEGER NOT NULL DEFAULT 0,
+        water INTEGER NOT NULL DEFAULT 0, sleep NUMERIC(3,1) NOT NULL DEFAULT 0,
+        PRIMARY KEY (user_id, date)
+      )`,
+    ];
+    for (const sql of baseTables) {
+      await client.query(sql).catch(e => console.warn('  Base table skip:', e.message.slice(0, 100)));
+    }
+
     const migrations = [
       `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ`,
       `CREATE TABLE IF NOT EXISTS post_comments (
@@ -66,11 +162,6 @@ async function runMigrations() {
       `ALTER TABLE lessons ADD COLUMN IF NOT EXISTS author TEXT`,
       `ALTER TABLE lessons ADD COLUMN IF NOT EXISTS minutes INTEGER NOT NULL DEFAULT 5`,
       `ALTER TABLE group_members ADD COLUMN IF NOT EXISTS joined_at TIMESTAMPTZ NOT NULL DEFAULT now()`,
-      // Fix joined_at values that were incorrectly backfilled with the migration timestamp.
-      // When the column was first added via ALTER TABLE, all existing rows got joined_at = now()
-      // (migration time) instead of their actual registration date. Correct these by resetting
-      // to users.created_at wherever joined_at is later than the user's creation time by more
-      // than 1 minute (the max expected delay between user insert and group_members insert).
       `UPDATE group_members gm SET joined_at = u.created_at FROM users u WHERE u.id = gm.user_id AND gm.joined_at > u.created_at + INTERVAL '1 minute'`,
       `CREATE TABLE IF NOT EXISTS body_measurements (
         id BIGSERIAL PRIMARY KEY, user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
@@ -162,15 +253,12 @@ async function runMigrations() {
         id BIGSERIAL PRIMARY KEY, reset_date DATE NOT NULL UNIQUE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`,
-      // Remove stale lunch tasks seeded before the template was fixed
       `DELETE FROM tasks WHERE icon='lunch_dining'`,
-      // Track per-user post likes for toggle (like/unlike) support
       `CREATE TABLE IF NOT EXISTS post_likes (
         user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
         post_id BIGINT REFERENCES posts(id) ON DELETE CASCADE,
         PRIMARY KEY (user_id, post_id)
       )`,
-      // Ensure unique week per challenge and unique entry per user+challenge
       `ALTER TABLE weekly_challenges ADD CONSTRAINT IF NOT EXISTS weekly_challenges_week_unique UNIQUE (week_number)`,
       `ALTER TABLE challenge_entries ADD CONSTRAINT IF NOT EXISTS challenge_entries_user_challenge_unique UNIQUE (user_id, challenge_id)`,
       `ALTER TABLE checkins ADD COLUMN IF NOT EXISTS evening_mood INTEGER`,
@@ -225,7 +313,6 @@ async function runMigrations() {
             type=EXCLUDED.type, target=EXCLUDED.target, xp_reward=EXCLUDED.xp_reward
     `).catch((e) => console.warn('[seed challenges]', e.message));
 
-    // Seed lessons only if table is empty
     const lessonCount = (await client.query('SELECT COUNT(*) FROM lessons')).rows[0].count;
     if (Number(lessonCount) === 0) {
       await client.query(`
@@ -274,30 +361,22 @@ async function runMigrations() {
       ON CONFLICT DO NOTHING
     `).catch(() => {});
 
-    // ── Seed: ensure at least one group + coach + two demo posts ──────────────
     try {
-      // Insert a default coach if none exists
       await client.query(`
         INSERT INTO coaches (name, title, specialization)
         SELECT 'Coach Priya', 'Certified Nutritionist', 'Weight loss & lifestyle'
         WHERE NOT EXISTS (SELECT 1 FROM coaches LIMIT 1)
       `);
-
-      // Insert a default group if none exists
       await client.query(`
         INSERT INTO groups (name, coach_id, starts_on)
         SELECT 'FitQuest Community', (SELECT id FROM coaches ORDER BY id LIMIT 1), CURRENT_DATE
         WHERE NOT EXISTS (SELECT 1 FROM groups LIMIT 1)
       `);
-
-      // Insert a system/coach user if none exists (needed to author demo posts)
       await client.query(`
         INSERT INTO users (phone, name, email, onboarded, xp, streak)
         SELECT '+910000000001', 'Coach Priya', 'coach@fitquest.app', TRUE, 0, 0
         WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='coach@fitquest.app')
       `);
-
-      // Insert two demo posts if the posts table is empty
       const postCount = (await client.query(`SELECT COUNT(*) AS n FROM posts`)).rows[0].n;
       if (Number(postCount) === 0) {
         const coachUser = (await client.query(
@@ -338,6 +417,7 @@ app.options('*', cors());
 app.use(express.json({ limit: '12mb' }));
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'fitquest', ts: Date.now() }));
+app.use('/',              migrateRoutes);     // one-time DB setup: GET /migrate?key=...
 
 app.use('/auth',          authRoutes);
 app.use('/meals',         mealRoutes);
