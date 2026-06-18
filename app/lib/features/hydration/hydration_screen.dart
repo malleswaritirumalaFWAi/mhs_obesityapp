@@ -14,6 +14,25 @@ import '../../core/widgets/neu_misc.dart';
 
 const _goal = 8;
 
+class _HydrationDay {
+  const _HydrationDay({required this.date, required this.glasses});
+  final DateTime date;
+  final int glasses;
+
+  String get relativeDate {
+    final now = DateTime.now();
+    final diff = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(date.year, date.month, date.day))
+        .inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    return '$diff days ago';
+  }
+
+  String get dateLabel =>
+      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+}
+
 class HydrationScreen extends ConsumerStatefulWidget {
   const HydrationScreen({super.key});
 
@@ -26,6 +45,9 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
   int _glasses = 0;
   bool _loading = true;
   bool _adding = false;
+  List<_HydrationDay> _history = [];
+  bool _loadingHistory = true;
+  int _visibleGroups = 2;
   late AnimationController _bounceCtrl;
   late Animation<double> _bounceAnim;
 
@@ -40,6 +62,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
       CurvedAnimation(parent: _bounceCtrl, curve: Curves.elasticOut),
     );
     _loadGlasses();
+    _loadHistory();
   }
 
   @override
@@ -61,6 +84,27 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
       // fallback to daily stats provider value
       final stats = ref.read(dailyStatsProvider);
       if (mounted) setState(() { _glasses = stats.water; _loading = false; });
+    }
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final res =
+          await ref.read(apiClientProvider).getJson('/hydration/history');
+      final raw = (res['history'] as List?) ?? [];
+      final entries = raw.map((e) {
+        final m = Map<String, dynamic>.from(e as Map);
+        return _HydrationDay(
+          date: (DateTime.tryParse(m['date'] as String? ?? '') ??
+                  DateTime.now())
+              .toLocal(),
+          glasses: (m['glasses'] as num?)?.toInt() ?? 0,
+        );
+      }).toList();
+      if (mounted) setState(() { _history = entries; _loadingHistory = false; });
+    } catch (_) {
+      // API doesn't have history endpoint yet — show today only
+      if (mounted) setState(() { _loadingHistory = false; });
     }
   }
 
@@ -254,10 +298,107 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
 
               // ── Tips card ──
               _TipsCard(glasses: _glasses),
+              const SizedBox(height: 28),
+
+              // ── History ──
+              _buildHistory(context),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHistory(BuildContext context) {
+    // Always include today's live entry at the top
+    final todayEntry = _HydrationDay(date: DateTime.now(), glasses: _glasses);
+    final allEntries = [
+      todayEntry,
+      ..._history.where((e) => e.relativeDate != 'Today'),
+    ];
+
+    // Group by relativeDate
+    final Map<String, List<_HydrationDay>> grouped = {};
+    for (final e in allEntries) {
+      (grouped[e.relativeDate] ??= []).add(e);
+    }
+
+    final allKeys = grouped.keys.toList();
+    final visibleKeys = allKeys.take(_visibleGroups).toList();
+    final hiddenDays = allKeys.length - _visibleGroups;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Gradient section header
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: BoxDecoration(
+            gradient: AppColors.tealGrad,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(children: [
+            const Icon(Symbols.water_drop_rounded,
+                color: Colors.white, size: 18, fill: 1),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text('Hydration history',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15)),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text('${allEntries.length} day${allEntries.length != 1 ? 's' : ''}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11)),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 14),
+        for (final label in visibleKeys) ...[
+          _HistoryDayLabel(
+              dateLabel: label, count: grouped[label]!.first.glasses),
+          const SizedBox(height: 8),
+          _HydrationHistoryCard(entry: grouped[label]!.first),
+          const SizedBox(height: 12),
+        ],
+        if (hiddenDays > 0)
+          GestureDetector(
+            onTap: () => setState(() => _visibleGroups++),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.line),
+              ),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Symbols.expand_more_rounded,
+                        color: AppColors.inkSoft, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Load older ($hiddenDays more day${hiddenDays > 1 ? 's' : ''})',
+                      style: const TextStyle(
+                          color: AppColors.inkMid,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13),
+                    ),
+                  ]),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -370,5 +511,147 @@ class _TipsCard extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+// ── History widgets ────────────────────────────────────────────────────────────
+
+class _HistoryDayLabel extends StatelessWidget {
+  const _HistoryDayLabel({required this.dateLabel, required this.count});
+  final String dateLabel;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = dateLabel == 'Today';
+    final isYesterday = dateLabel == 'Yesterday';
+    return Row(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          gradient: isToday
+              ? AppColors.tealGrad
+              : isYesterday
+                  ? AppColors.orangeGrad
+                  : null,
+          color: (!isToday && !isYesterday) ? AppColors.bg : null,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(dateLabel,
+            style: TextStyle(
+                color: (isToday || isYesterday) ? Colors.white : AppColors.inkSoft,
+                fontWeight: FontWeight.w800,
+                fontSize: 12)),
+      ),
+      const SizedBox(width: 10),
+      Text('$count / $_goal glasses',
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: AppColors.inkSoft, fontSize: 12)),
+    ]);
+  }
+}
+
+class _HydrationHistoryCard extends StatelessWidget {
+  const _HydrationHistoryCard({required this.entry});
+  final _HydrationDay entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (entry.glasses / _goal).clamp(0.0, 1.0);
+    final done = entry.glasses >= _goal;
+    return Stack(children: [
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2))
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: AppColors.tealGrad,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text('${entry.glasses}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Text('${entry.glasses} of $_goal glasses',
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      if (done)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.sageSoft,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text('Goal reached!',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.sageDark)),
+                        ),
+                    ]),
+                    const SizedBox(height: 8),
+                    Stack(children: [
+                      Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                              color: const Color(0xFFD6EFF8),
+                              borderRadius: BorderRadius.circular(999))),
+                      FractionallySizedBox(
+                        widthFactor: pct,
+                        child: Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.tealGrad,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ]),
+            ),
+          ]),
+        ]),
+      ),
+      Positioned(
+        left: 0, top: 0, bottom: 0,
+        child: Container(
+          width: 5,
+          decoration: BoxDecoration(
+            gradient: AppColors.tealGrad,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
+            ),
+          ),
+        ),
+      ),
+    ]);
   }
 }

@@ -13,6 +13,22 @@ import '../../core/widgets/neu_misc.dart';
 
 const _goal = 8000;
 
+class _MovementDay {
+  const _MovementDay({required this.date, required this.steps});
+  final DateTime date;
+  final int steps;
+
+  String get relativeDate {
+    final now = DateTime.now();
+    final diff = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(date.year, date.month, date.day))
+        .inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    return '$diff days ago';
+  }
+}
+
 const _presets = [
   (label: '+500',  steps: 500),
   (label: '+1k',   steps: 1000),
@@ -32,6 +48,9 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
   int _steps = 0;
   bool _loading = true;
   bool _adding = false;
+  List<_MovementDay> _history = [];
+  bool _loadingHistory = true;
+  int _visibleGroups = 2;
   late AnimationController _bounceCtrl;
   late Animation<double> _bounceAnim;
 
@@ -44,6 +63,7 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
       CurvedAnimation(parent: _bounceCtrl, curve: Curves.elasticOut),
     );
     _loadSteps();
+    _loadHistory();
   }
 
   @override
@@ -64,6 +84,26 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
     } catch (_) {
       final stats = ref.read(dailyStatsProvider);
       if (mounted) setState(() { _steps = stats.steps; _loading = false; });
+    }
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final res =
+          await ref.read(apiClientProvider).getJson('/movement/history');
+      final raw = (res['history'] as List?) ?? [];
+      final entries = raw.map((e) {
+        final m = Map<String, dynamic>.from(e as Map);
+        return _MovementDay(
+          date: (DateTime.tryParse(m['date'] as String? ?? '') ??
+                  DateTime.now())
+              .toLocal(),
+          steps: (m['steps'] as num?)?.toInt() ?? 0,
+        );
+      }).toList();
+      if (mounted) setState(() { _history = entries; _loadingHistory = false; });
+    } catch (_) {
+      if (mounted) setState(() { _loadingHistory = false; });
     }
   }
 
@@ -299,10 +339,106 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
 
               // ── Tips ──
               _TipsCard(steps: _steps),
+              const SizedBox(height: 28),
+
+              // ── History ──
+              _buildHistory(context),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHistory(BuildContext context) {
+    final todayEntry = _MovementDay(date: DateTime.now(), steps: _steps);
+    final allEntries = [
+      todayEntry,
+      ..._history.where((e) => e.relativeDate != 'Today'),
+    ];
+
+    final Map<String, List<_MovementDay>> grouped = {};
+    for (final e in allEntries) {
+      (grouped[e.relativeDate] ??= []).add(e);
+    }
+
+    final allKeys = grouped.keys.toList();
+    final visibleKeys = allKeys.take(_visibleGroups).toList();
+    final hiddenDays = allKeys.length - _visibleGroups;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: BoxDecoration(
+            gradient: AppColors.orangeGrad,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(children: [
+            const Icon(Symbols.directions_run_rounded,
+                color: Colors.white, size: 18, fill: 1),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text('Movement history',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15)),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${allEntries.length} day${allEntries.length != 1 ? 's' : ''}',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 14),
+        for (final label in visibleKeys) ...[
+          _MovementDayLabel(
+              dateLabel: label, steps: grouped[label]!.first.steps),
+          const SizedBox(height: 8),
+          _MovementHistoryCard(entry: grouped[label]!.first),
+          const SizedBox(height: 12),
+        ],
+        if (hiddenDays > 0)
+          GestureDetector(
+            onTap: () => setState(() => _visibleGroups++),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.line),
+              ),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Symbols.expand_more_rounded,
+                        color: AppColors.inkSoft, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Load older ($hiddenDays more day${hiddenDays > 1 ? 's' : ''})',
+                      style: const TextStyle(
+                          color: AppColors.inkMid,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13),
+                    ),
+                  ]),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -459,5 +595,147 @@ class _TipsCard extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+// ── Movement history widgets ───────────────────────────────────────────────────
+
+class _MovementDayLabel extends StatelessWidget {
+  const _MovementDayLabel({required this.dateLabel, required this.steps});
+  final String dateLabel;
+  final int steps;
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = dateLabel == 'Today';
+    final isYesterday = dateLabel == 'Yesterday';
+    return Row(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          gradient: isToday
+              ? AppColors.orangeGrad
+              : isYesterday
+                  ? AppColors.tealGrad
+                  : null,
+          color: (!isToday && !isYesterday) ? AppColors.bg : null,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(dateLabel,
+            style: TextStyle(
+                color: (isToday || isYesterday) ? Colors.white : AppColors.inkSoft,
+                fontWeight: FontWeight.w800,
+                fontSize: 12)),
+      ),
+      const SizedBox(width: 10),
+      Text('${_formatSteps(steps)} steps',
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: AppColors.inkSoft, fontSize: 12)),
+    ]);
+  }
+}
+
+class _MovementHistoryCard extends StatelessWidget {
+  const _MovementHistoryCard({required this.entry});
+  final _MovementDay entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (entry.steps / _goal).clamp(0.0, 1.0);
+    final done = entry.steps >= _goal;
+    return Stack(children: [
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2))
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: AppColors.orangeGrad,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(_formatSteps(entry.steps),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Text('${_formatSteps(entry.steps)} of ${_formatSteps(_goal)} steps',
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      if (done)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.sageSoft,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text('Goal reached!',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.sageDark)),
+                        ),
+                    ]),
+                    const SizedBox(height: 8),
+                    Stack(children: [
+                      Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                              color: AppColors.orangeSoft,
+                              borderRadius: BorderRadius.circular(999))),
+                      FractionallySizedBox(
+                        widthFactor: pct,
+                        child: Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.orangeGrad,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ]),
+            ),
+          ]),
+        ]),
+      ),
+      Positioned(
+        left: 0, top: 0, bottom: 0,
+        child: Container(
+          width: 5,
+          decoration: BoxDecoration(
+            gradient: AppColors.orangeGrad,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
+            ),
+          ),
+        ),
+      ),
+    ]);
   }
 }
