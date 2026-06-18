@@ -139,9 +139,6 @@ router.post('/', async (req, res) => {
   await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [req.user.uid, baseXp]);
   await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [req.user.uid, baseXp]);
 
-  // Mark the "Log a meal" task as done for today (all meal types share the same task icon).
-  markTasksDoneByIcon(req.user.uid, ['restaurant']).catch(() => {});
-
   // First meal badge
   const mealCount = await q(`SELECT COUNT(*) FROM meals WHERE user_id=$1`, [req.user.uid]);
   if (Number(mealCount.rows[0].count) === 1) {
@@ -149,13 +146,18 @@ router.post('/', async (req, res) => {
     if (b.rows[0]) await q(`INSERT INTO user_badges (user_id,badge_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [req.user.uid, b.rows[0].id]);
   }
 
-  // Combo bonus: all 4 meal types logged today
+  // Mark the "Log a meal" task done only when Breakfast + Lunch + Dinner are all logged today.
   const today = new Date().toISOString().slice(0, 10);
   const todayMeals = await q(
     `SELECT DISTINCT meal_type FROM meals WHERE user_id=$1 AND DATE(created_at)=$2`,
     [req.user.uid, today]
   );
   const types = todayMeals.rows.map(m => m.meal_type);
+  if (['Breakfast', 'Lunch', 'Dinner'].every(t => types.includes(t))) {
+    markTasksDoneByIcon(req.user.uid, ['restaurant']).catch(() => {});
+  }
+
+  // Combo bonus: all 4 meal types logged today
   let bonusXp = 0;
   if (['Breakfast','Lunch','Snack','Dinner'].every(t => types.includes(t))) {
     // Check if bonus already given today

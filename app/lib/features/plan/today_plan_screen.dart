@@ -36,15 +36,64 @@ String? _routeFor(String icon) {
 
 String? _mealTypeFor(String _icon) => null;
 
-({Color accent, Color soft}) _taskColors(String icon) => switch (icon) {
-  'wb_sunny'                              => (accent: AppColors.gold,      soft: AppColors.goldSoft),
-  'restaurant' || 'lunch_dining'          => (accent: AppColors.coral,     soft: AppColors.coralSoft),
-  'water_drop'                            => (accent: AppColors.tealLight,  soft: const Color(0xFFD6EFF8)),
-  'directions_run' || 'directions_walk'   => (accent: AppColors.berry,     soft: AppColors.berrySoft),
-  'fitness_center'                        => (accent: AppColors.orange,    soft: AppColors.orangeSoft),
-  'scale'                                 => (accent: AppColors.sage,      soft: AppColors.sageSoft),
-  'bedtime'                               => (accent: AppColors.berry,     soft: AppColors.berrySoft),
-  _                                       => (accent: AppColors.inkMid,    soft: AppColors.bg),
+({Color accent, Color soft, LinearGradient grad}) _taskColors(String icon) =>
+    switch (icon) {
+  'wb_sunny' => (
+    accent: const Color(0xFFF7971E),
+    soft: AppColors.goldSoft,
+    grad: const LinearGradient(
+        colors: [Color(0xFFF7971E), Color(0xFFFFD200)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ),
+  'restaurant' || 'lunch_dining' => (
+    accent: const Color(0xFFFF416C),
+    soft: AppColors.coralSoft,
+    grad: const LinearGradient(
+        colors: [Color(0xFFFF416C), Color(0xFFFF4B2B)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ),
+  'water_drop' => (
+    accent: AppColors.tealLight,
+    soft: const Color(0xFFD6EFF8),
+    grad: const LinearGradient(
+        colors: [Color(0xFF1B4F72), Color(0xFF00B4DB)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ),
+  'directions_run' || 'directions_walk' => (
+    accent: AppColors.orange,
+    soft: AppColors.orangeSoft,
+    grad: const LinearGradient(
+        colors: [Color(0xFFFF6B35), Color(0xFFF7971E)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ),
+  'fitness_center' => (
+    accent: AppColors.orange,
+    soft: AppColors.orangeSoft,
+    grad: const LinearGradient(
+        colors: [Color(0xFFFF6B35), Color(0xFFF7971E)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ),
+  'scale' => (
+    accent: const Color(0xFF11998E),
+    soft: AppColors.sageSoft,
+    grad: const LinearGradient(
+        colors: [Color(0xFF11998E), Color(0xFF38EF7D)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ),
+  'bedtime' => (
+    accent: const Color(0xFF6A11CB),
+    soft: AppColors.berrySoft,
+    grad: const LinearGradient(
+        colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ),
+  _ => (
+    accent: AppColors.inkMid,
+    soft: AppColors.bg,
+    grad: const LinearGradient(
+        colors: [AppColors.inkMid, AppColors.inkSoft],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ),
 };
 
 // ── Main screen ───────────────────────────────────────────────────────────────
@@ -68,7 +117,7 @@ class TodayPlanScreen extends ConsumerWidget {
     final todayLabel = dayLabels[DateTime.now().weekday - 1];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0EEE9),
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         bottom: false,
         child: s.loading
@@ -224,11 +273,10 @@ class TodayPlanScreen extends ConsumerWidget {
                                         ref.read(tasksProvider.notifier).fetch();
                                       }
                                     : null,
-                                onComplete: task.done
-                                    ? null
-                                    : () => ref
-                                        .read(tasksProvider.notifier)
-                                        .complete(task.id),
+                                // Goal-based tasks are NEVER manually completable.
+                                // They complete automatically via markTasksDoneByIcon
+                                // on the backend when the real goal is met.
+                                onComplete: null,
                               ),
                             const SizedBox(height: 8),
                           ],
@@ -251,28 +299,55 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = name == 'Morning'
-        ? AppColors.gold
+    final gradient = name == 'Morning'
+        ? const LinearGradient(
+            colors: [Color(0xFFF7971E), Color(0xFFFFD200)],
+            begin: Alignment.centerLeft, end: Alignment.centerRight)
         : name == 'Afternoon'
-            ? AppColors.tealLight
-            : AppColors.berry;
+            ? const LinearGradient(
+                colors: [Color(0xFF1B4F72), Color(0xFF00B4DB)],
+                begin: Alignment.centerLeft, end: Alignment.centerRight)
+            : const LinearGradient(
+                colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+                begin: Alignment.centerLeft, end: Alignment.centerRight);
+
+    final icon = name == 'Morning'
+        ? Symbols.wb_sunny_rounded
+        : name == 'Afternoon'
+            ? Symbols.wb_cloudy_rounded
+            : Symbols.bedtime_rounded;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(children: [
-        Container(
-          width: 4, height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: (name == 'Morning'
+                      ? const Color(0xFFF7971E)
+                      : name == 'Afternoon'
+                          ? AppColors.tealLight
+                          : const Color(0xFF6A11CB))
+                  .withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Text(name.toUpperCase(),
-            style: T.label(context).copyWith(
-                letterSpacing: 1.2,
-                fontSize: 11,
-                color: color)),
-      ]),
+        child: Row(children: [
+          Icon(icon, color: Colors.white, size: 16, fill: 1),
+          const SizedBox(width: 8),
+          Text(name.toUpperCase(),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  letterSpacing: 1.2)),
+        ]),
+      ),
     );
   }
 }
@@ -344,204 +419,199 @@ class _TaskCard extends ConsumerWidget {
     final progressPct =
         (target != null && target > 0) ? (progress! / target).clamp(0.0, 1.0) : null;
 
-    final action = task.done ? null : (onTap != null ? 'Start' : 'Done');
+    // Only show Start (navigate). Goal tasks are never manually completable.
+    final action = task.done ? null : (onTap != null ? 'Start' : null);
+
+    final isDone = task.done;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Stack(
-        children: [
-          // ── Card background ──
-          GestureDetector(
-            onTap: task.done ? null : (onTap != null ? onTap : null),
-            child: Container(
-              decoration: BoxDecoration(
-                color: task.done ? c.soft : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: task.done
-                        ? c.accent.withOpacity(0.25)
-                        : AppColors.line),
-                boxShadow: task.done
-                    ? null
-                    : [
-                        BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2))
-                      ],
-              ),
-              padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    // Colored icon box
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: c.soft,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(_iconFor(task.icon),
-                          color: c.accent, fill: 1, size: 22),
+      padding: const EdgeInsets.only(bottom: 14),
+      child: GestureDetector(
+        onTap: isDone ? null : (onTap != null ? onTap : null),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // ── 3D gradient card ──
+              Container(
+                decoration: BoxDecoration(
+                  gradient: c.grad,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: c.accent.withOpacity(0.5),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
-                    const SizedBox(width: 12),
-                    // Title + subtitle
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(task.title,
-                              style: T.title(context).copyWith(
-                                  fontSize: 14,
-                                  color: task.done
-                                      ? c.accent
-                                      : AppColors.ink)),
-                          const SizedBox(height: 3),
-                          Row(children: [
-                            Text(task.displayTime,
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: task.done
-                                        ? c.accent.withOpacity(0.7)
-                                        : AppColors.inkSoft)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 5),
-                              child: Text('·',
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                      // White semi-transparent icon circle
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.22),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.35), width: 1.5),
+                        ),
+                        child: Icon(_iconFor(task.icon),
+                            color: Colors.white, fill: 1, size: 26),
+                      ),
+                      const SizedBox(width: 14),
+                      // Title + subtitle
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(task.title,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 4),
+                            Row(children: [
+                              Text(task.displayTime,
                                   style: TextStyle(
                                       fontSize: 11,
-                                      color: AppColors.inkSoft)),
-                            ),
-                            Expanded(
-                              child: Text(task.subtitle,
-                                  style: T.small(context)
-                                      .copyWith(fontSize: 11),
-                                  overflow: TextOverflow.ellipsis),
-                            ),
-                          ]),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Action / done indicator
-                    if (task.done)
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: c.soft,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Symbols.check_circle_rounded,
-                            color: c.accent, fill: 1, size: 20),
-                      )
-                    else if (action != null)
-                      GestureDetector(
-                        // ✅ FIX: Start → navigate only; Done → mark complete
-                        onTap: () {
-                          if (onTap != null) {
-                            onTap!();
-                          } else {
-                            onComplete?.call();
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: c.accent,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: c.accent.withOpacity(0.4),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3)),
-                            ],
-                          ),
-                          child: Text(action,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12)),
-                        ),
-                      ),
-                  ]),
-
-                  // ── Progress bar (hydration + movement only) ──
-                  if (progressPct != null) ...[
-                    const SizedBox(height: 12),
-                    Row(children: [
-                      Expanded(
-                        child: Stack(children: [
-                          Container(
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: c.soft,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                          FractionallySizedBox(
-                            widthFactor: progressPct,
-                            child: Container(
-                              height: 6,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    c.accent.withOpacity(0.7),
-                                    c.accent,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(999),
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white.withOpacity(0.8))),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 5),
+                                child: Text('·',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.white.withOpacity(0.6))),
                               ),
+                              Expanded(
+                                child: Text(task.subtitle,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.white.withOpacity(0.75)),
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ]),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Action / done
+                      if (isDone)
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: Colors.white.withOpacity(0.5), width: 1.5),
+                          ),
+                          child: const Icon(Symbols.check_rounded,
+                              color: Colors.white, size: 22),
+                        )
+                      else if (action != null)
+                        GestureDetector(
+                          onTap: () {
+                            if (onTap != null) {
+                              onTap!();
+                            } else {
+                              onComplete?.call();
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 9),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Text(action,
+                                style: TextStyle(
+                                    color: c.accent,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12)),
+                          ),
+                        ),
+                    ]),
+
+                    // ── Progress bar ──
+                    if (progressPct != null) ...[
+                      const SizedBox(height: 14),
+                      Row(children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              value: progressPct,
+                              minHeight: 7,
+                              backgroundColor: Colors.white.withOpacity(0.25),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.white),
                             ),
                           ),
-                        ]),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(progressLabel!,
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: c.accent)),
-                    ]),
-                    if (progressPct >= 1.0) ...[
-                      const SizedBox(height: 6),
-                      Row(children: [
-                        Icon(Symbols.check_circle_rounded,
-                            color: c.accent, size: 14, fill: 1),
-                        const SizedBox(width: 4),
-                        Text('Goal reached!',
+                        ),
+                        const SizedBox(width: 10),
+                        Text(progressLabel!,
                             style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: c.accent)),
+                                color: Colors.white.withOpacity(0.9))),
                       ]),
+                      if (progressPct >= 1.0) ...[
+                        const SizedBox(height: 6),
+                        Row(children: [
+                          const Icon(Symbols.check_circle_rounded,
+                              color: Colors.white, size: 13, fill: 1),
+                          const SizedBox(width: 4),
+                          Text('Goal reached!',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white.withOpacity(0.9))),
+                        ]),
+                      ],
                     ],
                   ],
-                ],
-              ),
-            ),
-          ),
-          // ── Left accent bar ──
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 5,
-              decoration: BoxDecoration(
-                color:
-                    task.done ? c.accent.withOpacity(0.5) : c.accent,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
                 ),
               ),
-            ),
+
+              // ── Top shine highlight (3D convex effect) ──
+              Positioned(
+                top: 0, left: 0, right: 0,
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withOpacity(0.18),
+                        Colors.white.withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

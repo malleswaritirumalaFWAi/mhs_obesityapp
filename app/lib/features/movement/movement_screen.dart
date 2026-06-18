@@ -231,61 +231,134 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
               const SizedBox(height: 24),
 
               // ── Hero card ──
-              NeuCard(
-                color: done ? AppColors.coralSoft : AppColors.surface,
-                child: Column(
-                  children: [
-                    ScaleTransition(
-                      scale: _bounceAnim,
-                      child: Text(
-                        _loading ? '—' : _formatSteps(_steps),
-                        style: TextStyle(
-                          fontSize: 72,
-                          fontWeight: FontWeight.w900,
-                          color: done ? AppColors.coral : AppColors.inkMid,
-                          height: 1,
-                        ),
-                      ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: done
+                      ? const LinearGradient(
+                          colors: [AppColors.coral, Color(0xFFFF4500)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : AppColors.orangeGrad,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.orange.withOpacity(0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'of ${_formatSteps(_goal)} steps',
-                      style: T.small(context)
-                          .copyWith(fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 16),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: pct,
-                        minHeight: 12,
-                        backgroundColor: AppColors.line,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            done ? AppColors.coral : AppColors.sage),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (done)
-                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        const Icon(Symbols.check_circle_rounded,
-                            color: AppColors.coral, fill: 1, size: 20),
-                        const SizedBox(width: 6),
-                        Text('Daily goal reached!',
-                            style: T.title(context)
-                                .copyWith(color: AppColors.coral)),
-                      ])
-                    else
-                      Text(
-                        '${_formatSteps(remaining)} more steps to goal',
-                        style: T.small(context),
-                      ),
                   ],
                 ),
+                padding: const EdgeInsets.all(24),
+                child: Column(children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        ScaleTransition(
+                          scale: _bounceAnim,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                _loading ? '—' : _formatSteps(_steps),
+                                style: const TextStyle(
+                                    fontSize: 76,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    height: 1),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10, left: 6),
+                                child: Text('/ ${_formatSteps(_goal)}',
+                                    style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white.withOpacity(0.65))),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text('steps today',
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600)),
+                      ]),
+                      Container(
+                        width: 74,
+                        height: 74,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.4), width: 2),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text('${(pct * 100).round()}%',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: pct,
+                      minHeight: 10,
+                      backgroundColor: Colors.white.withOpacity(0.25),
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  if (done)
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      const Icon(Symbols.check_circle_rounded,
+                          color: Colors.white, fill: 1, size: 18),
+                      const SizedBox(width: 6),
+                      const Text('Daily goal reached! 🎉',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700)),
+                    ])
+                  else
+                    Row(children: [
+                      const Icon(Symbols.directions_run_rounded,
+                          color: Colors.white70, size: 14, fill: 1),
+                      const SizedBox(width: 6),
+                      Text(
+                          '${_formatSteps(remaining)} more steps to goal',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.85),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600)),
+                    ]),
+                ]),
               ),
               const SizedBox(height: 24),
 
               // ── Progress milestones ──
-              Text('Progress', style: T.title(context)),
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.orangeGrad,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text('PROGRESS',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                          letterSpacing: 0.5)),
+                ),
+              ]),
               const SizedBox(height: 14),
               _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -294,7 +367,21 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
 
               // ── Add step presets ──
               if (!done) ...[
-                Text('Log steps', style: T.title(context)),
+                Row(children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.orangeGrad,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text('LOG STEPS',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                            letterSpacing: 0.5)),
+                  ),
+                ]),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -319,17 +406,33 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                 ),
                 const SizedBox(height: 28),
               ] else ...[
-                NeuCard(
-                  color: AppColors.coralSoft,
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.orangeGrad,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.orange.withOpacity(0.4),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Symbols.emoji_events_rounded,
-                          color: AppColors.gold, fill: 1),
+                          color: AppColors.gold, fill: 1, size: 24),
                       const SizedBox(width: 10),
                       Text(
                         '${_formatSteps(_goal)} steps done — amazing!',
-                        style: T.title(context).copyWith(color: AppColors.coral),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15),
                       ),
                     ],
                   ),
@@ -467,23 +570,34 @@ class _MilestoneRow extends StatelessWidget {
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(right: m == milestones.last ? 0 : 8),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+            child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: reached ? AppColors.coralSoft : AppColors.surface,
+                gradient: reached ? AppColors.orangeGrad : null,
+                color: reached ? null : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: reached ? AppColors.coral : AppColors.line,
-                  width: reached ? 2 : 1,
+                  color: reached
+                      ? AppColors.orange.withOpacity(0.3)
+                      : const Color(0xFFFFD0B0),
+                  width: reached ? 0 : 1.5,
                 ),
+                boxShadow: reached
+                    ? [
+                        BoxShadow(
+                          color: AppColors.orange.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ]
+                    : null,
               ),
               child: Column(children: [
                 Icon(
                   reached
                       ? Symbols.check_circle_rounded
                       : Symbols.radio_button_unchecked_rounded,
-                  color: reached ? AppColors.coral : AppColors.inkSoft,
+                  color: reached ? Colors.white : const Color(0xFFFFB07A),
                   fill: 1,
                   size: 22,
                 ),
@@ -493,7 +607,7 @@ class _MilestoneRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: reached ? AppColors.coral : AppColors.inkSoft,
+                    color: reached ? Colors.white : const Color(0xFFFFB07A),
                   ),
                 ),
               ]),
@@ -519,16 +633,28 @@ class _PresetButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final active = onTap != null;
     final w = GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+      child: Container(
         width: fullWidth ? double.infinity : null,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: onTap == null ? AppColors.line : AppColors.surface,
+          color: active ? Colors.white : AppColors.line,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.line),
+          border: Border.all(
+            color: active ? AppColors.tealLight : AppColors.line,
+            width: active ? 1.5 : 1,
+          ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: AppColors.tealLight.withOpacity(0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  )
+                ]
+              : null,
         ),
         child: Center(
           child: Text(
@@ -536,7 +662,7 @@ class _PresetButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: onTap == null ? AppColors.inkSoft : AppColors.coral,
+              color: active ? AppColors.teal : AppColors.inkSoft,
             ),
           ),
         ),
@@ -559,35 +685,82 @@ class _TipsCard extends StatelessWidget {
     (icon: Symbols.bedtime_rounded,         tip: 'Evening stroll helps lower blood sugar'),
   ];
 
+  static const _tipGradients = [
+    LinearGradient(colors: [AppColors.teal, AppColors.tealLight],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+    LinearGradient(colors: [AppColors.orange, AppColors.amber],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+    LinearGradient(colors: [AppColors.coral, Color(0xFFFF9A8B)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+    LinearGradient(colors: [AppColors.berry, Color(0xFF9B59B6)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Movement tips', style: T.title(context)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            gradient: AppColors.orangeGrad,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text('MOVEMENT TIPS',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  letterSpacing: 0.5)),
+        ),
         const SizedBox(height: 12),
-        NeuCard(
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4)),
+            ],
+          ),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              for (final t in _tips) ...[
+              for (int i = 0; i < _tips.length; i++) ...[
                 Row(children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
-                      color: AppColors.coralSoft,
-                      borderRadius: BorderRadius.circular(10),
+                      gradient: _tipGradients[i],
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _tipGradients[i].colors.first.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    child: Icon(t.icon,
-                        color: AppColors.coral, size: 18, fill: 1),
+                    child: Icon(_tips[i].icon,
+                        color: Colors.white, size: 20, fill: 1),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(t.tip, style: T.small(context))),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(_tips[i].tip,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.inkMid)),
+                  ),
                 ]),
-                if (t != _tips.last) ...[
-                  const SizedBox(height: 10),
+                if (i < _tips.length - 1) ...[
+                  const SizedBox(height: 12),
                   const Divider(color: AppColors.line, height: 1),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                 ],
               ],
             ],

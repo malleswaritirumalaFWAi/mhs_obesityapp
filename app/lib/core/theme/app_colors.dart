@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Surfaces
-  static const bg = Color(0xFFF2EFE9);
-  static const surface = Color(0xFFF5F3EF);
-  static const shadowDark = Color(0xFFD9D4CA);
+  // Surfaces — neutral gray matching home screen
+  static const bg = Color(0xFFF5F5F5);
+  static const surface = Color(0xFFFFFFFF);
+  static const shadowDark = Color(0xFFD4D4D4);
   static const shadowLight = Color(0xFFFFFFFF);
-  static const line = Color(0xFFE5DDD0);
+  static const line = Color(0xFFE8E8E8);
 
   // Accents
   static const coral = Color(0xFFFF7A6B);

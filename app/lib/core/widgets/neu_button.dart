@@ -9,6 +9,7 @@ class NeuButton extends StatefulWidget {
     required this.child,
     this.onPressed,
     this.color,
+    this.gradient,
     this.foreground,
     this.expand = false,
     this.padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -17,7 +18,7 @@ class NeuButton extends StatefulWidget {
     this.loading = false,
   });
 
-  /// Primary CTA: coral filled pill.
+  /// Primary CTA — teal-to-indigo gradient pill.
   factory NeuButton.primary(
     String label, {
     Key? key,
@@ -29,7 +30,11 @@ class NeuButton extends StatefulWidget {
     return NeuButton(
       key: key,
       onPressed: onPressed,
-      color: AppColors.coral,
+      gradient: const LinearGradient(
+        colors: [Color(0xFF1B4F72), Color(0xFF6C63FF)],
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+      ),
       foreground: Colors.white,
       expand: expand,
       filled: true,
@@ -41,6 +46,7 @@ class NeuButton extends StatefulWidget {
   final Widget child;
   final VoidCallback? onPressed;
   final Color? color;
+  final Gradient? gradient;
   final Color? foreground;
   final bool expand;
   final EdgeInsetsGeometry padding;
@@ -58,6 +64,7 @@ class _NeuButtonState extends State<NeuButton> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null && !widget.loading;
+    final hasGradient = widget.gradient != null && widget.filled;
     final bg = widget.filled ? (widget.color ?? AppColors.surface) : AppColors.surface;
 
     Widget child = widget.loading
@@ -78,6 +85,8 @@ class _NeuButtonState extends State<NeuButton> {
             ),
           );
 
+    final borderRadius = BorderRadius.circular(widget.radius);
+
     return GestureDetector(
       onTapDown: enabled ? (_) => setState(() => _down = true) : null,
       onTapUp: enabled ? (_) => setState(() => _down = false) : null,
@@ -89,11 +98,34 @@ class _NeuButtonState extends State<NeuButton> {
         padding: widget.padding,
         alignment: widget.expand ? Alignment.center : null,
         decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(widget.radius),
-          boxShadow: _down || !enabled ? Neu.small() : Neu.raised(depth: 0.6),
+          color: hasGradient ? null : bg,
+          gradient: hasGradient
+              ? (enabled ? widget.gradient : null)
+              : null,
+          borderRadius: borderRadius,
+          boxShadow: _down || !enabled
+              ? Neu.small()
+              : hasGradient
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF6C63FF).withOpacity(_down ? 0.15 : 0.35),
+                        blurRadius: _down ? 6 : 16,
+                        offset: Offset(0, _down ? 2 : 6),
+                      )
+                    ]
+                  : Neu.raised(depth: 0.6),
         ),
-        child: Opacity(opacity: enabled ? 1 : 0.55, child: Center(child: child)),
+        child: Opacity(
+          opacity: enabled ? 1 : 0.55,
+          child: Center(
+            child: hasGradient && !enabled
+                ? ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                        Colors.grey, BlendMode.saturation),
+                    child: child)
+                : child,
+          ),
+        ),
       ),
     );
   }

@@ -94,19 +94,47 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.coral,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(vertical: 16),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: _uploading
+                    ? null
+                    : const LinearGradient(
+                        colors: [Color(0xFF1B4F72), Color(0xFF6C63FF)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                color: _uploading ? AppColors.line : null,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: _uploading
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: const Color(0xFF6C63FF).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
               ),
-              onPressed: _uploading ? null : _upload,
-              child: _uploading
-                ? const SizedBox(width: 20, height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Save photo',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onPressed: _uploading ? null : _upload,
+                child: _uploading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Text('Save photo',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 16)),
+              ),
             ),
           ),
         ]),

@@ -378,15 +378,13 @@ class HomeScreen extends ConsumerWidget {
                                 : null,
                             onAction: task.done
                                 ? null
-                                : () async {
-                                    ref.read(tasksProvider.notifier).complete(task.id);
-                                    final route = _routeFor(task.icon);
-                                    if (route != null) {
-                                      await context.push(route,
-                                          extra: _mealTypeFor(task.icon));
-                                      ref.read(tasksProvider.notifier).fetch();
-                                    }
-                                  },
+                                : (_routeFor(task.icon) != null
+                                    ? () async {
+                                        await context.push(_routeFor(task.icon)!,
+                                            extra: _mealTypeFor(task.icon));
+                                        ref.read(tasksProvider.notifier).fetch();
+                                      }
+                                    : null),
                           )).toList(),
                     ),
             ),
@@ -750,19 +748,37 @@ class _WaterSheetState extends ConsumerState<_WaterSheet> {
         const SizedBox(height: 20),
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.orange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18)),
-                padding: const EdgeInsets.symmetric(vertical: 16)),
-            onPressed: () {
-              ref.read(dailyStatsProvider.notifier).updateWater(_glasses);
-              Navigator.pop(context);
-            },
-            child: const Text('Save',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1B4F72), Color(0xFF6C63FF)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6C63FF).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18)),
+                  padding: const EdgeInsets.symmetric(vertical: 16)),
+              onPressed: () {
+                ref.read(dailyStatsProvider.notifier).updateWater(_glasses);
+                Navigator.pop(context);
+              },
+              child: const Text('Save',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            ),
           ),
         ),
       ]),

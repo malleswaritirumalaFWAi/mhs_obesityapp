@@ -272,6 +272,8 @@ async function runMigrations() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         UNIQUE (user_id, date, meal_type)
       )`,
+      `ALTER TABLE weekly_challenges ADD COLUMN IF NOT EXISTS phase INTEGER NOT NULL DEFAULT 1`,
+      `ALTER TABLE weekly_challenges ADD COLUMN IF NOT EXISTS min_value INTEGER NOT NULL DEFAULT 0`,
     ];
 
     for (const sql of migrations) {
@@ -295,22 +297,23 @@ async function runMigrations() {
     `).catch(() => {});
 
     await client.query(`
-      INSERT INTO weekly_challenges (week_number,title,description,type,target,xp_reward) VALUES
-        (1,'Step Starter','Hit 8,000 steps/day for 3 days this week. Walk after meals — it counts!','steps',3,40),
-        (2,'Sleep Champion','Get 7+ hours of sleep on 5 nights. Poor sleep raises hunger hormones by 24%.','sleep',5,40),
-        (3,'Step Warrior','Hit 10,000 steps in a single day. One big walk can reset your whole week!','steps',10000,60),
-        (4,'Meal Mastery','Log all 4 meals — breakfast, lunch, snack, dinner — every day for 5 days.','meals',5,40),
-        (5,'Hydration Hero','Drink 8 glasses of water every day for 5 days. Water before meals cuts calories.','water',5,40),
-        (6,'Fasting Focus','Complete a 14-hour fasting window on 4 different days this week.','fasting',4,50),
-        (7,'Check-in Streak','Complete your Morning Check-in 6 days in a row for mental clarity & accountability.','streak',6,50),
-        (8,'Midpoint Madness','Complete ALL daily tasks on 3 consecutive days — the halfway milestone!','tasks',3,80),
-        (9,'Weigh-in Week','Log your weight every morning for 7 days. Seeing data creates change.','streak',7,50),
-        (10,'Step Master','Accumulate 60,000 steps across the whole week — that''s 8,500/day average.','steps',60000,60),
-        (11,'Streak Keeper','Maintain your activity streak all 7 days this week without missing a single day.','streak',7,50),
-        (12,'Grand Finale','The final week! Complete all daily tasks perfectly for 5 days to earn your badge.','tasks',5,100)
+      INSERT INTO weekly_challenges (week_number,phase,title,description,type,target,min_value,xp_reward) VALUES
+        (1,1,'Know Your Baseline','Log weight + all meals every day for 7 days','weight_and_meals',7,0,50),
+        (2,1,'Find Your Move','Hit 5,000+ steps on 4 days this week','steps_min_days',4,5000,50),
+        (3,1,'Sleep Foundation','Log 7+ hours sleep on 5 days this week','sleep_days',5,0,50),
+        (4,2,'Morning Anchor','Complete morning check-in every day for 7 days','morning_checkin',7,0,60),
+        (5,2,'Move After Meals','Hit 5,000+ steps AND log all 3 meals on 5 days','steps_and_meals',5,5000,60),
+        (6,2,'Halfway Audit','Log weight every day for 7 days (milestone week)','weight_daily',7,0,80),
+        (7,3,'Step It Up','Hit 8,000+ steps on 5 days','steps_min_days',5,8000,70),
+        (8,3,'Eat With Intent','Log all meals with no skips on 5 days','meal_all_days',5,0,70),
+        (9,3,'Full System Week','Complete ALL 5 daily tasks on 4 days','all_tasks',4,0,80),
+        (10,4,'10K Club','Hit 10,000+ steps on 5 days','steps_min_days',5,10000,90),
+        (11,4,'Unbreakable Streak','Complete ALL 5 daily tasks every day for 7 days','all_tasks',7,0,100),
+        (12,4,'Transformation Proof','Log weight + morning + evening check-in every day for 7 days','transformation_proof',7,0,150)
       ON CONFLICT (week_number) DO UPDATE
         SET title=EXCLUDED.title, description=EXCLUDED.description,
-            type=EXCLUDED.type, target=EXCLUDED.target, xp_reward=EXCLUDED.xp_reward
+            type=EXCLUDED.type, target=EXCLUDED.target, min_value=EXCLUDED.min_value,
+            xp_reward=EXCLUDED.xp_reward, phase=EXCLUDED.phase
     `).catch((e) => console.warn('[seed challenges]', e.message));
 
     const lessonCount = (await client.query('SELECT COUNT(*) FROM lessons')).rows[0].count;

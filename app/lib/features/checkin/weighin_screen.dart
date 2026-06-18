@@ -8,7 +8,6 @@ import '../plan/tasks_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_button.dart';
-import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
 
 const _moods = [
@@ -18,6 +17,13 @@ const _moods = [
   (emoji: '😀', label: 'Good',  color: Color(0xFF81C784)),
   (emoji: '🤩', label: 'Great', color: Color(0xFF4DB6AC)),
 ];
+
+// Evening-themed gradient — indigo → berry
+const _eveningGrad = LinearGradient(
+  colors: [Color(0xFF4A148C), AppColors.berry],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
 
 class _WeighEntry {
   _WeighEntry({
@@ -55,10 +61,11 @@ class WeighInScreen extends ConsumerStatefulWidget {
 
 class _WeighInScreenState extends ConsumerState<WeighInScreen> {
   final _weightCtrl = TextEditingController();
-  final _notesCtrl = TextEditingController();
-  int _mood = 2; // default "Okay"
+  final _notesCtrl  = TextEditingController();
+  int _mood = 2;
   bool _busy = false;
   bool _loadingHistory = true;
+  int _visibleGroups = 2;
   List<_WeighEntry> _history = [];
   double? _startWeight;
   double? _targetWeight;
@@ -155,7 +162,6 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
-    // Reload history to show the new entry.
     setState(() { _loadingHistory = true; });
     await _loadData();
   }
@@ -175,6 +181,95 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
     return _startWeight! - _history.first.weight;
   }
 
+  Widget _buildHistory() {
+    // Group entries by dateLabel
+    final Map<String, List<_WeighEntry>> grouped = {};
+    for (final e in _history) {
+      (grouped[e.dateLabel] ??= []).add(e);
+    }
+    final allKeys = grouped.keys.toList();
+    final visibleKeys = allKeys.take(_visibleGroups).toList();
+    final hiddenDays = allKeys.length - _visibleGroups;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Gradient section header
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: BoxDecoration(
+            gradient: _eveningGrad,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(children: [
+            const Icon(Symbols.monitor_weight_rounded,
+                color: Colors.white, size: 18, fill: 1),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text('Weigh-in history',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15)),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text('${_history.length} total',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11)),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 14),
+        for (final dateLabel in visibleKeys) ...[
+          _WeighDayHeader(
+              dateLabel: dateLabel, count: grouped[dateLabel]!.length),
+          const SizedBox(height: 8),
+          ...grouped[dateLabel]!.asMap().entries.map((e) => _WeighCard(
+                entry: e.value,
+                prev: e.key < grouped[dateLabel]!.length - 1
+                    ? grouped[dateLabel]![e.key + 1]
+                    : (_history.indexOf(e.value) + 1 < _history.length
+                        ? _history[_history.indexOf(e.value) + 1]
+                        : null),
+              )),
+          const SizedBox(height: 12),
+        ],
+        if (hiddenDays > 0)
+          GestureDetector(
+            onTap: () => setState(() => _visibleGroups++),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.line),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Icon(Symbols.expand_more_rounded,
+                    color: AppColors.inkSoft, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Load older ($hiddenDays more day${hiddenDays > 1 ? 's' : ''})',
+                  style: const TextStyle(
+                      color: AppColors.inkMid,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13),
+                ),
+              ]),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentW = double.tryParse(_weightCtrl.text.trim());
@@ -190,9 +285,10 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Header ──
               Container(
                 decoration: BoxDecoration(
-                  gradient: AppColors.orangeGrad,
+                  gradient: _eveningGrad,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -231,10 +327,32 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── Summary banner (if history available) ──
+              // ── Progress summary banner ──
               if (loss != null) ...[
-                NeuCard(
-                  color: loss >= 0 ? AppColors.sageSoft : AppColors.coralSoft,
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  decoration: BoxDecoration(
+                    gradient: loss >= 0
+                        ? const LinearGradient(
+                            colors: [AppColors.sage, AppColors.sageDark],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          )
+                        : const LinearGradient(
+                            colors: [AppColors.coral, Color(0xFFFF4500)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (loss >= 0 ? AppColors.sage : AppColors.coral)
+                            .withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
                   child: Row(children: [
                     Text(
                       loss >= 0 ? '🎉' : '📈',
@@ -249,17 +367,18 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                             loss >= 0
                                 ? '${loss.toStringAsFixed(1)} kg lost so far'
                                 : '${loss.abs().toStringAsFixed(1)} kg gained',
-                            style: T.title(context).copyWith(
-                              color: loss >= 0
-                                  ? AppColors.sageDark
-                                  : AppColors.coral,
-                            ),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15),
                           ),
                           if (_targetWeight != null)
                             Text(
                               'Target: ${_targetWeight!.toStringAsFixed(1)} kg · '
                               '${(_history.first.weight - _targetWeight!).abs().toStringAsFixed(1)} kg to go',
-                              style: T.small(context),
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 12),
                             ),
                         ],
                       ),
@@ -271,19 +390,36 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
 
               // ── Already saved today ──
               if (todaySaved) ...[
-                NeuCard(
-                  color: AppColors.goldSoft,
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.gold, AppColors.goldDark],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
                   child: Row(children: [
                     const Icon(Symbols.check_circle_rounded,
-                        color: AppColors.gold, fill: 1),
+                        color: Colors.white, fill: 1, size: 24),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Tonight's weigh-in saved",
-                              style: T.title(context)
-                                  .copyWith(color: AppColors.goldDark)),
+                          const Text("Tonight's weigh-in saved",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15)),
                           Text(
                             [
                               '${_history.first.weight.toStringAsFixed(1)} kg',
@@ -291,7 +427,9 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                                 _moods[_history.first.eveningMood!.clamp(0, 4)].label,
                               _history.first.timeLabel,
                             ].join(' · '),
-                            style: T.small(context),
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.85),
+                                fontSize: 12),
                           ),
                         ],
                       ),
@@ -300,8 +438,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text('Log again to update',
-                    style:
-                        T.small(context).copyWith(color: AppColors.inkSoft)),
+                    style: T.small(context).copyWith(color: AppColors.inkSoft)),
                 const SizedBox(height: 16),
               ],
 
@@ -320,14 +457,14 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                         height: 56,
                         decoration: BoxDecoration(
                           color: _mood == i
-                              ? AppColors.coralSoft
+                              ? _moods[i].color.withOpacity(0.15)
                               : AppColors.surface,
                           shape: BoxShape.circle,
                           border: Border.all(
                               color: _mood == i
-                                  ? AppColors.coral
+                                  ? _moods[i].color
                                   : AppColors.line,
-                              width: _mood == i ? 2 : 1),
+                              width: _mood == i ? 2.5 : 1),
                         ),
                         alignment: Alignment.center,
                         child: Column(
@@ -337,10 +474,10 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                                 style: const TextStyle(fontSize: 22)),
                             if (_mood == i)
                               Text(_moods[i].label,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.coral)),
+                                      color: _moods[i].color)),
                           ],
                         ),
                       ),
@@ -352,12 +489,30 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
               // ── Weight input ──
               Text('Current weight', style: T.title(context)),
               const SizedBox(height: 12),
-              NeuCard(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.line),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2))
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(children: [
-                  const Icon(Symbols.scale_rounded,
-                      color: AppColors.coral, size: 28),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: _eveningGrad,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Symbols.scale_rounded,
+                        color: Colors.white, size: 20, fill: 1),
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: TextField(
@@ -418,19 +573,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                 const Center(child: CircularProgressIndicator()),
               ] else if (_history.isNotEmpty) ...[
                 const SizedBox(height: 32),
-                Row(children: [
-                  Text('Weigh-in history', style: T.title(context)),
-                  const Spacer(),
-                  Text('${_history.length} entries',
-                      style:
-                          T.small(context).copyWith(color: AppColors.inkSoft)),
-                ]),
-                const SizedBox(height: 12),
-                ..._history.take(14).map((e) => _WeighCard(
-                    entry: e,
-                    prev: _history.length > _history.indexOf(e) + 1
-                        ? _history[_history.indexOf(e) + 1]
-                        : null)),
+                _buildHistory(),
               ],
             ],
           ),
@@ -440,6 +583,46 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
   }
 }
 
+// ── Day header ─────────────────────────────────────────────────────────────────
+
+class _WeighDayHeader extends StatelessWidget {
+  const _WeighDayHeader({required this.dateLabel, required this.count});
+  final String dateLabel;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = dateLabel == 'Today';
+    final isYesterday = dateLabel == 'Yesterday';
+    return Row(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          gradient: isToday
+              ? _eveningGrad
+              : isYesterday
+                  ? AppColors.tealGrad
+                  : null,
+          color: (!isToday && !isYesterday) ? AppColors.bg : null,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(dateLabel,
+            style: TextStyle(
+                color: (isToday || isYesterday) ? Colors.white : AppColors.inkSoft,
+                fontWeight: FontWeight.w800,
+                fontSize: 12)),
+      ),
+      const SizedBox(width: 10),
+      Text(
+        '$count weigh-in${count > 1 ? 's' : ''}',
+        style: T.small(context).copyWith(color: AppColors.inkSoft, fontSize: 12),
+      ),
+    ]);
+  }
+}
+
+// ── History card ───────────────────────────────────────────────────────────────
+
 class _WeighCard extends StatelessWidget {
   const _WeighCard({required this.entry, this.prev});
   final _WeighEntry entry;
@@ -447,94 +630,150 @@ class _WeighCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mood = entry.eveningMood != null
+        ? _moods[entry.eveningMood!.clamp(0, 4)]
+        : null;
+    final accentColor = mood?.color ?? AppColors.berry;
+
     final diff = prev != null ? entry.weight - prev!.weight : 0.0;
     final diffText = prev != null
-        ? (diff > 0 ? '+${diff.toStringAsFixed(1)}' : diff.toStringAsFixed(1))
+        ? (diff > 0
+            ? '+${diff.toStringAsFixed(1)}'
+            : diff.toStringAsFixed(1))
         : '';
     final diffColor = diff < 0
         ? AppColors.sageDark
         : diff > 0
             ? AppColors.coral
             : AppColors.inkSoft;
+    final diffBg = diff < 0
+        ? AppColors.sageSoft
+        : diff > 0
+            ? AppColors.coralSoft
+            : AppColors.surface;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: NeuCard(
-        padding: const EdgeInsets.all(14),
-        child: Row(children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: AppColors.coralSoft,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: entry.eveningMood != null
-                ? Text(
-                    _moods[entry.eveningMood!.clamp(0, 4)].emoji,
-                    style: const TextStyle(fontSize: 22),
-                  )
-                : const Icon(Symbols.scale_rounded,
-                    color: AppColors.coral, fill: 1, size: 22),
+      child: Stack(children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.line),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2))
+            ],
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text('${entry.weight.toStringAsFixed(1)} kg',
-                    style: T.title(context).copyWith(fontSize: 16)),
-                if (entry.eveningMood != null) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    _moods[entry.eveningMood!.clamp(0, 4)].label,
-                    style: T.small(context).copyWith(
-                      fontSize: 11,
-                      color: AppColors.inkSoft,
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                Text(entry.dateLabel,
-                    style: T.small(context)
-                        .copyWith(color: AppColors.inkSoft, fontSize: 11)),
-              ]),
-              const SizedBox(height: 4),
-              Row(children: [
-                Text(entry.timeLabel,
-                    style: T.small(context).copyWith(fontSize: 11)),
-                if (diffText.isNotEmpty) ...[
-                  const SizedBox(width: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: diff < 0
-                          ? AppColors.sageSoft
-                          : diff > 0
-                              ? AppColors.coralSoft
-                              : AppColors.surface,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text('$diffText kg',
+          padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Mood / scale circle
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.12),
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: accentColor.withOpacity(0.45), width: 2),
+              ),
+              alignment: Alignment.center,
+              child: mood != null
+                  ? Text(mood.emoji, style: const TextStyle(fontSize: 22))
+                  : Icon(Symbols.scale_rounded,
+                      color: accentColor, fill: 1, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text('${entry.weight.toStringAsFixed(1)} kg',
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w800)),
+                    if (mood != null) ...[
+                      const SizedBox(width: 8),
+                      Text(mood.label,
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: mood.color)),
+                    ],
+                    const Spacer(),
+                    Text(entry.timeLabel,
                         style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: diffColor)),
-                  ),
+                            color: accentColor)),
+                  ]),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    // Weight pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.berrySoft,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Symbols.scale_rounded,
+                            size: 13, color: AppColors.berry),
+                        const SizedBox(width: 4),
+                        Text('${entry.weight.toStringAsFixed(1)} kg',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.berry)),
+                      ]),
+                    ),
+                    if (diffText.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: diffBg,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text('$diffText kg',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: diffColor)),
+                      ),
+                    ],
+                  ]),
+                  if (entry.notes != null && entry.notes!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(entry.notes!,
+                        style: T.small(context).copyWith(fontSize: 12),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                  ],
                 ],
-              ]),
-              if (entry.notes != null && entry.notes!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(entry.notes!,
-                    style: T.small(context).copyWith(fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
-              ],
-            ]),
+              ),
+            ),
+          ]),
+        ),
+        // Accent bar
+        Positioned(
+          left: 0, top: 0, bottom: 0,
+          child: Container(
+            width: 5,
+            decoration: BoxDecoration(
+              color: accentColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+            ),
           ),
-        ]),
-      ),
+        ),
+      ]),
     );
   }
 }

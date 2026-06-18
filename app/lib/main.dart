@@ -11,7 +11,7 @@ void main() {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
-    systemNavigationBarColor: AppColors.bg,
+    systemNavigationBarColor: Color(0xFFF5F5F5),
     systemNavigationBarIconBrightness: Brightness.dark,
   ));
   runApp(const ProviderScope(child: FitQuestApp()));

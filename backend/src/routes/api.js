@@ -159,6 +159,41 @@ router.get('/today', async (req, res) => {
 router.post('/today/task/:id/complete', async (req, res) => {
   const taskId = parseInt(req.params.id, 10);
   if (!taskId) return res.status(400).json({ message: 'Invalid task id' });
+
+  // Fetch the task to check its icon
+  const taskRow = await q(
+    `SELECT icon FROM tasks WHERE id=$1 AND user_id=$2`,
+    [taskId, uid(req)]
+  );
+  if (!taskRow.rows[0]) return res.status(404).json({ message: 'Task not found' });
+
+  const icon = taskRow.rows[0].icon;
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Goal-based tasks: verify the goal is actually met before marking done
+  if (icon === 'water_drop') {
+    const r = await q(`SELECT water FROM daily_stats WHERE user_id=$1 AND date=$2`, [uid(req), today]);
+    if ((r.rows[0]?.water ?? 0) < 8) return res.status(400).json({ message: 'Goal not met: need 8 glasses' });
+  } else if (icon === 'directions_run' || icon === 'directions_walk') {
+    const r = await q(`SELECT steps FROM daily_stats WHERE user_id=$1 AND date=$2`, [uid(req), today]);
+    if ((r.rows[0]?.steps ?? 0) < 8000) return res.status(400).json({ message: 'Goal not met: need 8000 steps' });
+  } else if (icon === 'scale') {
+    const r = await q(
+      `SELECT id FROM checkins WHERE user_id=$1 AND DATE(created_at)=$2 AND weight IS NOT NULL AND weight > 0`,
+      [uid(req), today]
+    );
+    if (!r.rows[0]) return res.status(400).json({ message: 'Goal not met: log weight first' });
+  } else if (icon === 'restaurant' || icon === 'lunch_dining') {
+    const r = await q(
+      `SELECT DISTINCT meal_type FROM meals WHERE user_id=$1 AND DATE(created_at)=$2`,
+      [uid(req), today]
+    );
+    const types = r.rows.map(row => row.meal_type);
+    if (!['Breakfast', 'Lunch', 'Dinner'].every(t => types.includes(t))) {
+      return res.status(400).json({ message: 'Goal not met: log Breakfast, Lunch, and Dinner first' });
+    }
+  }
+
   await q(
     `UPDATE tasks SET done=TRUE, completed_at=NOW() WHERE id=$1 AND user_id=$2`,
     [taskId, uid(req)]
@@ -257,8 +292,11 @@ router.post('/checkins', async (req, res) => {
   await q(`INSERT INTO checkins (user_id, mood, weight, notes) VALUES ($1,$2,$3,$4)`,
     [uid(req), mood, weight, notes]);
 
-  // Mark morning check-in task as done for today.
-  markTasksDoneByIcon(uid(req), ['wb_sunny']).catch(() => {});
+  // Mark morning check-in task done only when BOTH mood AND weight are logged.
+  const parsedWeight = weight !== undefined && weight !== null && !isNaN(Number(weight)) && Number(weight) > 0;
+  if (parsedWeight) {
+    markTasksDoneByIcon(uid(req), ['wb_sunny']).catch(() => {});
+  }
 
   // Streak logic: only update streak once per day; reset if last check-in wasn't yesterday.
   const today = new Date().toISOString().slice(0, 10);

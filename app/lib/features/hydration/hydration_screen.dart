@@ -206,63 +206,131 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
               const SizedBox(height: 24),
 
               // ── Hero card ──
-              NeuCard(
-                color: done ? AppColors.sageSoft : AppColors.surface,
-                child: Column(
-                  children: [
-                    // Big glass count
-                    ScaleTransition(
-                      scale: _bounceAnim,
-                      child: Text(
-                        '$_glasses',
-                        style: TextStyle(
-                          fontSize: 80,
-                          fontWeight: FontWeight.w900,
-                          color: done ? AppColors.sageDark : AppColors.coral,
-                          height: 1,
-                        ),
-                      ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: done
+                      ? const LinearGradient(
+                          colors: [AppColors.sage, AppColors.sageDark],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : AppColors.tealGrad,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.tealLight.withOpacity(0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'of $_goal glasses',
-                      style: T.small(context).copyWith(
-                          fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 16),
-                    // Progress bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: pct,
-                        minHeight: 12,
-                        backgroundColor: AppColors.line,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            done ? AppColors.sage : AppColors.coral),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (done)
-                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        const Icon(Symbols.check_circle_rounded,
-                            color: AppColors.sage, fill: 1, size: 20),
-                        const SizedBox(width: 6),
-                        Text('Daily goal reached!',
-                            style: T.title(context)
-                                .copyWith(color: AppColors.sageDark)),
-                      ])
-                    else
-                      Text(
-                        '$remaining more glass${remaining == 1 ? '' : 'es'} to reach your goal',
-                        style: T.small(context),
-                      ),
                   ],
                 ),
+                padding: const EdgeInsets.all(24),
+                child: Column(children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        ScaleTransition(
+                          scale: _bounceAnim,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('$_glasses',
+                                  style: const TextStyle(
+                                      fontSize: 76,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      height: 1)),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10, left: 6),
+                                child: Text('/ $_goal',
+                                    style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white.withOpacity(0.65))),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text('glasses today',
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600)),
+                      ]),
+                      // Circular % indicator
+                      Container(
+                        width: 74,
+                        height: 74,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.4), width: 2),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text('${(pct * 100).round()}%',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: pct,
+                      minHeight: 10,
+                      backgroundColor: Colors.white.withOpacity(0.25),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  if (done)
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      const Icon(Symbols.check_circle_rounded,
+                          color: Colors.white, fill: 1, size: 18),
+                      const SizedBox(width: 6),
+                      const Text('Daily goal reached! 🎉',
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w700)),
+                    ])
+                  else
+                    Row(children: [
+                      const Icon(Symbols.water_drop_rounded,
+                          color: Colors.white70, size: 14, fill: 1),
+                      const SizedBox(width: 6),
+                      Text(
+                          '$remaining more glass${remaining == 1 ? '' : 'es'} to go',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.85),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600)),
+                    ]),
+                ]),
               ),
               const SizedBox(height: 24),
 
               // ── Glass grid ──
-              Text('Your glasses today', style: T.title(context)),
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.tealGrad,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text('YOUR GLASSES TODAY',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                          letterSpacing: 0.5)),
+                ),
+              ]),
               const SizedBox(height: 14),
               _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -278,18 +346,36 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
                   onPressed: _adding ? null : _addGlass,
                 )
               else
-                NeuCard(
-                  color: AppColors.sageSoft,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.sage, AppColors.sageDark],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.sage.withOpacity(0.4),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Symbols.emoji_events_rounded,
-                          color: AppColors.gold, fill: 1),
+                          color: AppColors.gold, fill: 1, size: 24),
                       const SizedBox(width: 10),
                       Text(
                         'All $_goal glasses done — great work!',
-                        style: T.title(context)
-                            .copyWith(color: AppColors.sageDark),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15),
                       ),
                     ],
                   ),
@@ -424,16 +510,26 @@ class _GlassGrid extends StatelessWidget {
       itemCount: total,
       itemBuilder: (context, i) {
         final isFilled = i < filled;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+        return Container(
           decoration: BoxDecoration(
-            color: isFilled ? AppColors.sageSoft : AppColors.surface,
+            gradient: isFilled ? AppColors.tealGrad : null,
+            color: isFilled ? null : Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isFilled ? AppColors.sage : AppColors.line,
-              width: isFilled ? 2 : 1,
+              color: isFilled
+                  ? AppColors.tealLight.withOpacity(0.4)
+                  : const Color(0xFFB3E5FC),
+              width: isFilled ? 0 : 1.5,
             ),
+            boxShadow: isFilled
+                ? [
+                    BoxShadow(
+                      color: AppColors.tealLight.withOpacity(0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : null,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -441,7 +537,9 @@ class _GlassGrid extends StatelessWidget {
               Icon(
                 Symbols.water_drop_rounded,
                 fill: isFilled ? 1 : 0,
-                color: isFilled ? AppColors.sage : AppColors.inkSoft,
+                color: isFilled
+                    ? Colors.white
+                    : const Color(0xFF81D4FA),
                 size: 32,
               ),
               const SizedBox(height: 4),
@@ -450,7 +548,9 @@ class _GlassGrid extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: isFilled ? AppColors.sageDark : AppColors.inkSoft,
+                  color: isFilled
+                      ? Colors.white
+                      : const Color(0xFF81D4FA),
                 ),
               ),
             ],
@@ -474,36 +574,82 @@ class _TipsCard extends StatelessWidget {
     (icon: Symbols.bedtime_rounded, tip: 'Finish your last glass before 8 PM'),
   ];
 
+  static const _tipGradients = [
+    LinearGradient(colors: [AppColors.orange, AppColors.amber],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+    LinearGradient(colors: [AppColors.coral, Color(0xFFFF9A8B)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+    LinearGradient(colors: [AppColors.teal, AppColors.tealLight],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+    LinearGradient(colors: [AppColors.berry, Color(0xFF9B59B6)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Hydration tips', style: T.title(context)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            gradient: AppColors.tealGrad,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text('HYDRATION TIPS',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  letterSpacing: 0.5)),
+        ),
         const SizedBox(height: 12),
-        NeuCard(
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4)),
+            ],
+          ),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              for (final t in _tips) ...[
+              for (int i = 0; i < _tips.length; i++) ...[
                 Row(children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
-                      color: AppColors.sageSoft,
-                      borderRadius: BorderRadius.circular(10),
+                      gradient: _tipGradients[i],
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _tipGradients[i].colors.first.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    child: Icon(t.icon, color: AppColors.sage, size: 18, fill: 1),
+                    child: Icon(_tips[i].icon,
+                        color: Colors.white, size: 20, fill: 1),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Expanded(
-                    child: Text(t.tip, style: T.small(context)),
+                    child: Text(_tips[i].tip,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.inkMid)),
                   ),
                 ]),
-                if (t != _tips.last) ...[
-                  const SizedBox(height: 10),
+                if (i < _tips.length - 1) ...[
+                  const SizedBox(height: 12),
                   const Divider(color: AppColors.line, height: 1),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                 ],
               ],
             ],
