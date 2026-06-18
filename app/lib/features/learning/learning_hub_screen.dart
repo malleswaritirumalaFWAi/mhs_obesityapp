@@ -34,16 +34,55 @@ class LearningHubScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
           children: [
-            // Top bar
-            Row(children: [
-              NeuIconButton(
-                  icon: Symbols.arrow_back_rounded,
-                  onTap: () => context.pop()),
-              const SizedBox(width: 12),
-              const Text('Learn 📚', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-              const Spacer(),
-              NeuIconButton(icon: Symbols.notifications_rounded),
-            ]),
+            // ── Gradient header ──
+            Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.tealGrad,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => context.pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Learning Hub',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900)),
+                      Text('Lessons, tips & weekly goals',
+                          style: TextStyle(
+                              color: Colors.white70, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Symbols.notifications_rounded,
+                      color: Colors.white, size: 18),
+                ),
+              ]),
+            ),
             const SizedBox(height: 20),
 
             // ── Active lesson hero card ──────────────────────────────────────

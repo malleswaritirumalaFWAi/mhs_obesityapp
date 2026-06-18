@@ -117,27 +117,48 @@ class _GamificationTutorialScreenState
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Row(children: [
-                NeuIconButton(
-                  icon: Symbols.close_rounded,
-                  onTap: () => context.pop(),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.tealGrad,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const Spacer(),
-                Text('How to play', style: T.title(context)),
-                const Spacer(),
-                // Dot indicators
-                Row(
-                  children: List.generate(_slides.length, (i) => Container(
-                    width: i == _page ? 18 : 8,
-                    height: 8,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    decoration: BoxDecoration(
-                      color: i == _page ? AppColors.coral : AppColors.inkSoft,
-                      borderRadius: BorderRadius.circular(99),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Symbols.close_rounded,
+                          color: Colors.white, size: 18),
                     ),
-                  )),
-                ),
-              ]),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text('How to play',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900)),
+                  ),
+                  Row(
+                    children: List.generate(_slides.length, (i) => Container(
+                      width: i == _page ? 18 : 8,
+                      height: 8,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: i == _page
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    )),
+                  ),
+                ]),
+              ),
             ),
             const SizedBox(height: 12),
             Expanded(

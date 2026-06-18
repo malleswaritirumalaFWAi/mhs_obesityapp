@@ -322,33 +322,54 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
           children: [
-            Row(children: [
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Batch #47 · 50 members', style: T.small(context)),
-                Text('My group', style: T.h2(context)),
-              ]),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => context.push(Routes.groupChat),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.coralSoft,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Symbols.chat_rounded,
-                        color: AppColors.coral, size: 18),
-                    const SizedBox(width: 6),
-                    Text('Group Chat',
-                        style: T.small(context).copyWith(
-                            color: AppColors.coral,
-                            fontWeight: FontWeight.w700)),
-                  ]),
-                ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.tealGrad,
+                borderRadius: BorderRadius.circular(20),
               ),
-            ]),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Row(children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Batch #47 · 50 members',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 2),
+                      const Text('My Group',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => context.push(Routes.groupChat),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Symbols.chat_rounded,
+                          color: Colors.white, size: 16),
+                      const SizedBox(width: 6),
+                      const Text('Group Chat',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12)),
+                    ]),
+                  ),
+                ),
+              ]),
+            ),
             const SizedBox(height: 16),
             _Tabs(
               index: _tab,

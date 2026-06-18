@@ -43,7 +43,45 @@ class _RecipeLibraryScreenState extends ConsumerState<RecipeLibraryScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: NeuTopBar(title: 'Recipe Library 🍛', onBack: () => context.pop()),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.tealGrad,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Recipe Library',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900)),
+                        Text('Healthy meal ideas for you',
+                            style: TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  const Text('🍛', style: TextStyle(fontSize: 26)),
+                ]),
+              ),
             ),
             const SizedBox(height: 12),
             SingleChildScrollView(

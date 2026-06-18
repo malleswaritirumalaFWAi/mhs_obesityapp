@@ -63,9 +63,51 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              NeuTopBar(
-                title: isEvening ? 'Evening Reflection 🌙' : 'Weekly Review 📊',
-                onBack: () => context.pop(),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.tealGrad,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isEvening ? 'Evening Reflection' : 'Weekly Review',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900),
+                        ),
+                        Text(
+                          isEvening
+                              ? 'How did your day go?'
+                              : 'Reflect on your week',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(isEvening ? '🌙' : '📊',
+                      style: const TextStyle(fontSize: 26)),
+                ]),
               ),
               const SizedBox(height: 24),
 

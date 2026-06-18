@@ -190,7 +190,45 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              NeuTopBar(title: 'Evening weigh-in', onBack: () => context.pop()),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.orangeGrad,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Evening weigh-in',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900)),
+                        Text('Log your weight for today',
+                            style: TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  const Text('⚖️', style: TextStyle(fontSize: 26)),
+                ]),
+              ),
               const SizedBox(height: 20),
 
               // ── Summary banner (if history available) ──

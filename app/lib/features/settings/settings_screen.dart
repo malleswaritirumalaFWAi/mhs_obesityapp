@@ -21,20 +21,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _push = true;
   bool _coachDigest = true;
   bool _leaderboard = false;
-  String _language = 'en';
-  bool _savingLang = false;
-
   Future<void> _logout() async {
     await ref.read(sessionProvider.notifier).signOut();
     if (mounted) context.go(Routes.welcome);
-  }
-
-  Future<void> _setLanguage(String lang) async {
-    setState(() { _language = lang; _savingLang = true; });
-    try {
-      await ref.read(apiClientProvider).postJson('/settings/language', {'language': lang});
-    } catch (_) {}
-    if (mounted) setState(() => _savingLang = false);
   }
 
   Future<void> _requestDataExport() async {
@@ -99,71 +88,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           children: [
-            NeuTopBar(title: 'Settings', onBack: () => context.pop()),
-            const SizedBox(height: 20),
-
-            Text('LANGUAGE', style: T.label(context)),
-            const SizedBox(height: 12),
-            NeuCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  const Icon(Symbols.language_rounded, color: AppColors.inkMid, size: 22),
-                  const SizedBox(width: 14),
-                  Text('App language', style: T.title(context).copyWith(fontSize: 15)),
-                  if (_savingLang) ...[
-                    const Spacer(),
-                    const SizedBox(width: 16, height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  ],
-                ]),
-                const SizedBox(height: 14),
-                Row(children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _setLanguage('en'),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: _language == 'en' ? AppColors.coral : AppColors.bg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _language == 'en' ? AppColors.coral : AppColors.line),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text('English',
-                          style: TextStyle(
-                            color: _language == 'en' ? Colors.white : AppColors.inkMid,
-                            fontWeight: FontWeight.w700)),
-                      ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.tealGrad,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => context.pop(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
                     ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: Colors.white, size: 18),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _setLanguage('ta'),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: _language == 'ta' ? AppColors.coral : AppColors.bg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _language == 'ta' ? AppColors.coral : AppColors.line),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text('தமிழ்',
-                          style: TextStyle(
-                            color: _language == 'ta' ? Colors.white : AppColors.inkMid,
-                            fontWeight: FontWeight.w700)),
-                      ),
-                    ),
-                  ),
-                ]),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Text('Settings',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900)),
+                ),
+                const Icon(Symbols.tune_rounded, color: Colors.white, size: 22),
               ]),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
 
             Text('NOTIFICATIONS', style: T.label(context)),
             const SizedBox(height: 12),

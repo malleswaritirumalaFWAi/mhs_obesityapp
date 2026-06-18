@@ -57,72 +57,147 @@ class TodayPlanScreen extends ConsumerWidget {
     final todayLabel = dayLabels[DateTime.now().weekday - 1];
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         bottom: false,
         child: s.loading
             ? const Center(child: CircularProgressIndicator())
             : ListView(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                padding: EdgeInsets.zero,
                 children: [
-                  Row(children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Day ${s.day}', style: T.small(context)),
-                        Text("Today's plan", style: T.h2(context)),
-                      ],
-                    ),
-                    const Spacer(),
-                    const NeuIconButton(icon: Symbols.tune_rounded),
-                  ]),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 64,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        for (final d in dayLabels)
-                          _DayChip(label: d, today: d == todayLabel),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  NeuCard(
-                    color: AppColors.coralSoft,
-                    child: Row(children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Progress · ${s.done} of ${s.total} done',
-                              style: T.title(context).copyWith(fontSize: 15),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              s.done == s.total && s.total > 0
-                                  ? 'All done — amazing work today!'
-                                  : "Finish ${s.total - s.done} more — you'll hit your target.",
-                              style: T.small(context),
-                            ),
-                          ],
-                        ),
+                  // ── Gradient header ──
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: AppColors.orangeGrad,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(32),
+                        bottomRight: Radius.circular(32),
                       ),
-                      NeuProgressRing(
-                        value: s.total > 0 ? s.done / s.total : 0,
-                        size: 64,
-                        stroke: 8,
-                        center: Text(
-                          s.total > 0
-                              ? '${((s.done / s.total) * 100).round()}%'
-                              : '0%',
-                          style: T.small(context)
-                              .copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    child: Column(children: [
+                      Row(children: [
+                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('Day ${s.day} / 84',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.85),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500)),
+                          const Text("Today's Plan",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900)),
+                        ]),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(todayLabel,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13)),
                         ),
+                      ]),
+                      const SizedBox(height: 16),
+                      // Progress bar
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.3), width: 1),
+                        ),
+                        child: Row(children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  s.done == s.total && s.total > 0
+                                      ? 'All done — amazing! 🎉'
+                                      : '${s.done} of ${s.total} tasks done',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: LinearProgressIndicator(
+                                    value: s.total > 0 ? s.done / s.total : 0,
+                                    minHeight: 6,
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.3),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                            Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          SizedBox(
+                            width: 60,
+                            height: 60,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                CircularProgressIndicator(
+                                  value: s.total > 0 ? s.done / s.total : 0,
+                                  strokeWidth: 6,
+                                  backgroundColor:
+                                      Colors.white.withOpacity(0.25),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                  strokeCap: StrokeCap.round,
+                                ),
+                                Text(
+                                  s.total > 0
+                                      ? '${((s.done / s.total) * 100).round()}%'
+                                      : '0%',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ]),
                       ),
                     ]),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Day chips
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: SizedBox(
+                      height: 48,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          for (final d in dayLabels)
+                            _DayChip(label: d, today: d == todayLabel),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 20),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(children: [
                   if (s.tasks.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),

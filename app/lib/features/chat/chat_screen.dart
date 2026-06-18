@@ -152,34 +152,58 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         child: Column(
           children: [
             // ── Header ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+            Container(
+              decoration: const BoxDecoration(
+                gradient: AppColors.tealGrad,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
               child: Row(children: [
                 Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                      color: AppColors.berrySoft, shape: BoxShape.circle),
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    shape: BoxShape.circle,
+                  ),
                   alignment: Alignment.center,
-                  child: Text('P',
-                      style: T.title(context).copyWith(color: AppColors.berry)),
+                  child: const Text('P',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 20)),
                 ),
                 const SizedBox(width: 12),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Coach Priya',
-                      style: T.title(context).copyWith(fontSize: 16)),
+                  const Text('Coach Priya',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16)),
                   Row(children: [
-                    Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                            color: AppColors.sage, shape: BoxShape.circle)),
+                    const CircleAvatar(
+                        radius: 4,
+                        backgroundColor: Color(0xFF80FFD4)),
                     const SizedBox(width: 6),
-                    Text('Online', style: T.small(context)),
+                    const Text('Online',
+                        style: TextStyle(
+                            color: Colors.white70, fontSize: 13)),
                   ]),
                 ]),
                 const Spacer(),
-                const NeuIconButton(icon: Symbols.call_rounded),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Symbols.call_rounded,
+                      color: Colors.white, size: 20),
+                ),
               ]),
             ),
 

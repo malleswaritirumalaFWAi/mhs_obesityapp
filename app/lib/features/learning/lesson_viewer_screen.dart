@@ -41,7 +41,38 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
       return Scaffold(
         body: SafeArea(
           child: Column(children: [
-            NeuTopBar(title: 'Lesson', onBack: () => Navigator.pop(context)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.tealGrad,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text('Lesson',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900)),
+                  ),
+                ]),
+              ),
+            ),
             const Expanded(child: Center(child: CircularProgressIndicator())),
           ]),
         ),
@@ -59,17 +90,49 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
               child: Column(
                 children: [
-                  NeuTopBar(
-                    title: 'Week ${lesson.weekNumber} · ${lesson.lessonType.toUpperCase()}',
-                    onBack: () => Navigator.pop(context),
-                    trailing: NeuPill(
-                      color: AppColors.goldSoft,
-                      child: Text('+${lesson.xpReward} XP',
-                          style: const TextStyle(
-                              color: AppColors.goldDark,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12)),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.tealGrad,
+                      borderRadius: BorderRadius.circular(20),
                     ),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                    child: Row(children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Symbols.arrow_back_rounded,
+                              color: Colors.white, size: 18),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          'Week ${lesson.weekNumber} · ${lesson.lessonType.toUpperCase()}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text('+${lesson.xpReward} XP',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12)),
+                      ),
+                    ]),
                   ),
                   const SizedBox(height: 12),
                   // Progress bar

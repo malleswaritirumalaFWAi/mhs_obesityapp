@@ -21,11 +21,56 @@ class CoachScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              NeuTopBar(onBack: () => context.go(Routes.quiz)),
-              const SizedBox(height: 18),
-              Text("You're in! 🎉", style: T.label(context).copyWith(color: AppColors.sageDark)),
-              const SizedBox(height: 8),
-              Text('Meet your coach', style: T.h1(context)),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.orangeGrad,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: () => context.go(Routes.quiz),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("You're in! 🎉",
+                            style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
+                        Text('Meet your coach',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text('🏆', style: TextStyle(fontSize: 22)),
+                  ),
+                ]),
+              ),
               const SizedBox(height: 22),
               NeuCard(
                 child: Column(

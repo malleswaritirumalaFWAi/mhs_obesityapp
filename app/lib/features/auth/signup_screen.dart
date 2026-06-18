@@ -7,7 +7,6 @@ import '../../core/router.dart';
 import '../../core/state/session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_misc.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -64,112 +63,206 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     final error = _validationError ?? s.error;
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 14, 22, 22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              NeuTopBar(onBack: () => context.go(Routes.welcome)),
-              const SizedBox(height: 28),
-              Text('CREATE ACCOUNT',
-                  style: T.label(context).copyWith(color: AppColors.coral)),
-              const SizedBox(height: 8),
-              Text('Join FitQuest', style: T.h1(context)),
-              const SizedBox(height: 6),
-              Text('Start your 12-week transformation today.',
-                  style: T.body(context)),
-              const SizedBox(height: 28),
-
-              Text('FULL NAME', style: T.label(context)),
-              const SizedBox(height: 8),
-              NeuTextField(
-                controller: _name,
-                hint: 'Aarav Sharma',
-                keyboardType: TextInputType.name,
-                textCapitalization: TextCapitalization.words,
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: Column(
+        children: [
+          // ── Gradient header ──
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: AppColors.orangeGrad,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(36),
+                bottomRight: Radius.circular(36),
               ),
-              const SizedBox(height: 18),
-
-              Text('PHONE NUMBER', style: T.label(context)),
-              const SizedBox(height: 8),
-              NeuTextField(
-                controller: _phone,
-                hint: '98765 43210',
-                keyboardType: TextInputType.phone,
-                prefix: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Text('🇮🇳 ', style: TextStyle(fontSize: 18)),
-                  Text('+91',
-                      style: T.title(context).copyWith(color: AppColors.inkMid)),
-                ]),
-              ),
-              const SizedBox(height: 18),
-
-              Text('EMAIL', style: T.label(context)),
-              const SizedBox(height: 8),
-              NeuTextField(
-                controller: _email,
-                hint: 'you@example.com',
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 18),
-
-              Text('PASSWORD', style: T.label(context)),
-              const SizedBox(height: 8),
-              NeuTextField(
-                controller: _password,
-                hint: 'Min. 8 characters',
-                obscureText: _obscure,
-                suffix: GestureDetector(
-                  onTap: () => setState(() => _obscure = !_obscure),
-                  child: Icon(
-                    _obscure
-                        ? Symbols.visibility_rounded
-                        : Symbols.visibility_off_rounded,
-                    color: AppColors.inkSoft,
-                    size: 22,
+            ),
+            padding: EdgeInsets.fromLTRB(
+                24, MediaQuery.of(context).padding.top + 20, 24, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () => context.go(Routes.welcome),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: Colors.white, size: 20),
                   ),
                 ),
-              ),
-              const SizedBox(height: 28),
-
-              if (error != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: Text(error,
-                      style: T.small(context).copyWith(color: AppColors.coral)),
+                const SizedBox(height: 20),
+                const Text('🏆', style: TextStyle(fontSize: 40)),
+                const SizedBox(height: 12),
+                const Text(
+                  'Join FitQuest',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                      height: 1.1),
                 ),
-
-              NeuButton.primary(
-                'Create account',
-                loading: s.busy,
-                trailing: const Icon(Symbols.arrow_forward_rounded, size: 20),
-                onPressed: s.busy ? null : _submit,
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: GestureDetector(
-                  onTap: () => context.go(Routes.signin),
-                  child: Text.rich(TextSpan(children: [
-                    TextSpan(
-                        text: 'Already have an account? ',
-                        style: T.small(context)),
-                    TextSpan(
-                        text: 'Sign in',
-                        style: T.small(context).copyWith(
-                            color: AppColors.coral,
-                            fontWeight: FontWeight.w800)),
-                  ])),
+                const SizedBox(height: 6),
+                Text(
+                  'Start your 12-week transformation today.',
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.85), fontSize: 15),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Center(
-                child: Text('🔒 Your data is safe and never shared.',
-                    style: T.small(context)),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+
+          // ── Form ──
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('FULL NAME', style: T.label(context)),
+                  const SizedBox(height: 8),
+                  NeuTextField(
+                    controller: _name,
+                    hint: 'Aarav Sharma',
+                    keyboardType: TextInputType.name,
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text('PHONE NUMBER', style: T.label(context)),
+                  const SizedBox(height: 8),
+                  NeuTextField(
+                    controller: _phone,
+                    hint: '98765 43210',
+                    keyboardType: TextInputType.phone,
+                    prefix: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Text('🇮🇳 ', style: TextStyle(fontSize: 18)),
+                      Text('+91',
+                          style: T.title(context)
+                              .copyWith(color: AppColors.inkMid)),
+                    ]),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text('EMAIL', style: T.label(context)),
+                  const SizedBox(height: 8),
+                  NeuTextField(
+                    controller: _email,
+                    hint: 'you@example.com',
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text('PASSWORD', style: T.label(context)),
+                  const SizedBox(height: 8),
+                  NeuTextField(
+                    controller: _password,
+                    hint: 'Min. 8 characters',
+                    obscureText: _obscure,
+                    suffix: GestureDetector(
+                      onTap: () => setState(() => _obscure = !_obscure),
+                      child: Icon(
+                        _obscure
+                            ? Symbols.visibility_rounded
+                            : Symbols.visibility_off_rounded,
+                        color: AppColors.inkSoft,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  if (error != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.coralSoft,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(children: [
+                        const Icon(Symbols.error_rounded,
+                            color: AppColors.coral, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(error,
+                              style: T.small(context)
+                                  .copyWith(color: AppColors.coral)),
+                        ),
+                      ]),
+                    ),
+
+                  GestureDetector(
+                    onTap: s.busy ? null : _submit,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      decoration: BoxDecoration(
+                        gradient: s.busy ? null : AppColors.orangeGrad,
+                        color: s.busy ? AppColors.line : null,
+                        borderRadius: BorderRadius.circular(32),
+                        boxShadow: s.busy
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: AppColors.orange.withOpacity(0.4),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                      ),
+                      child: Center(
+                        child: s.busy
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('Create account',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 17)),
+                                  SizedBox(width: 10),
+                                  Icon(Symbols.arrow_forward_rounded,
+                                      color: Colors.white, size: 20),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: GestureDetector(
+                      onTap: () => context.go(Routes.signin),
+                      child: Text.rich(TextSpan(children: [
+                        TextSpan(
+                            text: 'Already have an account? ',
+                            style: T.small(context)),
+                        TextSpan(
+                            text: 'Sign in',
+                            style: T.small(context).copyWith(
+                                color: AppColors.orange,
+                                fontWeight: FontWeight.w800)),
+                      ])),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text('🔒 Your data is safe and never shared.',
+                        style: T.small(context)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

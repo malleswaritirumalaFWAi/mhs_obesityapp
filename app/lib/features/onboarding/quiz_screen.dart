@@ -56,7 +56,7 @@ class QuizScreen extends ConsumerStatefulWidget {
 }
 
 class _QuizScreenState extends ConsumerState<QuizScreen> {
-  // MCQ steps 0-4, then step 5 = body stats, step 6 = medical, step 7 = language + disclaimer
+  // MCQ steps 0-4, then step 5 = body stats, step 6 = medical, step 7 = disclaimer
   static const _totalSteps = 8;
   int _step = 0;
   final _answers = <int, int>{};
@@ -70,8 +70,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   final _conditionsCtrl = TextEditingController();
   final _medsCtrl = TextEditingController();
 
-  // Language + disclaimer (step 7)
-  String _language = 'en';
+  // Disclaimer (step 7)
   bool _dpdpConsent = false;
   bool _medDisclaimer = false;
 
@@ -100,7 +99,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         'target_weight': double.tryParse(_targetCtrl.text.trim()),
         'medical_conditions': _conditionsCtrl.text.trim(),
         'medications': _medsCtrl.text.trim(),
-        'language': _language,
         'dpdp_consent': _dpdpConsent,
         'medical_disclaimer_accepted': _medDisclaimer,
       });
@@ -144,10 +142,46 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              NeuTopBar(
-                onBack: _back,
-                trailing: Text('${_step + 1} of $_totalSteps',
-                    style: T.small(context)),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.orangeGrad,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: _back,
+                    child: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text('About You',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text('${_step + 1} of $_totalSteps',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13)),
+                  ),
+                ]),
               ),
               const SizedBox(height: 18),
               ClipRRect(
@@ -327,45 +361,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Almost there!', style: T.h1(context).copyWith(fontSize: 26)),
         const SizedBox(height: 8),
-        Text('Set your language and review our terms.', style: T.body(context)),
+        Text('Review our terms before we build your plan.', style: T.body(context)),
         const SizedBox(height: 22),
-
-        Text('Preferred language', style: T.title(context)),
-        const SizedBox(height: 12),
-        Row(children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _language = 'en'),
-              child: NeuCard(
-                color: _language == 'en' ? AppColors.coralSoft : null,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(children: [
-                  Text('🇬🇧', style: const TextStyle(fontSize: 24)),
-                  const SizedBox(height: 6),
-                  Text('English', style: T.title(context).copyWith(
-                    fontSize: 14, color: _language == 'en' ? AppColors.coral : null)),
-                ]),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _language = 'ta'),
-              child: NeuCard(
-                color: _language == 'ta' ? AppColors.coralSoft : null,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(children: [
-                  Text('🇮🇳', style: const TextStyle(fontSize: 24)),
-                  const SizedBox(height: 6),
-                  Text('தமிழ்', style: T.title(context).copyWith(
-                    fontSize: 14, color: _language == 'ta' ? AppColors.coral : null)),
-                ]),
-              ),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 24),
 
         NeuCard(
           color: _medDisclaimer ? AppColors.sageSoft : null,

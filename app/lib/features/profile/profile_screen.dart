@@ -23,6 +23,7 @@ class ProfileScreen extends ConsumerWidget {
     final userAsync = ref.watch(userProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         bottom: false,
         child: userAsync.when(
@@ -56,64 +57,142 @@ class ProfileScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(children: [
-          Text('Profile', style: T.h2(context)),
-          const Spacer(),
-          NeuIconButton(
-              icon: Symbols.settings_rounded,
-              onTap: () => context.push(Routes.settings)),
-        ]),
-        const SizedBox(height: 18),
-        NeuCard(
+        // ── Gradient hero ──
+        Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.orangeGrad,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.all(16),
           child: Column(children: [
             Row(children: [
               Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                    color: AppColors.coralSoft, shape: BoxShape.circle),
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.25),
+                  shape: BoxShape.circle,
+                ),
                 alignment: Alignment.center,
                 child: Text(initial,
-                    style: T.h2(context).copyWith(color: AppColors.coral)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 22)),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: T.title(context)),
+                    Text(name,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 17)),
                     const SizedBox(height: 4),
                     Row(children: [
-                    NeuPill(
-                      color: AppColors.goldSoft,
-                      child: Text('🔥 $streak day streak',
-                          style: const TextStyle(
-                              color: AppColors.goldDark,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12)),
-                    ),
-                    const SizedBox(width: 8),
-                    NeuPill(
-                      color: AppColors.coralSoft,
-                      child: Text(level,
-                          style: const TextStyle(
-                              color: AppColors.coral,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12)),
-                    ),
-                  ]),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text('🔥 $streak day streak',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11)),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(level,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11)),
+                      ),
+                    ]),
                   ],
                 ),
               ),
+              GestureDetector(
+                onTap: () => context.push(Routes.settings),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Symbols.settings_rounded,
+                      color: Colors.white, size: 20),
+                ),
+              ),
             ]),
-            const SizedBox(height: 18),
-            Row(children: [
-              _Stat(value: xp.toString(), label: 'XP'),
-              _divider(),
-              _Stat(value: royalRank != null ? '#$royalRank' : '#—', label: 'Rank'),
-              _divider(),
-              _Stat(value: badges.length.toString(), label: 'Badges'),
-            ]),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: Colors.white.withOpacity(0.3), width: 1),
+              ),
+              child: Row(children: [
+                Expanded(
+                    child: Column(children: [
+                  Text('$xp',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18)),
+                  Text('XP',
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 12)),
+                ])),
+                Container(
+                    width: 1,
+                    height: 28,
+                    color: Colors.white.withOpacity(0.3)),
+                Expanded(
+                    child: Column(children: [
+                  Text(royalRank != null ? '#$royalRank' : '#—',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18)),
+                  Text('Rank',
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 12)),
+                ])),
+                Container(
+                    width: 1,
+                    height: 28,
+                    color: Colors.white.withOpacity(0.3)),
+                Expanded(
+                    child: Column(children: [
+                  Text('${badges.length}',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18)),
+                  Text('Badges',
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 12)),
+                ])),
+              ]),
+            ),
           ]),
         ),
         const SizedBox(height: 16),

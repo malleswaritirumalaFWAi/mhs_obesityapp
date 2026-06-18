@@ -141,9 +141,44 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              NeuTopBar(
-                onBack: () => context.go(Routes.coach),
-                trailing: Text('Last step', style: T.small(context)),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.orangeGrad,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: () => context.go(Routes.coach),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Choose Your Plan',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900)),
+                        Text('Last step to unlock FitQuest',
+                            style: TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  const Text('🏆', style: TextStyle(fontSize: 26)),
+                ]),
               ),
               const SizedBox(height: 18),
               Text('Your plan', style: T.h1(context)),
