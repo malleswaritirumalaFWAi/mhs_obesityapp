@@ -126,6 +126,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
   List<_MealEntry> _history = [];
   bool _loadingHistory = true;
   String? _historyError;
+  int _visibleGroups = 2; // today + yesterday shown by default
 
   @override
   void initState() {
@@ -663,49 +664,74 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
     }
     if (_history.isEmpty) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Meal history', style: T.title(context)),
-        const SizedBox(height: 16),
-        NeuCard(
+        _HistorySectionHeader(count: 0),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.line),
+          ),
           child: Center(
             child: Column(children: [
               const Icon(Symbols.no_meals_rounded, size: 36, color: AppColors.inkSoft),
               const SizedBox(height: 8),
               Text('No meals logged yet', style: T.small(context)),
               Text('Snap your first meal above', style: T.small(context)),
-              if (_historyError != null) ...[
-                const SizedBox(height: 8),
-                Text(_historyError!,
-                    style: T.small(context).copyWith(fontSize: 10, color: Colors.red)),
-              ],
             ]),
           ),
         ),
       ]);
     }
 
-    // Group all meals by relative date
+    // Group by relative date
     final Map<String, List<_MealEntry>> grouped = {};
     for (final e in _history) {
       (grouped[e.relativeDate] ??= []).add(e);
     }
 
+    final allKeys = grouped.keys.toList();
+    final visibleKeys = allKeys.take(_visibleGroups).toList();
+    final hiddenDays = allKeys.length - _visibleGroups;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(children: [
-          Text('Meal history', style: T.title(context)),
-          const Spacer(),
-          Text('${_history.length} logged',
-              style: T.small(context).copyWith(color: AppColors.inkSoft)),
-        ]),
+        _HistorySectionHeader(count: _history.length),
         const SizedBox(height: 14),
-        for (final dateLabel in grouped.keys) ...[
+        for (final dateLabel in visibleKeys) ...[
           _DayHeader(dateLabel: dateLabel, entries: grouped[dateLabel]!),
           const SizedBox(height: 8),
           for (final entry in grouped[dateLabel]!)
             _MealHistoryCard(entry: entry),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
+        if (hiddenDays > 0)
+          GestureDetector(
+            onTap: () => setState(() => _visibleGroups++),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.line),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Icon(Symbols.expand_more_rounded,
+                    color: AppColors.inkSoft, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Load older ($hiddenDays more day${hiddenDays > 1 ? 's' : ''})',
+                  style: const TextStyle(
+                      color: AppColors.inkMid,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13),
+                ),
+              ]),
+            ),
+          ),
       ],
     );
   }
@@ -758,6 +784,47 @@ class _PickPrompt extends StatelessWidget {
 
 // ── History widgets ───────────────────────────────────────────────────────────
 
+class _HistorySectionHeader extends StatelessWidget {
+  const _HistorySectionHeader({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: BoxDecoration(
+        gradient: AppColors.orangeGrad,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(children: [
+        const Icon(Symbols.restaurant_rounded,
+            color: Colors.white, size: 18, fill: 1),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: Text('Meal history',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15)),
+        ),
+        if (count > 0)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text('$count logged',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11)),
+          ),
+      ]),
+    );
+  }
+}
+
 class _DayHeader extends StatelessWidget {
   const _DayHeader({required this.dateLabel, required this.entries});
   final String dateLabel;
@@ -766,18 +833,32 @@ class _DayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalCal = entries.fold<int>(0, (sum, e) => sum + e.calories);
+    final isToday = dateLabel == 'Today';
+    final isYesterday = dateLabel == 'Yesterday';
     return Row(children: [
       Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-            color: AppColors.coralSoft, borderRadius: BorderRadius.circular(20)),
+          gradient: isToday
+              ? AppColors.orangeGrad
+              : isYesterday
+                  ? AppColors.tealGrad
+                  : null,
+          color: (!isToday && !isYesterday) ? AppColors.bg : null,
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: Text(dateLabel,
-            style: T.small(context).copyWith(
-                color: AppColors.coral, fontWeight: FontWeight.w800, fontSize: 12)),
+            style: TextStyle(
+                color: (isToday || isYesterday)
+                    ? Colors.white
+                    : AppColors.inkSoft,
+                fontWeight: FontWeight.w800,
+                fontSize: 12)),
       ),
       const SizedBox(width: 10),
       Text('$totalCal kcal total',
-          style: T.small(context).copyWith(color: AppColors.inkSoft, fontSize: 12)),
+          style: T.small(context)
+              .copyWith(color: AppColors.inkSoft, fontSize: 12)),
     ]);
   }
 }
@@ -786,59 +867,114 @@ class _MealHistoryCard extends StatelessWidget {
   const _MealHistoryCard({required this.entry});
   final _MealEntry entry;
 
+  static LinearGradient _gradientFor(String mealType) {
+    switch (mealType.toLowerCase()) {
+      case 'lunch':
+      case 'snacks':
+      case 'snack':
+        return AppColors.tealGrad;
+      default:
+        return AppColors.orangeGrad;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final gradient = _gradientFor(entry.mealType);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: NeuCard(
-        padding: const EdgeInsets.all(14),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 46, height: 46,
-            decoration: const BoxDecoration(
-                color: AppColors.coralSoft, shape: BoxShape.circle),
-            alignment: Alignment.center,
-            child: Text(_emojiFor(entry.mealType),
-                style: const TextStyle(fontSize: 22)),
+      child: Stack(children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.line),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2))
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text(entry.mealType,
-                    style: T.title(context).copyWith(fontSize: 14)),
-                const Spacer(),
-                Text(entry.timeLabel,
-                    style: T.small(context)
-                        .copyWith(color: AppColors.inkSoft, fontSize: 11)),
-              ]),
-              const SizedBox(height: 4),
-              if (entry.items.isNotEmpty)
-                Text(
-                  entry.items.take(4).join(', ') +
-                      (entry.items.length > 4 ? ' +${entry.items.length - 4} more' : ''),
-                  style: T.small(context).copyWith(fontSize: 12),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              const SizedBox(height: 8),
-              Row(children: [
-                _Chip(color: AppColors.coralSoft,
-                    text: '${entry.calories} kcal', textColor: AppColors.coral),
-                const SizedBox(width: 6),
-                _Chip(color: AppColors.sageSoft,
-                    text: 'C ${entry.carbs}%', textColor: AppColors.sageDark),
-                const SizedBox(width: 6),
-                _Chip(color: AppColors.sageSoft,
-                    text: 'P ${entry.protein}%', textColor: AppColors.sageDark),
-                const SizedBox(width: 6),
-                _Chip(color: const Color(0xFFF3E5F5),
-                    text: 'F ${entry.fat}%', textColor: AppColors.berry),
-              ]),
-            ]),
+          padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Gradient emoji circle
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: gradient,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(_emojiFor(entry.mealType),
+                  style: const TextStyle(fontSize: 22)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Text(entry.mealType,
+                          style: T.title(context).copyWith(fontSize: 14)),
+                      const Spacer(),
+                      Text(entry.timeLabel,
+                          style: T.small(context).copyWith(
+                              color: AppColors.inkSoft, fontSize: 11)),
+                    ]),
+                    const SizedBox(height: 4),
+                    if (entry.items.isNotEmpty)
+                      Text(
+                        entry.items.take(4).join(', ') +
+                            (entry.items.length > 4
+                                ? ' +${entry.items.length - 4} more'
+                                : ''),
+                        style: T.small(context).copyWith(fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      _Chip(
+                          color: AppColors.coralSoft,
+                          text: '${entry.calories} kcal',
+                          textColor: AppColors.coral),
+                      const SizedBox(width: 6),
+                      _Chip(
+                          color: AppColors.goldSoft,
+                          text: 'C ${entry.carbs}%',
+                          textColor: AppColors.goldDark),
+                      const SizedBox(width: 6),
+                      _Chip(
+                          color: AppColors.sageSoft,
+                          text: 'P ${entry.protein}%',
+                          textColor: AppColors.sageDark),
+                      const SizedBox(width: 6),
+                      _Chip(
+                          color: AppColors.berrySoft,
+                          text: 'F ${entry.fat}%',
+                          textColor: AppColors.berry),
+                    ]),
+                  ]),
+            ),
+          ]),
+        ),
+        // Gradient left accent bar
+        Positioned(
+          left: 0, top: 0, bottom: 0,
+          child: Container(
+            width: 5,
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+            ),
           ),
-        ]),
-      ),
+        ),
+      ]),
     );
   }
 }

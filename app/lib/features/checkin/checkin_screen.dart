@@ -66,6 +66,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
   final _notes = TextEditingController();
   bool _busy = false;
   bool _loadingHistory = true;
+  int _visibleGroups = 2; // today + yesterday by default
   List<_CheckinEntry> _history = [];
 
   // Derived from profile — populated after load
@@ -165,6 +166,88 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
         ),
       );
     }
+  }
+
+  Widget _buildHistory(BuildContext context) {
+    // Group by relative date
+    final Map<String, List<_CheckinEntry>> grouped = {};
+    for (final e in _history) {
+      (grouped[e.relativeDate] ??= []).add(e);
+    }
+    final allKeys = grouped.keys.toList();
+    final visibleKeys = allKeys.take(_visibleGroups).toList();
+    final hiddenDays = allKeys.length - _visibleGroups;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Gradient section header
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: BoxDecoration(
+            gradient: AppColors.orangeGrad,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(children: [
+            const Icon(Symbols.history_rounded,
+                color: Colors.white, size: 18, fill: 1),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text('Check-in history',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15)),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text('${_history.length} total',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11)),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 14),
+        for (final dateLabel in visibleKeys) ...[
+          _CheckinDayHeader(
+              dateLabel: dateLabel, entries: grouped[dateLabel]!),
+          const SizedBox(height: 8),
+          ...grouped[dateLabel]!.map((e) => _HistoryCard(entry: e)),
+          const SizedBox(height: 12),
+        ],
+        if (hiddenDays > 0)
+          GestureDetector(
+            onTap: () => setState(() => _visibleGroups++),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.line),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Icon(Symbols.expand_more_rounded,
+                    color: AppColors.inkSoft, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Load older ($hiddenDays more day${hiddenDays > 1 ? 's' : ''})',
+                  style: const TextStyle(
+                      color: AppColors.inkMid,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13),
+                ),
+              ]),
+            ),
+          ),
+      ],
+    );
   }
 
   String _weightProgress(double current) {
@@ -373,15 +456,49 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                 const Center(child: CircularProgressIndicator()),
               ] else if (_history.isNotEmpty) ...[
                 const SizedBox(height: 32),
-                Text('Recent check-ins', style: T.title(context)),
-                const SizedBox(height: 12),
-                ..._history.take(7).map((e) => _HistoryCard(entry: e)),
+                _buildHistory(context),
               ],
             ],
           ),
         ),
       ),
     );
+  }
+}
+
+class _CheckinDayHeader extends StatelessWidget {
+  const _CheckinDayHeader({required this.dateLabel, required this.entries});
+  final String dateLabel;
+  final List<_CheckinEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = dateLabel == 'Today';
+    final isYesterday = dateLabel == 'Yesterday';
+    return Row(children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          gradient: isToday
+              ? AppColors.orangeGrad
+              : isYesterday
+                  ? AppColors.tealGrad
+                  : null,
+          color: (!isToday && !isYesterday) ? AppColors.bg : null,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(dateLabel,
+            style: TextStyle(
+                color: (isToday || isYesterday) ? Colors.white : AppColors.inkSoft,
+                fontWeight: FontWeight.w800,
+                fontSize: 12)),
+      ),
+      const SizedBox(width: 10),
+      Text(
+        '${entries.length} check-in${entries.length > 1 ? 's' : ''}',
+        style: T.small(context).copyWith(color: AppColors.inkSoft, fontSize: 12),
+      ),
+    ]);
   }
 }
 
@@ -394,18 +511,30 @@ class _HistoryCard extends StatelessWidget {
     final mood = _moods[entry.mood.clamp(0, 4)];
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: NeuCard(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Mood circle
+      child: Stack(children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.line),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2))
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Mood circle with mood color
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.coralSoft,
+                color: mood.color.withOpacity(0.15),
                 shape: BoxShape.circle,
+                border: Border.all(
+                    color: mood.color.withOpacity(0.5), width: 2),
               ),
               alignment: Alignment.center,
               child: Text(mood.emoji,
@@ -418,30 +547,37 @@ class _HistoryCard extends StatelessWidget {
                 children: [
                   Row(children: [
                     Text(mood.label,
-                        style: T.title(context).copyWith(fontSize: 14)),
+                        style: T.title(context).copyWith(
+                            fontSize: 14, color: mood.color)),
                     const Spacer(),
-                    Text(entry.relativeDate,
-                        style: T.small(context)
-                            .copyWith(color: AppColors.inkSoft, fontSize: 11)),
-                    const SizedBox(width: 6),
-                    Text('· ${entry.timeLabel}',
+                    Text(entry.timeLabel,
                         style: T.small(context).copyWith(
                             color: AppColors.coral,
                             fontSize: 11,
                             fontWeight: FontWeight.w700)),
                   ]),
-                  const SizedBox(height: 4),
-                  Row(children: [
-                    if (entry.weight != null) ...[
-                      const Icon(Symbols.scale_rounded,
-                          size: 14, color: AppColors.inkSoft),
-                      const SizedBox(width: 4),
-                      Text('${entry.weight!.toStringAsFixed(1)} kg',
-                          style: T.small(context)
-                              .copyWith(fontWeight: FontWeight.w700)),
-                    ],
-                  ]),
-                  if (entry.notes != null && entry.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  if (entry.weight != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.sageSoft,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Symbols.scale_rounded,
+                            size: 13, color: AppColors.sageDark),
+                        const SizedBox(width: 4),
+                        Text('${entry.weight!.toStringAsFixed(1)} kg',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.sageDark)),
+                      ]),
+                    ),
+                  if (entry.notes != null &&
+                      entry.notes!.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       entry.notes!,
@@ -453,9 +589,23 @@ class _HistoryCard extends StatelessWidget {
                 ],
               ),
             ),
-          ],
+          ]),
         ),
-      ),
+        // Mood-colored left accent bar
+        Positioned(
+          left: 0, top: 0, bottom: 0,
+          child: Container(
+            width: 5,
+            decoration: BoxDecoration(
+              color: mood.color,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }
