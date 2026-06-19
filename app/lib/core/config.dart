@@ -13,7 +13,7 @@ class AppConfig {
   static String get apiBase {
     if (_apiBaseEnv.isNotEmpty) return _apiBaseEnv;
     // Release builds always hit Vercel production.
-    if (kReleaseMode) return 'https://mhs-obesityapp.vercel.app';
+    if (kReleaseMode) return 'https://mhs-backend.vercel.app';
     // Debug/local: Android emulator uses 10.0.2.2, web uses localhost.
     // ignore: do_not_use_environment
     const isWeb = bool.fromEnvironment('dart.library.html', defaultValue: false);
