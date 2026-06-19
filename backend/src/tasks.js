@@ -13,20 +13,21 @@ export const TASK_TEMPLATES = [
  * Safe to call multiple times — no-op if tasks already exist.
  */
 export async function ensureTasksForDay(userId, dayIndex) {
-  const existing = await q(
-    `SELECT COUNT(*) AS n FROM tasks WHERE user_id=$1 AND day_index=$2`,
-    [userId, dayIndex]
-  );
-  if (Number(existing.rows[0].n) === 0) {
-    for (const t of TASK_TEMPLATES) {
-      await q(
-        `INSERT INTO tasks (user_id, day_index, slot, time, icon, title, subtitle, xp)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-         ON CONFLICT (user_id, day_index, icon) DO NOTHING`,
-        [userId, dayIndex, t.slot, t.time, t.icon, t.title, t.subtitle, t.xp]
-      );
-    }
-    console.log(`[tasks] seeded day ${dayIndex} for user ${userId}`);
+  // Always attempt all inserts — ON CONFLICT DO NOTHING skips existing rows.
+  // This ensures newly added task templates are seeded even if the day was
+  // previously seeded with a smaller set.
+  let inserted = 0;
+  for (const t of TASK_TEMPLATES) {
+    const r = await q(
+      `INSERT INTO tasks (user_id, day_index, slot, time, icon, title, subtitle, xp)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT (user_id, day_index, icon) DO NOTHING`,
+      [userId, dayIndex, t.slot, t.time, t.icon, t.title, t.subtitle, t.xp]
+    );
+    inserted += r.rowCount ?? 0;
+  }
+  if (inserted > 0) {
+    console.log(`[tasks] seeded ${inserted} new task(s) for day ${dayIndex}, user ${userId}`);
   }
 }
 

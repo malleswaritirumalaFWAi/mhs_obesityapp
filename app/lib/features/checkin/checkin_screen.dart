@@ -5,7 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/router.dart';
-import '../plan/tasks_provider.dart';
+import '../../core/providers/tasks_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_button.dart';

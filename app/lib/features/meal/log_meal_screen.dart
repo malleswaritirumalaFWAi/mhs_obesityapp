@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/api/api_client.dart';
+import '../../core/providers/meal_stats_provider.dart';
 import '../../core/providers/tasks_provider.dart';
 import 'web_camera.dart';
 import '../../core/theme/app_colors.dart';
@@ -342,6 +343,9 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
     }
 
     if (!mounted) return;
+    // Optimistically mark this meal type as logged so the progress indicator
+    // on Today's Plan updates immediately without waiting for a re-fetch.
+    ref.read(mealStatsProvider.notifier).addMealType(selectedType);
     ref.invalidate(tasksProvider);
     setState(() {
       _photoBytes = null;
@@ -359,6 +363,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mealStats = ref.watch(mealStatsProvider);
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -405,7 +410,98 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                   const Text('🍽️', style: TextStyle(fontSize: 26)),
                 ]),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
+              // ── Today's meal progress ──────────────────────────────────────
+              if (!mealStats.loading) ...[
+                Container(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  decoration: BoxDecoration(
+                    color: mealStats.isComplete
+                        ? AppColors.sageSoft
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: mealStats.isComplete
+                          ? AppColors.sage.withOpacity(0.4)
+                          : AppColors.line,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Icon(
+                          mealStats.isComplete
+                              ? Symbols.check_circle_rounded
+                              : Symbols.restaurant_rounded,
+                          size: 15,
+                          fill: 1,
+                          color: mealStats.isComplete
+                              ? AppColors.sageDark
+                              : AppColors.inkSoft,
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          mealStats.isComplete
+                              ? 'All main meals logged today!'
+                              : "Today's progress · ${mealStats.progressLabel}",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: mealStats.isComplete
+                                ? AppColors.sageDark
+                                : AppColors.inkMid,
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 10),
+                      Row(children: [
+                        _TodayMealBadge(
+                          emoji: '🍳',
+                          label: 'Breakfast',
+                          done: mealStats.has('Breakfast'),
+                        ),
+                        const SizedBox(width: 8),
+                        _TodayMealBadge(
+                          emoji: '🥗',
+                          label: 'Lunch',
+                          done: mealStats.has('Lunch'),
+                        ),
+                        const SizedBox(width: 8),
+                        _TodayMealBadge(
+                          emoji: '🍲',
+                          label: 'Dinner',
+                          done: mealStats.has('Dinner'),
+                        ),
+                        const SizedBox(width: 8),
+                        _TodayMealBadge(
+                          emoji: '🍪',
+                          label: 'Snack',
+                          done: mealStats.has('Snacks'),
+                          optional: true,
+                        ),
+                      ]),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: mealStats.mainCount / 3,
+                          minHeight: 5,
+                          backgroundColor: AppColors.line,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            mealStats.isComplete
+                                ? AppColors.sage
+                                : AppColors.coral,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ] else
+                const SizedBox(height: 4),
 
               // ── Meal type selector (always free) ──
               Text('Meal type', style: T.title(context)),
@@ -733,6 +829,68 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
             ),
           ),
       ],
+    );
+  }
+}
+
+// ── Today meal badge (progress row in log_meal_screen) ───────────────────────
+
+class _TodayMealBadge extends StatelessWidget {
+  const _TodayMealBadge({
+    required this.emoji,
+    required this.label,
+    required this.done,
+    this.optional = false,
+  });
+  final String emoji;
+  final String label;
+  final bool done;
+  final bool optional;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: done
+              ? AppColors.sageSoft
+              : optional
+                  ? AppColors.bg
+                  : AppColors.coralSoft.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: done
+                ? AppColors.sage.withOpacity(0.5)
+                : optional
+                    ? AppColors.line
+                    : AppColors.coral.withOpacity(0.25),
+          ),
+        ),
+        child: Column(children: [
+          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: done
+                  ? AppColors.sageDark
+                  : optional
+                      ? AppColors.inkSoft
+                      : AppColors.inkMid,
+            ),
+          ),
+          if (optional && !done)
+            Text('optional',
+                style: const TextStyle(
+                    fontSize: 9, color: AppColors.inkSoft)),
+          if (done)
+            const Icon(Icons.check_circle_rounded,
+                size: 12, color: AppColors.sageDark),
+        ]),
+      ),
     );
   }
 }

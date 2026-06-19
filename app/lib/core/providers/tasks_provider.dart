@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../config.dart';
 import '../state/session.dart';
@@ -62,6 +64,18 @@ class TaskItem {
             ? DateTime.tryParse(j['completed_at'] as String)?.toLocal()
             : null,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'slot': slot,
+        'time': time,
+        'icon': icon,
+        'title': title,
+        'subtitle': subtitle,
+        'xp': xp,
+        'done': done,
+        'completed_at': completedAt?.toIso8601String(),
+      };
 }
 
 class TasksState {
@@ -141,8 +155,41 @@ class TasksNotifier extends StateNotifier<TasksState> {
     super.dispose();
   }
 
+  // ── SharedPreferences helpers ──────────────────────────────────────────────
+
+  static String _cacheKey(String date) => 'tasks_cache_$date';
+
+  /// Persists the current task list (with done states) for [date].
+  Future<void> _persistToPrefs(String date, List<TaskItem> tasks) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _cacheKey(date),
+        jsonEncode(tasks.map((t) => t.toJson()).toList()),
+      );
+    } catch (_) {}
+  }
+
+  /// Loads the cached task list for [date], or null if not cached.
+  Future<List<TaskItem>?> _loadFromPrefs(String date) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_cacheKey(date));
+      if (raw == null) return null;
+      final list = jsonDecode(raw) as List;
+      return list
+          .map((t) => TaskItem.fromJson(Map<String, dynamic>.from(t as Map)))
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+
   Future<void> fetch() async {
-    _lastFetchDate = DateTime.now().toIso8601String().substring(0, 10);
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    _lastFetchDate = today;
     state = state.copyWith(loading: true, error: null);
     try {
       final res = await _api.getJson('/today');
@@ -150,15 +197,26 @@ class TasksNotifier extends StateNotifier<TasksState> {
       final tasks = rawTasks
           .map((t) => TaskItem.fromJson(Map<String, dynamic>.from(t as Map)))
           .toList();
+      final List<TaskItem> finalTasks =
+          tasks.isNotEmpty ? tasks : (AppConfig.demoMode ? _demoTasks : <TaskItem>[]);
+      // Persist the latest state so offline/restart sessions keep done flags.
+      await _persistToPrefs(today, finalTasks);
       state = TasksState(
-        // In demo mode, fall back to demo tasks when API returns empty.
-        tasks: tasks.isNotEmpty ? tasks : (AppConfig.demoMode ? _demoTasks : []),
+        tasks: finalTasks,
         day: (res['day'] as num?)?.toInt() ?? 1,
         loading: false,
       );
     } catch (_) {
-      if (AppConfig.demoMode) {
-        // Demo mode: show placeholder tasks so the screen is never blank.
+      // Try the local cache for today first.
+      final cached = await _loadFromPrefs(today);
+      if (cached != null) {
+        state = TasksState(
+          tasks: cached,
+          day: state.day > 1 ? state.day : 1,
+          loading: false,
+        );
+      } else if (AppConfig.demoMode) {
+        // Demo mode with no cache: show placeholder tasks so the screen is never blank.
         state = TasksState(
           tasks: _demoTasks,
           day: state.day > 1 ? state.day : 1,
@@ -174,6 +232,8 @@ class TasksNotifier extends StateNotifier<TasksState> {
     }
   }
 
+  // ── Complete ───────────────────────────────────────────────────────────────
+
   Future<void> complete(int taskId) async {
     // Optimistic update immediately with actual timestamp.
     final now = DateTime.now();
@@ -184,17 +244,24 @@ class TasksNotifier extends StateNotifier<TasksState> {
               : t)
           .toList(),
     );
+
+    // Persist immediately so the done state survives a re-fetch failure.
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    await _persistToPrefs(today, state.tasks);
+
     // Demo tasks (negative IDs) are local-only — skip API call.
     if (taskId < 0) return;
+
     try {
       await _api.postJson('/today/task/$taskId/complete', null);
     } catch (_) {
-      // Revert on failure.
+      // Revert on failure and update cache.
       state = state.copyWith(
         tasks: state.tasks
             .map((t) => t.id == taskId ? t.copyWith(done: false) : t)
             .toList(),
       );
+      await _persistToPrefs(today, state.tasks);
     }
   }
 }

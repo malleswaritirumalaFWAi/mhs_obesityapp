@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/providers/daily_stats_provider.dart';
+import '../../core/providers/meal_stats_provider.dart';
 import '../../core/providers/tasks_provider.dart';
 import '../../core/router.dart';
 import '../../core/theme/app_colors.dart';
@@ -387,6 +388,43 @@ class _DayChip extends StatelessWidget {
   }
 }
 
+// ── Meal chip (B / L / D indicator) ───────────────────────────────────────────
+
+class _MealChip extends StatelessWidget {
+  const _MealChip({required this.label, required this.done});
+  final String label;
+  final bool done;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: done
+            ? Colors.white.withOpacity(0.35)
+            : Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withOpacity(done ? 0.6 : 0.25),
+          width: 1,
+        ),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: Colors.white.withOpacity(done ? 1.0 : 0.5))),
+        if (done) ...[
+          const SizedBox(width: 3),
+          Icon(Symbols.check_rounded,
+              color: Colors.white, size: 10),
+        ],
+      ]),
+    );
+  }
+}
+
 // ── Task card ──────────────────────────────────────────────────────────────────
 
 class _TaskCard extends ConsumerWidget {
@@ -398,9 +436,10 @@ class _TaskCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(dailyStatsProvider);
+    final meals = ref.watch(mealStatsProvider);
     final c = _taskColors(task.icon);
 
-    // Progress tracking for hydration and movement
+    // Progress tracking for hydration, movement, and meals
     int? progress;
     int? target;
     String? progressLabel;
@@ -415,6 +454,12 @@ class _TaskCard extends ConsumerWidget {
           ? '${(progress / 1000).toStringAsFixed(1)}k'
           : '$progress';
       progressLabel = '$stepsStr / 8k steps';
+    } else if (task.icon == 'restaurant' || task.icon == 'lunch_dining') {
+      if (!meals.loading) {
+        progress = meals.mainCount;
+        target = 3;
+        progressLabel = '${meals.mainCount}/3 meals';
+      }
     }
     final progressPct =
         (target != null && target > 0) ? (progress! / target).clamp(0.0, 1.0) : null;
@@ -574,6 +619,25 @@ class _TaskCard extends ConsumerWidget {
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white.withOpacity(0.9))),
                       ]),
+                      // B / L / D chips for the meal task
+                      if ((task.icon == 'restaurant' || task.icon == 'lunch_dining') &&
+                          !meals.loading) ...[
+                        const SizedBox(height: 8),
+                        Row(children: [
+                          _MealChip(label: 'B', done: meals.has('Breakfast')),
+                          const SizedBox(width: 6),
+                          _MealChip(label: 'L', done: meals.has('Lunch')),
+                          const SizedBox(width: 6),
+                          _MealChip(label: 'D', done: meals.has('Dinner')),
+                          const SizedBox(width: 10),
+                          Text(
+                            meals.has('Snacks') ? '+ Snack' : 'Snack optional',
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white.withOpacity(0.6)),
+                          ),
+                        ]),
+                      ],
                       if (progressPct >= 1.0) ...[
                         const SizedBox(height: 6),
                         Row(children: [
