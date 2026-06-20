@@ -287,7 +287,7 @@ router.post('/stats/today', async (req, res) => {
 // ---- Check-ins ----
 router.post('/checkins', async (req, res, next) => {
   try {
-  const { mood, weight, notes } = req.body || {};
+  const { mood, weight, notes, tz_offset } = req.body || {};
   if (mood === undefined || mood === null || mood < 0 || mood > 4)
     return res.status(400).json({ message: 'mood must be 0–4' });
   await q(`INSERT INTO checkins (user_id, mood, weight, notes) VALUES ($1,$2,$3,$4)`,
@@ -299,11 +299,28 @@ router.post('/checkins', async (req, res, next) => {
     markTasksDoneByIcon(uid(req), ['wb_sunny']).catch(() => {});
   }
 
-  // Streak logic: only update streak once per day; reset if last check-in wasn't yesterday.
-  const today = new Date().toISOString().slice(0, 10);
+  // Streak logic — timezone-aware using client-supplied tz_offset (minutes from UTC).
+  // e.g. IST = +330. Falls back to UTC (0) if not provided.
+  // We compute local-midnight boundaries as UTC timestamps so all DB comparisons
+  // use raw TIMESTAMPTZ ranges — no ::date casts that would silently shift to UTC.
+  const tzOffsetMin = Number(tz_offset ?? 0);
+  const nowMs = Date.now();
+  const localNow = new Date(nowMs + tzOffsetMin * 60000);
+  const localMidnightUtc = new Date(
+    Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate())
+    - tzOffsetMin * 60000
+  );
+  const localTodayEndUtc       = new Date(localMidnightUtc.getTime() + 86400000);
+  const localYesterdayStartUtc = new Date(localMidnightUtc.getTime() - 86400000);
+
+  // Has the user already checked in during local-today?
+  // OFFSET 1 skips the row we just inserted so we detect a *prior* check-in today.
   const alreadyCheckedToday = (await q(
-    `SELECT id FROM checkins WHERE user_id=$1 AND created_at::date = $2 AND mood >= 0 ORDER BY id DESC OFFSET 1 LIMIT 1`,
-    [uid(req), today]
+    `SELECT id FROM checkins
+     WHERE user_id=$1 AND mood >= 0
+       AND created_at >= $2 AND created_at < $3
+     ORDER BY id DESC OFFSET 1 LIMIT 1`,
+    [uid(req), localMidnightUtc, localTodayEndUtc]
   )).rows[0];
 
   const prevUser = (await q(`SELECT streak, total_xp FROM users WHERE id=$1`, [uid(req)])).rows[0] || {};
@@ -314,16 +331,18 @@ router.post('/checkins', async (req, res, next) => {
   let multiplier = 1.0;
 
   if (!alreadyCheckedToday) {
-    // Check if last check-in was yesterday (for streak continuity).
+    // Was the user's previous check-in within the local-yesterday window?
     const lastCheckin = (await q(
-      `SELECT created_at::date AS d FROM checkins WHERE user_id=$1 AND mood >= 0 ORDER BY created_at DESC OFFSET 1 LIMIT 1`,
+      `SELECT created_at FROM checkins
+       WHERE user_id=$1 AND mood >= 0
+       ORDER BY created_at DESC OFFSET 1 LIMIT 1`,
       [uid(req)]
     )).rows[0];
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    // pg returns date columns as 'YYYY-MM-DD' strings; compare directly.
-    const wasYesterday = String(lastCheckin?.d ?? '').slice(0, 10) === yesterday.toISOString().slice(0, 10);
+    const wasYesterday = !!lastCheckin &&
+      new Date(lastCheckin.created_at) >= localYesterdayStartUtc &&
+      new Date(lastCheckin.created_at) <  localMidnightUtc;
 
-    // Reset streak if gap > 1 day, otherwise increment.
+    // Increment if consecutive, reset to 1 otherwise (Snapchat-style).
     const newStreak = wasYesterday ? prevStreak + 1 : 1;
     if (newStreak >= 30) multiplier = 1.5;
     else if (newStreak >= 14) multiplier = 1.2;

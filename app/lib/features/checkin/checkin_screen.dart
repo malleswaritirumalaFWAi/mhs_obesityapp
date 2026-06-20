@@ -141,6 +141,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
         'mood': _mood,
         'weight': double.tryParse(_weight.text.trim()),
         'notes': _notes.text.trim(),
+        'tz_offset': DateTime.now().timeZoneOffset.inMinutes,
       });
       if (!mounted) return;
       setState(() => _busy = false);
