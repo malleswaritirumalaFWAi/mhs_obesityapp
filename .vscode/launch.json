@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FitQuest (Chrome - Fast)",
+      "type": "dart",
+      "request": "launch",
+      "program": "app/lib/main.dart",
+      "args": [
+        "-d", "chrome",
+        "--web-renderer", "html"
+      ]
+    },
+    {
+      "name": "FitQuest (Android)",
+      "type": "dart",
+      "request": "launch",
+      "program": "app/lib/main.dart",
+      "args": ["-d", "emulator-5554"]
+    }
+  ]
+}
