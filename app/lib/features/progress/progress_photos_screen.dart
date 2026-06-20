@@ -37,11 +37,11 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
     } catch (_) { if (mounted) setState(() => _loading = false); }
   }
 
-  Future<void> _upload() async {
+  Future<void> _upload(void Function(void Function()) setSheet) async {
     final url = _urlCtrl.text.trim();
     final label = _labelCtrl.text.trim();
     if (url.isEmpty) return;
-    setState(() => _uploading = true);
+    setSheet(() => _uploading = true);
     try {
       await ref.read(apiClientProvider).postJson('/progress/photos', {
         'photo_url': url,
@@ -57,87 +57,94 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.coral));
     } finally {
-      if (mounted) setState(() => _uploading = false);
+      setSheet(() => _uploading = false);
     }
   }
 
   void _showAddDialog() {
+    _uploading = false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(24, 20, 24,
-          MediaQuery.of(ctx).viewInsets.bottom + 32),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('Add progress photo', style: T.title(context)),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _urlCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Photo URL',
-              hintText: 'https://...',
-              border: OutlineInputBorder(),
+      // StatefulBuilder gives the sheet its own setSheet() so the button
+      // disables immediately on tap — the parent setState() alone cannot
+      // rebuild the sheet overlay and would leave the button enabled,
+      // causing duplicate uploads on fast double-taps.
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: EdgeInsets.fromLTRB(24, 20, 24,
+            MediaQuery.of(ctx).viewInsets.bottom + 32),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('Add progress photo', style: T.title(context)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _urlCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Photo URL',
+                hintText: 'https://...',
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _labelCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Label (optional)',
-              hintText: 'e.g. Week 4 front',
-              border: OutlineInputBorder(),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _labelCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Label (optional)',
+                hintText: 'e.g. Week 4 front',
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: _uploading
-                    ? null
-                    : const LinearGradient(
-                        colors: [Color(0xFF1B4F72), Color(0xFF6C63FF)],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                color: _uploading ? AppColors.line : null,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: _uploading
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: const Color(0xFF6C63FF).withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 5),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: _uploading
+                      ? null
+                      : const LinearGradient(
+                          colors: [Color(0xFF1B4F72), Color(0xFF6C63FF)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
                         ),
-                      ],
-              ),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  color: _uploading ? AppColors.line : null,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: _uploading
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: const Color(0xFF6C63FF).withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                 ),
-                onPressed: _uploading ? null : _upload,
-                child: _uploading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Text('Save photo',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 16)),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  onPressed: _uploading ? null : () => _upload(setSheet),
+                  child: _uploading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Text('Save photo',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 16)),
+                ),
               ),
             ),
-          ),
-        ]),
+          ]),
+        ),
       ),
     );
   }

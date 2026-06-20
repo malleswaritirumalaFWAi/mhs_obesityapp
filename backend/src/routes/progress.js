@@ -15,11 +15,15 @@ router.get('/photos', async (req, res) => {
 });
 
 router.post('/photos', async (req, res) => {
-  const { photo_url, label, week } = req.body || {};
+  const { photo_url, label } = req.body || {};
   if (!photo_url) return res.status(400).json({ message: 'photo_url required' });
+  // Calculate current week number from user's program start date (created_at).
+  const userRow = (await q(`SELECT created_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
+  const startMs = userRow?.created_at ? new Date(userRow.created_at).getTime() : Date.now();
+  const weekNum = Math.max(1, Math.ceil((Date.now() - startMs) / (7 * 24 * 60 * 60 * 1000)));
   const r = await q(
     `INSERT INTO progress_photos (user_id,photo_url,label,week) VALUES ($1,$2,$3,$4) RETURNING *`,
-    [uid(req), photo_url, label || null, week || null]
+    [uid(req), photo_url, label || null, weekNum]
   );
   res.json({ photo: r.rows[0] });
 });
