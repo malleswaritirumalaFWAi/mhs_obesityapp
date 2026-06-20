@@ -225,7 +225,11 @@ router.post('/movement/add', async (req, res) => {
   if (steps >= goal) {
     markTasksDoneByIcon(uid(req), ['directions_run', 'directions_walk']).catch(() => {});
   }
-  if (add > 0) await q(`UPDATE users SET xp = xp + 5 WHERE id=$1`, [uid(req)]);
+  if (add > 0) {
+    await q(`UPDATE users SET xp=xp+5, total_xp=total_xp+5 WHERE id=$1`, [uid(req)]);
+    await q(`UPDATE group_members SET weekly_xp=weekly_xp+5 WHERE user_id=$1`, [uid(req)]);
+    await updateUserLevel(uid(req));
+  }
   res.json({ steps, done: steps >= goal });
 });
 
@@ -251,7 +255,9 @@ router.post('/hydration/add', async (req, res) => {
   if (glasses >= 8) {
     markTasksDoneByIcon(uid(req), ['water_drop']).catch(() => {});
   }
-  await q(`UPDATE users SET xp = xp + 5 WHERE id=$1`, [uid(req)]);
+  await q(`UPDATE users SET xp=xp+5, total_xp=total_xp+5 WHERE id=$1`, [uid(req)]);
+  await q(`UPDATE group_members SET weekly_xp=weekly_xp+5 WHERE user_id=$1`, [uid(req)]);
+  await updateUserLevel(uid(req));
   res.json({ glasses, done: glasses >= 8 });
 });
 

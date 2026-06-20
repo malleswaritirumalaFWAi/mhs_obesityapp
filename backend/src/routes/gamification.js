@@ -81,9 +81,9 @@ router.post('/freeze/buy', async (req, res) => {
 
 router.get('/points-store', async (_req, res) => {
   res.json({ items: [
-    { id: 'freeze',        name: 'Streak Freeze',    emoji: '❄️',  xp: 500,  desc: 'Protect your streak for 1 day' },
-    { id: 'double_xp_day', name: 'Double XP Day',    emoji: '⚡',  xp: 1000, desc: 'Earn 2x XP for 24 hours' },
-    { id: 'cheat_meal',    name: 'Cheat Meal Pass',  emoji: '🍕',  xp: 800,  desc: 'One guilt-free meal pass' },
+    { id: 'freeze',        name: 'Streak Freeze',    emoji: '❄️',  cost: 500,  description: 'Protect your streak for 1 day' },
+    { id: 'double_xp_day', name: 'Double XP Day',    emoji: '⚡',  cost: 1000, description: 'Earn 2x XP for 24 hours' },
+    { id: 'cheat_meal',    name: 'Cheat Meal Pass',  emoji: '🍕',  cost: 800,  description: 'One guilt-free meal pass' },
   ]});
 });
 

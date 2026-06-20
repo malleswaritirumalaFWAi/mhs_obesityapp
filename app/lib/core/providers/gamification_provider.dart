@@ -2,6 +2,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../state/session.dart';
 
+// ── Tier utility ─────────────────────────────────────────────────────────────
+// Mirrors the LEVELS array in backend/src/routes/gamification.js.
+
+class XpTier {
+  const XpTier({required this.name, required this.label, required this.emoji,
+    required this.min, this.nextMin});
+  final String name, label, emoji;
+  final int min;
+  final int? nextMin;
+}
+
+const List<XpTier> xpTiers = [
+  XpTier(name: 'bronze',   label: 'Bronze',   emoji: '🥉', min: 0,     nextMin: 1000),
+  XpTier(name: 'silver',   label: 'Silver',   emoji: '🥈', min: 1000,  nextMin: 3000),
+  XpTier(name: 'gold',     label: 'Gold',     emoji: '🥇', min: 3000,  nextMin: 6000),
+  XpTier(name: 'platinum', label: 'Platinum', emoji: '💎', min: 6000,  nextMin: 10000),
+  XpTier(name: 'diamond',  label: 'Diamond',  emoji: '👑', min: 10000, nextMin: null),
+];
+
+/// Returns the tier for [totalXp]. Matches backend gamification.js LEVELS array.
+XpTier getTierFromXP(int totalXp) {
+  for (var i = xpTiers.length - 1; i >= 0; i--) {
+    if (totalXp >= xpTiers[i].min) return xpTiers[i];
+  }
+  return xpTiers.first;
+}
+
 class LevelInfo {
   const LevelInfo({required this.name, required this.label, required this.emoji,
     required this.totalXp, this.nextThreshold, this.progressToNext});
