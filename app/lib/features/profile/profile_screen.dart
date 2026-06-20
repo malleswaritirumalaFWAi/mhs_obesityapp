@@ -45,7 +45,7 @@ class ProfileScreen extends ConsumerWidget {
     final name = (user?.name as String?) ?? 'User';
     final email = (user?.email as String?) ?? '';
     final phone = (user?.phone as String?) ?? '';
-    final xp = (user?.xp as int?) ?? 0;
+    final xp = (user?.totalXp as int?) ?? 0;
     final streak = (user?.streak as int?) ?? 0;
     final badges = (user?.badges as List?) ?? [];
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';

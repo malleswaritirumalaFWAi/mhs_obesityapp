@@ -21,7 +21,7 @@ async function groupId(userId) {
 
 // ---- Profile + quiz ----
 router.get('/profile', async (req, res) => {
-  const u = await q(`SELECT id, phone, email, name, onboarded, xp, streak, start_weight, target_weight FROM users WHERE id=$1`, [uid(req)]);
+  const u = await q(`SELECT id, phone, email, name, onboarded, xp, total_xp, streak, start_weight, target_weight FROM users WHERE id=$1`, [uid(req)]);
   const p = await q(`SELECT gender, activity, goal, food_pref, challenge FROM profiles WHERE user_id=$1`, [uid(req)]);
   const badges = await q(
     `SELECT b.emoji, b.name FROM user_badges ub JOIN badges b ON b.id=ub.badge_id WHERE ub.user_id=$1 ORDER BY ub.earned_at DESC`,

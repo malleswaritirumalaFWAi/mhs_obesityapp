@@ -8,6 +8,7 @@ class UserProfile {
     required this.phone,
     required this.email,
     required this.xp,
+    required this.totalXp,
     required this.streak,
     required this.badges,
   });
@@ -15,7 +16,10 @@ class UserProfile {
   final String name;
   final String phone;
   final String email;
+  /// Spendable XP (decremented on redeems). Use [totalXp] for display.
   final int xp;
+  /// Cumulative lifetime XP — matches Royal leaderboard ranking.
+  final int totalXp;
   final int streak;
   final List<Map<String, String>> badges; // [{emoji, name}]
 
@@ -33,6 +37,7 @@ final userProvider = FutureProvider<UserProfile>((ref) async {
     phone: (user['phone'] as String?) ?? '',
     email: (user['email'] as String?) ?? '',
     xp: (user['xp'] as num?)?.toInt() ?? 0,
+    totalXp: (user['total_xp'] as num?)?.toInt() ?? 0,
     streak: (user['streak'] as num?)?.toInt() ?? 0,
     badges: rawBadges
         .map((b) => {
