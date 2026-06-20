@@ -285,7 +285,8 @@ router.post('/stats/today', async (req, res) => {
 });
 
 // ---- Check-ins ----
-router.post('/checkins', async (req, res) => {
+router.post('/checkins', async (req, res, next) => {
+  try {
   const { mood, weight, notes } = req.body || {};
   if (mood === undefined || mood === null || mood < 0 || mood > 4)
     return res.status(400).json({ message: 'mood must be 0–4' });
@@ -310,6 +311,7 @@ router.post('/checkins', async (req, res) => {
 
   let xpToAdd = 0;
   let streak = prevStreak;
+  let multiplier = 1.0;
 
   if (!alreadyCheckedToday) {
     // Check if last check-in was yesterday (for streak continuity).
@@ -318,11 +320,11 @@ router.post('/checkins', async (req, res) => {
       [uid(req)]
     )).rows[0];
     const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    const wasYesterday = lastCheckin?.d?.toISOString?.()?.slice(0,10) === yesterday.toISOString().slice(0,10);
+    // pg returns date columns as 'YYYY-MM-DD' strings; compare directly.
+    const wasYesterday = String(lastCheckin?.d ?? '').slice(0, 10) === yesterday.toISOString().slice(0, 10);
 
     // Reset streak if gap > 1 day, otherwise increment.
     const newStreak = wasYesterday ? prevStreak + 1 : 1;
-    let multiplier = 1.0;
     if (newStreak >= 30) multiplier = 1.5;
     else if (newStreak >= 14) multiplier = 1.2;
     else if (newStreak >= 7) multiplier = 1.1;
@@ -388,6 +390,7 @@ router.post('/checkins', async (req, res) => {
   }
 
   res.json({ saved: true, xp_awarded: xpToAdd, streak, badge_earned: badgeEarned, badge, multiplier });
+  } catch (err) { next(err); }
 });
 
 router.get('/checkins', async (req, res) => {
