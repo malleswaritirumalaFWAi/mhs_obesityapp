@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../core/api/api_client.dart';
 import '../../core/router.dart';
 import '../../core/providers/tasks_provider.dart';
+import '../../core/providers/user_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_button.dart';
@@ -147,6 +148,8 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
       setState(() => _busy = false);
       // Refresh task completion state so the check-in task shows as done.
       ref.invalidate(tasksProvider);
+      // Force profile to re-fetch so streak updates immediately on the profile screen.
+      ref.invalidate(userProvider);
       // Reload history so the new entry shows immediately.
       await _loadData();
       if (!mounted) return;
