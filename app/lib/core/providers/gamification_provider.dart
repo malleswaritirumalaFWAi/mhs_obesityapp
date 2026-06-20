@@ -99,6 +99,7 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
       await _api.postJson('/gamification/freeze/buy', {});
       state = state.copyWith(
         xp: (state.xp - 500).clamp(0, 999999),
+        totalXp: (state.totalXp - 500).clamp(0, 999999),
         streakFreezes: state.streakFreezes + 1,
       );
       return true;

@@ -77,9 +77,13 @@ router.post('/freeze/use', async (req, res) => {
 });
 
 router.post('/freeze/buy', async (req, res) => {
-  const r = (await q(`SELECT xp, streak_freezes FROM users WHERE id=$1`, [uid(req)])).rows[0];
-  if (!r || r.xp < 500) return res.status(400).json({ message: 'Insufficient XP (need 500)' });
-  await q(`UPDATE users SET xp=xp-500, streak_freezes=streak_freezes+1 WHERE id=$1`, [uid(req)]);
+  const r = (await q(`SELECT xp, total_xp, streak_freezes FROM users WHERE id=$1`, [uid(req)])).rows[0];
+  if (!r || r.total_xp < 500) return res.status(400).json({ message: 'Insufficient XP (need 500)' });
+  // Deduct from total_xp (lifetime balance); also reduce spendable xp but clamp at 0.
+  await q(
+    `UPDATE users SET total_xp=total_xp-500, xp=GREATEST(xp-500,0), streak_freezes=streak_freezes+1 WHERE id=$1`,
+    [uid(req)]
+  );
   res.json({ ok: true });
 });
 

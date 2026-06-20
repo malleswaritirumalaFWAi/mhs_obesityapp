@@ -10,11 +10,24 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
 
-class GamificationScreen extends ConsumerWidget {
+class GamificationScreen extends ConsumerStatefulWidget {
   const GamificationScreen({super.key});
+  @override
+  ConsumerState<GamificationScreen> createState() => _GamificationScreenState();
+}
+
+class _GamificationScreenState extends ConsumerState<GamificationScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Always reload fresh XP/freeze data when this screen opens.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(gamificationProvider.notifier).load();
+    });
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final g = ref.watch(gamificationProvider);
 
     return Scaffold(
@@ -146,8 +159,8 @@ class GamificationScreen extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(child: _ActionButton(
                     label: 'Buy (500 XP)',
-                    color: g.xp >= 500 ? AppColors.coral : AppColors.inkSoft,
-                    onTap: g.xp >= 500 ? () async {
+                    color: g.totalXp >= 500 ? AppColors.coral : AppColors.inkSoft,
+                    onTap: g.totalXp >= 500 ? () async {
                       final ok = await ref.read(gamificationProvider.notifier).buyFreeze();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
