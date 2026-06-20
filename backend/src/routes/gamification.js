@@ -28,6 +28,10 @@ router.get('/status', async (req, res) => {
   const u = (await q(`SELECT xp, total_xp, streak, streak_freezes, level FROM users WHERE id=$1`, [uid(req)])).rows[0] || {};
   const totalXp = u.total_xp ?? 0;
   const level = LEVELS.find(l => totalXp >= l.min && totalXp <= l.max) ?? LEVELS[0];
+  // Self-heal: sync the stored level column if it drifted (e.g. after a server restart).
+  if (u.level !== level.name) {
+    await q(`UPDATE users SET level=$1 WHERE id=$2`, [level.name, uid(req)]);
+  }
   const nextLevel = LEVELS[LEVELS.indexOf(level) + 1];
   const rank = (await q(
     `SELECT COUNT(*)+1 AS rank FROM users WHERE total_xp > $1`, [totalXp]

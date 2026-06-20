@@ -363,7 +363,7 @@ router.post('/checkins', async (req, res, next) => {
     streak = updated.rows[0]?.streak ?? newStreak;
     await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), xpToAdd]);
   }
-  updateUserLevel(uid(req)).catch(() => {});
+  await updateUserLevel(uid(req));
 
   // Streak badge milestones
   const streakBadgeMap = { 3:'streak_3', 7:'streak_7', 14:'streak_14', 30:'streak_30', 60:'streak_60' };
