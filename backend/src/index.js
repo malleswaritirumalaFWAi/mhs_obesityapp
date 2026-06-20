@@ -254,6 +254,7 @@ async function runMigrations() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`,
       `DELETE FROM tasks WHERE icon='lunch_dining'`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS tasks_user_day_icon_uidx ON tasks (user_id, day_index, icon)`,
       `CREATE TABLE IF NOT EXISTS post_likes (
         user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
         post_id BIGINT REFERENCES posts(id) ON DELETE CASCADE,

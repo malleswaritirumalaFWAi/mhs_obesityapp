@@ -107,7 +107,8 @@ router.post('/signup', async (req, res) => {
       [user.id]
     );
     // Seed day 1 tasks immediately so every new user has tasks on first login.
-    await ensureTasksForDay(user.id, 1);
+    // Non-blocking: tasks are also re-seeded on first /profile load.
+    ensureTasksForDay(user.id, 1).catch((e) => console.warn('[tasks] signup seed failed:', e.message));
     res.json({ token: signToken(user), onboarded: user.onboarded });
   } catch (e) {
     console.error('[signup]', e.message);
