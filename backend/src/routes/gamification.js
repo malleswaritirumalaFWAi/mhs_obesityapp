@@ -25,7 +25,7 @@ export async function updateUserLevel(userId) {
 }
 
 router.get('/status', async (req, res) => {
-  const u = (await q(`SELECT xp, total_xp, streak, streak_freezes, level FROM users WHERE id=$1`, [uid(req)])).rows[0] || {};
+  const u = (await q(`SELECT xp, total_xp, streak, streak_freezes, level, double_xp_expires_at, cheat_meal_passes FROM users WHERE id=$1`, [uid(req)])).rows[0] || {};
   const totalXp = u.total_xp ?? 0;
   const level = LEVELS.find(l => totalXp >= l.min && totalXp <= l.max) ?? LEVELS[0];
   // Self-heal: sync the stored level column if it drifted (e.g. after a server restart).
@@ -36,6 +36,7 @@ router.get('/status', async (req, res) => {
   const rank = (await q(
     `SELECT COUNT(*)+1 AS rank FROM users WHERE total_xp > $1`, [totalXp]
   )).rows[0]?.rank ?? null;
+  const doubleXpActive = u.double_xp_expires_at && new Date(u.double_xp_expires_at) > new Date();
   res.json({
     xp: u.xp ?? 0,
     total_xp: totalXp,
@@ -47,6 +48,9 @@ router.get('/status', async (req, res) => {
       next_threshold: nextLevel?.min ?? null,
       progress_to_next: nextLevel ? totalXp - level.min : null,
     },
+    double_xp_active: !!doubleXpActive,
+    double_xp_expires_at: u.double_xp_expires_at ?? null,
+    cheat_meal_passes: u.cheat_meal_passes ?? 0,
   });
 });
 
@@ -100,13 +104,32 @@ router.post('/points-store/redeem', async (req, res) => {
   const costs = { freeze: 500, double_xp_day: 1000, cheat_meal: 800 };
   const cost = costs[item_id];
   if (!cost) return res.status(400).json({ message: 'Invalid item' });
-  const r = (await q(`SELECT xp, streak_freezes FROM users WHERE id=$1`, [uid(req)])).rows[0];
+  const r = (await q(`SELECT xp, streak_freezes, double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
   if (!r || r.xp < cost) return res.status(400).json({ message: `Need ${cost} XP` });
-  await q(`UPDATE users SET xp=xp-$2 WHERE id=$1`, [uid(req), cost]);
+
+  // Deduct XP
+  await q(`UPDATE users SET xp=xp-$2, total_xp=GREATEST(total_xp-$2,0) WHERE id=$1`, [uid(req), cost]);
+
+  let extraData = {};
   if (item_id === 'freeze') {
     await q(`UPDATE users SET streak_freezes=streak_freezes+1 WHERE id=$1`, [uid(req)]);
+    extraData = { streak_freezes: (r.streak_freezes ?? 0) + 1 };
+  } else if (item_id === 'double_xp_day') {
+    // Stack on top of any existing time rather than resetting early
+    const base = r.double_xp_expires_at && new Date(r.double_xp_expires_at) > new Date()
+      ? new Date(r.double_xp_expires_at)
+      : new Date();
+    const expires = new Date(base.getTime() + 24 * 60 * 60 * 1000);
+    await q(`UPDATE users SET double_xp_expires_at=$2 WHERE id=$1`, [uid(req), expires.toISOString()]);
+    extraData = { double_xp_expires_at: expires.toISOString() };
+  } else if (item_id === 'cheat_meal') {
+    await q(`UPDATE users SET cheat_meal_passes=cheat_meal_passes+1 WHERE id=$1`, [uid(req)]);
+    const updated = (await q(`SELECT cheat_meal_passes FROM users WHERE id=$1`, [uid(req)])).rows[0];
+    extraData = { cheat_meal_passes: updated?.cheat_meal_passes ?? 1 };
   }
-  res.json({ ok: true, message: `${item_id} redeemed!` });
+
+  const names = { freeze: 'Streak Freeze', double_xp_day: 'Double XP Day', cheat_meal: 'Cheat Meal Pass' };
+  res.json({ ok: true, message: `${names[item_id]} activated!`, ...extraData });
 });
 
 export default router;

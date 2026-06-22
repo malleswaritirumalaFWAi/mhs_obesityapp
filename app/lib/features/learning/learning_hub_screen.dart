@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/providers/lessons_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/admin_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_card.dart';
@@ -20,6 +21,14 @@ class LearningHubScreen extends ConsumerWidget {
     final activeWeekLessons = state.activeWeekLessons;
     final upNext = state.upNext;
     final modules = state.weekModules;
+
+    // Admin unlock overrides — check ALL_USERS flag set by admin dashboard
+    final adminUnlocks = ref.watch(adminLessonUnlocksProvider).maybeWhen(
+      data: (m) => m,
+      orElse: () => <String, bool>{},
+    );
+    bool adminUnlockedModule(int weekNum) =>
+        adminUnlocks['unlock_lesson_module$weekNum'] == true;
 
     // Progress within the active week
     final totalInWeek = activeWeekLessons.length;
@@ -146,7 +155,10 @@ class LearningHubScreen extends ConsumerWidget {
               Text('Up next', style: T.title(context)),
               const SizedBox(height: 12),
               for (final lesson in upNext)
-                _UpNextRow(lesson: lesson),
+                _UpNextRow(
+                  lesson: lesson,
+                  adminUnlocked: adminUnlockedModule(lesson.weekNumber),
+                ),
               const SizedBox(height: 24),
             ],
 
@@ -163,7 +175,10 @@ class LearningHubScreen extends ConsumerWidget {
               )
             else
               for (final module in modules)
-                _WeekModuleRow(module: module),
+                _WeekModuleRow(
+                  module: module,
+                  adminUnlocked: adminUnlockedModule(module.weekNumber),
+                ),
           ],
         ),
       ),
@@ -174,8 +189,9 @@ class LearningHubScreen extends ConsumerWidget {
 // ── Up next row ───────────────────────────────────────────────────────────────
 
 class _UpNextRow extends StatelessWidget {
-  const _UpNextRow({required this.lesson});
+  const _UpNextRow({required this.lesson, this.adminUnlocked = false});
   final LessonItem lesson;
+  final bool adminUnlocked;
 
   @override
   Widget build(BuildContext context) {
@@ -183,11 +199,13 @@ class _UpNextRow extends StatelessWidget {
     final isQuiz = lesson.lessonType == 'quiz';
     final iconColor =
         isQuiz ? AppColors.gold : isVideo ? AppColors.coral : AppColors.berry;
+    // Admin override: allow navigation even if API status is locked
+    final canNavigate = !lesson.isLocked || adminUnlocked;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: NeuCard(
-        onTap: () => context.push('/lesson/${lesson.id}'),
+        onTap: canNavigate ? () => context.push('/lesson/${lesson.id}') : null,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Row(children: [
           Container(
@@ -224,8 +242,12 @@ class _UpNextRow extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Symbols.chevron_right_rounded,
-              color: AppColors.inkSoft, size: 20),
+          if (adminUnlocked && lesson.isLocked)
+            const Icon(Symbols.lock_open_rounded,
+                color: AppColors.teal, size: 18)
+          else
+            const Icon(Symbols.chevron_right_rounded,
+                color: AppColors.inkSoft, size: 20),
         ]),
       ),
     );
@@ -235,14 +257,16 @@ class _UpNextRow extends StatelessWidget {
 // ── Week module row ───────────────────────────────────────────────────────────
 
 class _WeekModuleRow extends StatelessWidget {
-  const _WeekModuleRow({required this.module});
+  const _WeekModuleRow({required this.module, this.adminUnlocked = false});
   final WeekModule module;
+  final bool adminUnlocked;
 
   @override
   Widget build(BuildContext context) {
     final completed = module.isCompleted;
-    final locked = module.isLocked;
-    final active = module.isActive;
+    // Admin override: treat as unlocked if admin has explicitly unlocked this module
+    final locked = !adminUnlocked && module.isLocked;
+    final active = module.isActive || (adminUnlocked && module.isLocked);
 
     Color cardColor = AppColors.surface;
     if (active) cardColor = AppColors.coralSoft;
@@ -266,6 +290,16 @@ class _WeekModuleRow extends StatelessWidget {
         child: const Icon(Symbols.lock_rounded,
             color: AppColors.inkSoft, size: 18, fill: 1),
       );
+    } else if (adminUnlocked && module.isLocked) {
+      // Locked by API but admin-unlocked — show teal open-lock icon
+      statusIcon = Container(
+        width: 36,
+        height: 36,
+        decoration: const BoxDecoration(
+            color: AppColors.sageSoft, shape: BoxShape.circle),
+        child: const Icon(Symbols.lock_open_rounded,
+            color: AppColors.teal, size: 18, fill: 1),
+      );
     } else {
       // active
       statusIcon = Container(
@@ -283,18 +317,28 @@ class _WeekModuleRow extends StatelessWidget {
     if (completed) {
       statusLabel = 'Completed';
       statusColor = AppColors.sageDark;
+    } else if (adminUnlocked && module.isLocked) {
+      statusLabel = 'Admin Unlocked';
+      statusColor = AppColors.teal;
     } else if (active) {
       statusLabel = 'Active now';
       statusColor = AppColors.coral;
     } else {
-      statusLabel = 'Unlocks soon';
+      statusLabel = 'Locked';
       statusColor = AppColors.inkSoft;
     }
+
+    // First lesson ID for navigation when admin-unlocked
+    final firstLessonId =
+        module.lessons.isNotEmpty ? module.lessons.first.id : null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: NeuCard(
         color: cardColor,
+        onTap: (!locked && firstLessonId != null)
+            ? () => context.push('/lesson/$firstLessonId')
+            : null,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(children: [
           statusIcon,

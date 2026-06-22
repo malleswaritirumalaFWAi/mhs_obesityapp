@@ -130,12 +130,24 @@ router.post('/analyze', async (req, res) => {
 // POST /meals  { meal_type, items, calories, carbs, protein, fat, photo_url }
 router.post('/', async (req, res) => {
   const { meal_type, items, calories, carbs, protein, fat, photo_url } = req.body || {};
+
+  // Check active perks before inserting
+  const userRow = (await q(`SELECT double_xp_expires_at, cheat_meal_passes FROM users WHERE id=$1`, [req.user.uid])).rows[0] || {};
+  const doubleXpActive = userRow.double_xp_expires_at && new Date(userRow.double_xp_expires_at) > new Date();
+  const useCheatPass = (userRow.cheat_meal_passes ?? 0) > 0;
+
   const r = await q(
-    `INSERT INTO meals (user_id, meal_type, items, calories, carbs, protein, fat, photo_url)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-    [req.user.uid, meal_type, JSON.stringify(items || []), calories, carbs, protein, fat, photo_url || null]
+    `INSERT INTO meals (user_id, meal_type, items, calories, carbs, protein, fat, photo_url, cheat_meal)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+    [req.user.uid, meal_type, JSON.stringify(items || []), calories, carbs, protein, fat, photo_url || null, useCheatPass]
   );
-  const baseXp = 15;
+
+  // Consume cheat meal pass if used
+  if (useCheatPass) {
+    await q(`UPDATE users SET cheat_meal_passes=cheat_meal_passes-1 WHERE id=$1`, [req.user.uid]);
+  }
+
+  const baseXp = doubleXpActive ? 30 : 15;
   await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [req.user.uid, baseXp]);
   await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [req.user.uid, baseXp]);
 
@@ -166,14 +178,14 @@ router.post('/', async (req, res) => {
       [req.user.uid, today]
     );
     if (!alreadyGiven.rows[0]) {
-      bonusXp = 20;
-      await q(`UPDATE users SET xp=xp+20, total_xp=total_xp+20 WHERE id=$1`, [req.user.uid]);
-      await q(`UPDATE group_members SET weekly_xp=weekly_xp+20 WHERE user_id=$1`, [req.user.uid]);
-      await q(`INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'combo_bonus','🍽️ Combo Bonus!','All 4 meals logged today! +20 bonus XP')`, [req.user.uid]);
+      bonusXp = doubleXpActive ? 40 : 20;
+      await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [req.user.uid, bonusXp]);
+      await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [req.user.uid, bonusXp]);
+      await q(`INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'combo_bonus','🍽️ Combo Bonus!','All 4 meals logged today! +${bonusXp} bonus XP')`, [req.user.uid]);
     }
   }
 
-  res.json({ id: r.rows[0].id, xp_awarded: baseXp + bonusXp, combo_bonus: bonusXp });
+  res.json({ id: r.rows[0].id, xp_awarded: baseXp + bonusXp, combo_bonus: bonusXp, double_xp_active: !!doubleXpActive, cheat_meal_used: useCheatPass });
 });
 
 // GET /meals  -> last 60 meals for the logged-in user, newest first

@@ -43,19 +43,29 @@ class GamificationState {
     this.streakFreezes = 0, this.royalRank,
     this.level = const LevelInfo(name:'bronze',label:'Bronze',emoji:'🥉',totalXp:0),
     this.loading = false,
+    this.doubleXpActive = false,
+    this.doubleXpExpiresAt,
+    this.cheatMealPasses = 0,
   });
   final int xp, totalXp, streak, streakFreezes;
   final int? royalRank;
   final LevelInfo level;
   final bool loading;
+  final bool doubleXpActive;
+  final DateTime? doubleXpExpiresAt;
+  final int cheatMealPasses;
 
   GamificationState copyWith({int? xp, int? totalXp, int? streak,
-    int? streakFreezes, int? royalRank, LevelInfo? level, bool? loading}) =>
+    int? streakFreezes, int? royalRank, LevelInfo? level, bool? loading,
+    bool? doubleXpActive, DateTime? doubleXpExpiresAt, int? cheatMealPasses}) =>
     GamificationState(
       xp: xp ?? this.xp, totalXp: totalXp ?? this.totalXp,
       streak: streak ?? this.streak, streakFreezes: streakFreezes ?? this.streakFreezes,
       royalRank: royalRank ?? this.royalRank,
       level: level ?? this.level, loading: loading ?? this.loading,
+      doubleXpActive: doubleXpActive ?? this.doubleXpActive,
+      doubleXpExpiresAt: doubleXpExpiresAt ?? this.doubleXpExpiresAt,
+      cheatMealPasses: cheatMealPasses ?? this.cheatMealPasses,
     );
 }
 
@@ -68,6 +78,8 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
     try {
       final d = await _api.getJson('/gamification/status');
       final l = d['level'] as Map<String, dynamic>? ?? {};
+      final expiresStr = d['double_xp_expires_at'] as String?;
+      final expiresAt = expiresStr != null ? DateTime.tryParse(expiresStr) : null;
       state = GamificationState(
         xp: (d['xp'] as num?)?.toInt() ?? 0,
         totalXp: (d['total_xp'] as num?)?.toInt() ?? 0,
@@ -82,6 +94,9 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
           nextThreshold: (l['next_threshold'] as num?)?.toInt(),
           progressToNext: (l['progress_to_next'] as num?)?.toInt(),
         ),
+        doubleXpActive: d['double_xp_active'] as bool? ?? false,
+        doubleXpExpiresAt: expiresAt,
+        cheatMealPasses: (d['cheat_meal_passes'] as num?)?.toInt() ?? 0,
       );
     } catch (_) {}
   }

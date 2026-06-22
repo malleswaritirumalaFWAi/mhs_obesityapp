@@ -41,6 +41,8 @@ import '../features/badge/badge_gallery_screen.dart';
 import '../features/learning/lesson_viewer_screen.dart';
 import '../features/home/weekly_progress_screen.dart';
 import '../features/gamification/gamification_tutorial_screen.dart';
+import '../screens/admin/admin_login_screen.dart';
+import '../screens/admin/admin_dashboard_screen.dart';
 
 class Routes {
   Routes._();
@@ -83,6 +85,10 @@ class Routes {
   static const lessonViewer = '/lesson/:id';
   static const weeklyProgress = '/weekly-progress';
   static const gamificationTutorial = '/how-to-play';
+
+  // Admin routes (separate from user flow)
+  static const adminLogin = '/admin';
+  static const adminDashboard = '/admin-dashboard';
 }
 
 final _rootKey = GlobalKey<NavigatorState>();
@@ -222,5 +228,15 @@ final appRouter = GoRouter(
         path: Routes.gamificationTutorial,
         parentNavigatorKey: _rootKey,
         builder: (_, __) => const GamificationTutorialScreen()),
+
+    // ── Admin routes (separate from user flow) ─────────────────────────
+    GoRoute(
+        path: Routes.adminLogin,
+        parentNavigatorKey: _rootKey,
+        builder: (_, __) => const AdminLoginScreen()),
+    GoRoute(
+        path: Routes.adminDashboard,
+        parentNavigatorKey: _rootKey,
+        builder: (_, __) => const AdminDashboardScreen()),
   ],
 );

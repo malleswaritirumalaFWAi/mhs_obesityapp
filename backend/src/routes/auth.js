@@ -116,6 +116,45 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+// POST /auth/admin-login { email, password }
+// Validates hardcoded admin credentials, upserts admin user in DB, returns JWT.
+// No authMiddleware on this route — it IS the auth step.
+router.post('/admin-login', async (req, res) => {
+  const { email, password } = req.body || {};
+  if (
+    email?.toLowerCase().trim() !== 'admin@gmail.com' ||
+    password !== 'Admin@123'
+  ) {
+    return res.status(401).json({ message: 'Invalid admin credentials' });
+  }
+  try {
+    // Find existing admin user by email
+    let user = (await q(`SELECT id, phone FROM users WHERE email='admin@gmail.com'`)).rows[0];
+    if (!user) {
+      // Try by reserved phone
+      user = (await q(`SELECT id, phone FROM users WHERE phone='+919999999999'`)).rows[0];
+    }
+    if (!user) {
+      // Create admin user
+      const hash = await bcrypt.hash('Admin@123', 10);
+      const r = await q(
+        `INSERT INTO users (phone, email, name, password_hash, onboarded, role)
+         VALUES ('+919999999999', 'admin@gmail.com', 'Admin', $1, TRUE, 'admin')
+         RETURNING id, phone`,
+        [hash]
+      );
+      user = r.rows[0];
+    } else {
+      // Ensure role is admin
+      await q(`UPDATE users SET role='admin' WHERE id=$1`, [user.id]);
+    }
+    res.json({ token: signToken(user) });
+  } catch (e) {
+    console.error('[admin-login]', e.message);
+    res.status(500).json({ message: 'Admin login failed. Please try again.' });
+  }
+});
+
 // POST /auth/signin { email, password }
 router.post('/signin', async (req, res) => {
   try {

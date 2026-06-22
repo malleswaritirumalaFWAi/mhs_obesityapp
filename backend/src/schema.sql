@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS users (
 -- Add email/password columns to existing installs (safe to run repeatedly)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+-- Gamification perks
+ALTER TABLE users ADD COLUMN IF NOT EXISTS double_xp_expires_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS cheat_meal_passes INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS otps (
   phone      TEXT PRIMARY KEY,
@@ -100,8 +103,12 @@ CREATE TABLE IF NOT EXISTS meals (
   carbs     INTEGER,
   protein   INTEGER,
   fat       INTEGER,
+  photo_url TEXT,
+  cheat_meal BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE meals ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ALTER TABLE meals ADD COLUMN IF NOT EXISTS cheat_meal BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS posts (
   id         BIGSERIAL PRIMARY KEY,

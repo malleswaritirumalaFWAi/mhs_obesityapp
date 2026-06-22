@@ -7,6 +7,8 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/admin_content_model.dart';
+import '../../services/admin_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_misc.dart';
@@ -256,6 +258,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
   Map<String, dynamic>? _data;
   bool _loading = true;
   int _selectedPhase = 0;
+  Map<String, bool> _adminUnlocks = {};
 
   late final AnimationController _shimmer;
   late final Animation<double> _shimmerAnim;
@@ -285,8 +288,14 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
     super.dispose();
   }
 
+  bool _isAdminUnlocked(int week) =>
+      _adminUnlocks['unlock_challenge_week$week'] == true;
+
   Future<void> _load() async {
     setState(() => _loading = true);
+    // Load admin unlock overrides (runs regardless of API success)
+    final adminKeys = kChallengeWeeks.map((w) => w.unlockKey).toList();
+    _adminUnlocks = await AdminService.loadGlobalUnlockStates(adminKeys);
     try {
       final d = await ref.read(apiClientProvider).getJson('/challenge/current');
       if (!mounted) return;
@@ -353,7 +362,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
     final currentWeek = _safeInt(_data?['current_week'], 1);
     final entry = _entriesMap[week];
     final isActive = week == currentWeek;
-    final isLocked = week > currentWeek;
+    final isLocked = week > currentWeek && !_isAdminUnlocked(week);
     final isCompleted = entry?['completed'] == true;
     final progress = _safeInt(entry?['progress']);
     final meta = _metaOf(week);
@@ -512,7 +521,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                           final week = phaseWeeks[index];
                           final entry = _entriesMap[week];
                           final isActive = week == currentWeek;
-                          final isLocked = week > currentWeek;
+                          final isLocked = week > currentWeek && !_isAdminUnlocked(week);
                           final isCompleted = entry?['completed'] == true;
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -548,6 +557,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                         child: _MiniTimeline(
                           currentWeek: currentWeek,
                           entriesMap: _entriesMap,
+                          adminUnlocks: _adminUnlocks,
                         ),
                       ),
                     ),
@@ -1149,9 +1159,14 @@ class _WeekCard extends StatelessWidget {
 // ─── Mini Timeline ────────────────────────────────────────────────────────────
 
 class _MiniTimeline extends StatelessWidget {
-  const _MiniTimeline({required this.currentWeek, required this.entriesMap});
+  const _MiniTimeline({
+    required this.currentWeek,
+    required this.entriesMap,
+    this.adminUnlocks = const {},
+  });
   final int currentWeek;
   final Map<int, Map<String, dynamic>> entriesMap;
+  final Map<String, bool> adminUnlocks;
 
   @override
   Widget build(BuildContext context) {
@@ -1175,7 +1190,8 @@ class _MiniTimeline extends StatelessWidget {
             final phase = _phaseOf(week);
             final isActive = week == currentWeek;
             final isCompleted = entriesMap[week]?['completed'] == true;
-            final isLocked = week > currentWeek;
+            final isLocked = week > currentWeek &&
+                !(adminUnlocks['unlock_challenge_week$week'] == true);
 
             return Expanded(
               child: Column(children: [

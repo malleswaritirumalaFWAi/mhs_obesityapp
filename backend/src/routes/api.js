@@ -226,8 +226,10 @@ router.post('/movement/add', async (req, res) => {
     markTasksDoneByIcon(uid(req), ['directions_run', 'directions_walk']).catch(() => {});
   }
   if (add > 0) {
-    await q(`UPDATE users SET xp=xp+5, total_xp=total_xp+5 WHERE id=$1`, [uid(req)]);
-    await q(`UPDATE group_members SET weekly_xp=weekly_xp+5 WHERE user_id=$1`, [uid(req)]);
+    const ux = (await q(`SELECT double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
+    const dxp = ux?.double_xp_expires_at && new Date(ux.double_xp_expires_at) > new Date() ? 10 : 5;
+    await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [uid(req), dxp]);
+    await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), dxp]);
     await updateUserLevel(uid(req));
   }
   res.json({ steps, done: steps >= goal });
@@ -255,8 +257,10 @@ router.post('/hydration/add', async (req, res) => {
   if (glasses >= 8) {
     markTasksDoneByIcon(uid(req), ['water_drop']).catch(() => {});
   }
-  await q(`UPDATE users SET xp=xp+5, total_xp=total_xp+5 WHERE id=$1`, [uid(req)]);
-  await q(`UPDATE group_members SET weekly_xp=weekly_xp+5 WHERE user_id=$1`, [uid(req)]);
+  const uxh = (await q(`SELECT double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
+  const dxph = uxh?.double_xp_expires_at && new Date(uxh.double_xp_expires_at) > new Date() ? 10 : 5;
+  await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [uid(req), dxph]);
+  await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), dxph]);
   await updateUserLevel(uid(req));
   res.json({ glasses, done: glasses >= 8 });
 });
@@ -353,7 +357,9 @@ router.post('/checkins', async (req, res, next) => {
     if (newStreak >= 30) multiplier = 1.5;
     else if (newStreak >= 14) multiplier = 1.2;
     else if (newStreak >= 7) multiplier = 1.1;
-    const baseXp = 10;
+    const dxpRow = (await q(`SELECT double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
+    const doubleXp = dxpRow?.double_xp_expires_at && new Date(dxpRow.double_xp_expires_at) > new Date();
+    const baseXp = doubleXp ? 20 : 10;
     xpToAdd = Math.round(baseXp * multiplier);
 
     const updated = await q(

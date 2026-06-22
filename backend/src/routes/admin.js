@@ -136,9 +136,19 @@ router.post('/users/:id/role', async (req, res) => {
 router.get('/users', async (req, res) => {
   if (!await requireAdmin(req, res)) return;
   const rows = (await q(
-    `SELECT id, name, phone, email, role, xp, total_xp, streak, level, created_at FROM users ORDER BY created_at DESC`
+    `SELECT
+       u.id, u.name, u.phone, u.email, u.role, u.xp, u.total_xp, u.streak, u.level, u.created_at,
+       (SELECT COUNT(*)::int FROM challenge_entries WHERE user_id=u.id AND completed=TRUE) AS challenges_completed,
+       (SELECT COUNT(*)::int FROM weekly_challenges) AS challenges_total,
+       (SELECT COUNT(*)::int FROM lessons WHERE status='completed') AS lessons_completed,
+       (SELECT COUNT(*)::int FROM lessons) AS lessons_total
+     FROM users u
+     WHERE u.role != 'admin'
+     ORDER BY u.total_xp DESC NULLS LAST`
   )).rows;
-  res.json({ users: rows });
+  // Assign rank based on descending total_xp order
+  const withRank = rows.map((r, i) => ({ ...r, rank: i + 1 }));
+  res.json({ users: withRank });
 });
 
 router.post('/weekly-reset', async (req, res) => {
