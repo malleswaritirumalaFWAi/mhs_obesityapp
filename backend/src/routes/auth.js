@@ -35,7 +35,7 @@ function genCode() {
 async function sendSms(phone, code) {
   const key = process.env.MSG91_AUTH_KEY;
   if (!key) {
-    console.log(`[OTP] (dev) ${phone} -> ${code}  (or use fixed ${process.env.DEV_FIXED_OTP || '123456'})`);
+    console.log(`[OTP] (dev) ${phone} -> OTP is: ${code}`);
     return;
   }
   // MSG91 OTP send (India). Endpoint kept minimal; configure template in console.
