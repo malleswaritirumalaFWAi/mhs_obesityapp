@@ -801,12 +801,23 @@ router.get('/weekly-progress', async (req, res) => {
 
 // ---- Badge gallery ----
 router.get('/badges', async (req, res) => {
-  const all = (await q(`SELECT id, code, emoji, name, xp FROM badges ORDER BY xp ASC`)).rows;
-  const earned = (await q(
-    `SELECT badge_id FROM user_badges WHERE user_id=$1`, [uid(req)]
-  )).rows.map(r => r.badge_id);
-  const earnedSet = new Set(earned);
-  res.json({ badges: all.map(b => ({ ...b, earned: earnedSet.has(b.id) })) });
+  const all = (await q(`SELECT id, code, emoji, name, xp, description FROM badges ORDER BY xp ASC`)).rows;
+  const earnedRows = (await q(
+    `SELECT badge_id, earned_at FROM user_badges WHERE user_id=$1`, [uid(req)]
+  )).rows;
+  const earnedMap = new Map(earnedRows.map(r => [r.badge_id, r.earned_at]));
+  res.json({
+    badges: all.map(b => ({
+      id: b.id,
+      slug: b.code,
+      emoji: b.emoji,
+      name: b.name,
+      description: b.description,
+      xp_reward: b.xp,
+      earned: earnedMap.has(b.id),
+      earned_at: earnedMap.get(b.id) ?? null,
+    })),
+  });
 });
 
 // ---- Chat ----
@@ -815,12 +826,52 @@ router.get('/chat', async (req, res) => {
   res.json({ messages: r.rows });
 });
 
+/**
+ * Detects health inputs that require a safety-first response rather than
+ * generic encouragement. Returns a safe reply string, or null if input is normal.
+ */
+function safetyCheck(text) {
+  const t = text.toLowerCase();
+
+  // Extreme or impossible weight changes
+  const extremeWt = /lost\s+(\d+(?:\.\d+)?)\s*(kg|kilo|pound|lb)/i.exec(text);
+  if (extremeWt) {
+    const amt = parseFloat(extremeWt[1]);
+    const unit = extremeWt[2].toLowerCase();
+    const kg = unit.startsWith('kg') || unit.startsWith('kilo') ? amt : amt * 0.453592;
+    // More than 1 kg in a single day is physiologically extreme
+    if (kg > 1 && /\b(hour|hr|minute|min|day|24h)\b/i.test(text)) {
+      return 'That rate of weight loss sounds very unusual and could be a sign of dehydration or a medical issue — not healthy fat loss. Please stop exercising, drink water, and consult a doctor or emergency services if you feel unwell.';
+    }
+  }
+
+  // Medical emergency signals
+  if (/chest\s*pain|can'?t\s*breathe|difficulty\s*breath|passed\s*out|faint(ed)?|vomit(ing)?\s*blood|heart\s*(attack|racing)|stroke/i.test(t)) {
+    return 'This sounds like it could be a medical emergency. Please stop what you are doing and contact emergency services or see a doctor immediately. Your health and safety come first.';
+  }
+
+  // Self-harm or eating disorder signals
+  if (/not\s*eating|starv(ing|ation)|haven'?t\s*eaten\s*(in\s*)?\d+\s*(day|hour|hr)|purge?|laxative|cut(ting)?\s*myself/i.test(t)) {
+    return 'I\'m concerned about what you\'ve shared. Restricting food or harming yourself is dangerous and not part of the FitQuest programme. Please speak to a healthcare professional or a trusted person about how you are feeling.';
+  }
+
+  return null; // input is safe — proceed normally
+}
+
 router.post('/chat', async (req, res) => {
   const { text } = req.body || {};
   if (!text?.trim()) return res.status(400).json({ message: 'text is required' });
   await q(`INSERT INTO chat_messages (user_id, from_coach, text) VALUES ($1, FALSE, $2)`, [uid(req), text]);
 
-  let reply = 'Great work staying consistent! Keep it up and hydrate well today 💪';
+  // Safety gate — respond before calling Claude for dangerous inputs
+  const safeReply = safetyCheck(text);
+  if (safeReply) {
+    await q(`INSERT INTO chat_messages (user_id, from_coach, text) VALUES ($1, TRUE, $2)`, [uid(req), safeReply]);
+    return res.json({ reply: safeReply });
+  }
+
+  // Context-aware fallback used only when Claude is unavailable
+  let reply = 'I\'m having a moment of connectivity trouble — try again in a bit! In the meantime, keep up your daily tasks and stay hydrated.';
 
   const key = process.env.ANTHROPIC_API_KEY;
   if (key && text) {
@@ -843,7 +894,10 @@ router.post('/chat', async (req, res) => {
           `You are a warm, motivating fitness coach named Priya in a weight-loss app called FitQuest. ` +
           `The user's name is ${u.name || 'there'}, their goal is "${p.goal || 'lose weight'}", ` +
           `food preference is "${p.food_pref || 'vegetarian'}", and their current streak is ${u.streak || 0} days. ` +
-          `Keep replies short (1-3 sentences), practical, and encouraging. No lists or markdown.`,
+          `Keep replies short (1-3 sentences), practical, and encouraging. No lists or markdown. ` +
+          `SAFETY RULE: If the user describes any medical emergency, extreme symptoms, ` +
+          `dangerous weight loss rates, self-harm, or eating disorders, ALWAYS advise them ` +
+          `to seek immediate medical attention — never give generic praise for these inputs.`,
         messages: history.map((m) => ({
           role: m.from_coach ? 'assistant' : 'user',
           content: m.text,

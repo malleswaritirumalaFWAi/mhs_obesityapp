@@ -21,25 +21,13 @@ class CoachScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.orangeGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              NeuCard(
                 padding: const EdgeInsets.all(16),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => context.go(Routes.quiz),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -48,27 +36,18 @@ class CoachScreen extends StatelessWidget {
                       children: [
                         Text("You're in! 🎉",
                             style: TextStyle(
-                                color: Colors.white70,
+                                color: AppColors.inkSoft,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600)),
                         Text('Meet your coach',
                             style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
                       ],
                     ),
                   ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text('🏆', style: TextStyle(fontSize: 22)),
-                  ),
+                  const Text('🏆', style: TextStyle(fontSize: 22)),
                 ]),
               ),
               const SizedBox(height: 22),
@@ -120,14 +99,35 @@ class CoachScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: AppColors.bg,
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.line),
                       ),
                       child: Row(children: [
-                        const Icon(Symbols.play_circle_rounded,
-                            color: AppColors.coral, fill: 1),
+                        const Icon(Symbols.mic_rounded,
+                            color: AppColors.inkSoft, size: 20),
                         const SizedBox(width: 10),
-                        Text('Audio intro · 0:45', style: T.small(context)),
-                        const Spacer(),
-                        const Icon(Symbols.graphic_eq_rounded, color: AppColors.inkSoft),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Audio intro · 0:45', style: T.small(context)),
+                              Text('Available after onboarding',
+                                  style: T.small(context).copyWith(
+                                      fontSize: 10, color: AppColors.inkSoft)),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.goldSoft,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text('Soon',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.goldDark)),
+                        ),
                       ]),
                     ),
                   ],

@@ -107,11 +107,16 @@ router.post('/analyze', async (req, res) => {
       return JSON.parse(text.slice(start, end + 1));
     } catch (e) {
       const isRateLimit = e.status === 429 || (e.message || '').toLowerCase().includes('rate limit');
-      if (isRateLimit && attemptsLeft > 1) {
-        // Wait 8 seconds then retry — handles transient rate-limit spikes.
-        console.warn(`[meals/analyze] Rate limited — retrying in 8s (${attemptsLeft - 1} left)`);
-        await new Promise((r) => setTimeout(r, 8000));
-        return attemptAnalysis(attemptsLeft - 1);
+      if (isRateLimit) {
+        if (attemptsLeft > 1) {
+          // Wait 8 seconds then retry — handles transient rate-limit spikes.
+          console.warn(`[meals/analyze] Rate limited — retrying in 8s (${attemptsLeft - 1} left)`);
+          await new Promise((r) => setTimeout(r, 8000));
+          return attemptAnalysis(attemptsLeft - 1);
+        }
+        // All retries exhausted — return mock so the user can still log their meal.
+        console.warn('[meals/analyze] Rate limit exhausted — returning mock estimate');
+        return { ...MOCK, _mock: true, _reason: 'rate_limit' };
       }
       throw e;
     }
@@ -121,9 +126,9 @@ router.post('/analyze', async (req, res) => {
     const json = await attemptAnalysis(3); // 1 attempt + 2 retries on rate limit
     res.json({ ...MOCK, ...json });
   } catch (e) {
+    // Non-rate-limit failures: still fall back to mock so user isn't blocked.
     console.error('[meals/analyze] Claude FAILED —', e.message, '| status:', e.status ?? 'n/a');
-    const httpStatus = e.status && e.status >= 400 && e.status < 600 ? e.status : 503;
-    res.status(httpStatus).json({ error: true, message: e.message });
+    res.json({ ...MOCK, _mock: true, _reason: 'ai_error' });
   }
 });
 

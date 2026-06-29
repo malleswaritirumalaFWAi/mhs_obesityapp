@@ -26,25 +26,13 @@ class BadgeGalleryScreen extends ConsumerWidget {
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.orangeGrad,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                NeuCard(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                   child: Row(children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Symbols.arrow_back_rounded,
-                            color: Colors.white, size: 18),
-                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: AppColors.inkMid, size: 22),
                     ),
                     const SizedBox(width: 14),
                     const Expanded(
@@ -53,12 +41,12 @@ class BadgeGalleryScreen extends ConsumerWidget {
                         children: [
                           Text('Badge Collection',
                               style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.ink,
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900)),
                           Text('Your earned achievements',
                               style: TextStyle(
-                                  color: Colors.white70, fontSize: 12)),
+                                  color: AppColors.inkSoft, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -182,11 +170,21 @@ class _BadgeTile extends StatelessWidget {
             if (locked) ...[
               NeuPill(
                 color: AppColors.bg,
-                child: Text('Keep going to unlock!',
-                    style: TextStyle(
-                        color: AppColors.inkSoft,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Symbols.lock_rounded, size: 13, color: AppColors.inkSoft),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      badge.description.isNotEmpty
+                          ? badge.description
+                          : 'Keep going to unlock!',
+                      style: const TextStyle(
+                          color: AppColors.inkSoft,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12),
+                    ),
+                  ),
+                ]),
               ),
             ] else ...[
               NeuPill(

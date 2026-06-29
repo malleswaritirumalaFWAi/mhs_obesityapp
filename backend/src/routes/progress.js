@@ -14,6 +14,23 @@ router.get('/photos', async (req, res) => {
   res.json({ photos });
 });
 
+// POST /progress/photos/upload — accepts base64 image from the mobile app
+router.post('/photos/upload', async (req, res) => {
+  const { image_base64, mime, label } = req.body || {};
+  if (!image_base64) return res.status(400).json({ message: 'image_base64 required' });
+  const mimeType = mime || 'image/jpeg';
+  // Store as a data URL — works without a CDN for MVP
+  const photo_url = `data:${mimeType};base64,${image_base64}`;
+  const userRow = (await q(`SELECT created_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
+  const startMs = userRow?.created_at ? new Date(userRow.created_at).getTime() : Date.now();
+  const weekNum = Math.max(1, Math.ceil((Date.now() - startMs) / (7 * 24 * 60 * 60 * 1000)));
+  const r = await q(
+    `INSERT INTO progress_photos (user_id,photo_url,label,week) VALUES ($1,$2,$3,$4) RETURNING *`,
+    [uid(req), photo_url, label || null, weekNum]
+  );
+  res.json({ photo: r.rows[0] });
+});
+
 router.post('/photos', async (req, res) => {
   const { photo_url, label } = req.body || {};
   if (!photo_url) return res.status(400).json({ message: 'photo_url required' });

@@ -1,10 +1,31 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import rateLimit from 'express-rate-limit';
 import { q } from '../db.js';
 import { signToken } from '../auth.js';
 import { ensureTasksForDay } from '../tasks.js';
 
 const router = Router();
+
+// 5 OTP requests per phone per 15 min
+const otpRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => req.body?.phone || req.ip || 'unknown',
+  message: { message: 'Too many OTP requests. Please wait 15 minutes and try again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// 10 verify attempts per phone per 15 min — locks out brute-force
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => req.body?.phone || req.ip || 'unknown',
+  message: { message: 'Too many verification attempts. Please wait 15 minutes and try again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 function genCode() {
   // 6-digit numeric, no crypto needed for dev OTP
@@ -34,7 +55,7 @@ async function sendSms(phone, code) {
 }
 
 // POST /auth/otp/request { phone }
-router.post('/otp/request', async (req, res) => {
+router.post('/otp/request', otpRequestLimiter, async (req, res) => {
   const { phone } = req.body || {};
   if (!phone) return res.status(400).json({ message: 'phone required' });
   const code = genCode();
@@ -49,17 +70,13 @@ router.post('/otp/request', async (req, res) => {
 });
 
 // POST /auth/otp/verify { phone, code }
-router.post('/otp/verify', async (req, res) => {
+router.post('/otp/verify', otpVerifyLimiter, async (req, res) => {
   const { phone, code } = req.body || {};
   if (!phone || !code) return res.status(400).json({ message: 'phone and code required' });
 
-  const fixed = process.env.DEV_FIXED_OTP || '123456';
-  let ok = code === fixed; // dev bypass
-  if (!ok) {
-    const r = await q(`SELECT code, expires_at FROM otps WHERE phone=$1`, [phone]);
-    const row = r.rows[0];
-    ok = row && row.code === code && new Date(row.expires_at) > new Date();
-  }
+  const r = await q(`SELECT code, expires_at FROM otps WHERE phone=$1`, [phone]);
+  const row = r.rows[0];
+  const ok = row && row.code === code && new Date(row.expires_at) > new Date();
   if (!ok) return res.status(401).json({ message: 'Invalid or expired code' });
 
   // upsert user + join default group

@@ -275,6 +275,7 @@ async function runMigrations() {
       )`,
       `ALTER TABLE weekly_challenges ADD COLUMN IF NOT EXISTS phase INTEGER NOT NULL DEFAULT 1`,
       `ALTER TABLE weekly_challenges ADD COLUMN IF NOT EXISTS min_value INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE badges ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''`,
     ];
 
     for (const sql of migrations) {
@@ -283,18 +284,28 @@ async function runMigrations() {
 
     // Seed reference data
     await client.query(`
-      INSERT INTO badges (code, emoji, name, xp) VALUES
-        ('first_step','👣','First Step',0),('snapshot','📸','Snapshot',0),
-        ('baseline','⚖️','Baseline',0),('team_player','🤝','Team Player',0),
-        ('streak_3','✨','Spark',50),('streak_7','🔥','Flame',100),
-        ('streak_14','🔥','Blaze',200),('streak_30','🌋','Inferno',500),
-        ('streak_60','💥','Unstoppable',1000),('freeze_master','❄️','Freeze Master',100),
-        ('comeback_kid','💪','Comeback Kid',100),('first_bite','🍽️','First Bite',0),
-        ('first_post','📝','First Post',0),('weekly_champ','🥇','Weekly Champ',500),
-        ('recruiter','🎁','Recruiter',300),('goal_crusher','🏆','Goal Crusher',1000),
-        ('graduate','🎓','Graduate',1000),('streak_master','🔥','Streak Master',500),
-        ('fasting_pro','⏰','Fasting Pro',300),('royal_champion','👑','Royal Champion',2000)
-      ON CONFLICT (code) DO NOTHING
+      INSERT INTO badges (code, emoji, name, xp, description) VALUES
+        ('first_step','👣','First Step',0,'Complete your very first morning check-in'),
+        ('snapshot','📸','Snapshot',0,'Add your first progress photo'),
+        ('baseline','⚖️','Baseline',0,'Log your weight for 7 consecutive days'),
+        ('team_player','🤝','Team Player',0,'Post in the group feed for the first time'),
+        ('streak_3','✨','Spark',50,'Build a 3-day activity streak'),
+        ('streak_7','🔥','Flame',100,'Build a 7-day activity streak'),
+        ('streak_14','🔥','Blaze',200,'Build a 14-day activity streak'),
+        ('streak_30','🌋','Inferno',500,'Build a 30-day activity streak'),
+        ('streak_60','💥','Unstoppable',1000,'Build a 60-day activity streak'),
+        ('freeze_master','❄️','Freeze Master',100,'Use a streak freeze to protect your streak'),
+        ('comeback_kid','💪','Comeback Kid',100,'Return after a missed day and restart your streak'),
+        ('first_bite','🍽️','First Bite',0,'Log your first meal using Meal AI'),
+        ('first_post','📝','First Post',0,'Share your first post in the group feed'),
+        ('weekly_champ','🥇','Weekly Champ',500,'Finish #1 on the weekly XP leaderboard'),
+        ('recruiter','🎁','Recruiter',300,'Refer a friend who joins FitQuest'),
+        ('goal_crusher','🏆','Goal Crusher',1000,'Reach your target weight'),
+        ('graduate','🎓','Graduate',1000,'Complete all 12 weeks of the programme'),
+        ('streak_master','🔥','Streak Master',500,'Build a 30-day streak without a break'),
+        ('fasting_pro','⏰','Fasting Pro',300,'Complete 5 intermittent fasting sessions'),
+        ('royal_champion','👑','Royal Champion',2000,'Win the weekly leaderboard 3 weeks in a row')
+      ON CONFLICT (code) DO UPDATE SET description=EXCLUDED.description
     `).catch(() => {});
 
     await client.query(`

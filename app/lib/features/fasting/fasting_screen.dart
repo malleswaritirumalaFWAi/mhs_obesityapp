@@ -35,25 +35,13 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
           children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.tealGrad,
-                borderRadius: BorderRadius.circular(20),
-              ),
+            NeuCard(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Row(children: [
                 GestureDetector(
                   onTap: () => context.pop(),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Symbols.arrow_back_rounded,
-                        color: Colors.white, size: 18),
-                  ),
+                  child: const Icon(Symbols.arrow_back_rounded,
+                      color: AppColors.inkMid, size: 22),
                 ),
                 const SizedBox(width: 14),
                 const Expanded(
@@ -62,12 +50,12 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                     children: [
                       Text('Fasting Timer',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.ink,
                               fontSize: 20,
                               fontWeight: FontWeight.w900)),
                       Text('Track your intermittent fast',
                           style: TextStyle(
-                              color: Colors.white70, fontSize: 12)),
+                              color: AppColors.inkSoft, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -156,11 +144,42 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                 icon: Symbols.stop_circle_rounded,
                 color: AppColors.berry,
                 onTap: () async {
-                  final result = await ref.read(fastingProvider.notifier).stop();
-                  if (context.mounted) {
-                    final xp = (result['xp_awarded'] as num?)?.toInt() ?? 0;
-                    final completed = result['completed'] as bool? ?? false;
-                    _showResult(context, completed, xp);
+                  final elapsed = ref.read(fastingProvider).elapsed;
+                  final h = elapsed.inHours;
+                  final m = elapsed.inMinutes.remainder(60);
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: AppColors.surface,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      title: const Text('Stop your fast?',
+                          style: TextStyle(color: AppColors.ink, fontWeight: FontWeight.w800)),
+                      content: Text(
+                        'You have fasted for ${h}h ${m}m. '
+                        'This will be saved to your history.',
+                        style: const TextStyle(color: AppColors.inkMid),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Keep going',
+                              style: TextStyle(color: AppColors.sage, fontWeight: FontWeight.w700)),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Stop',
+                              style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w700)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true && context.mounted) {
+                    final result = await ref.read(fastingProvider.notifier).stop();
+                    if (context.mounted) {
+                      final xp = (result['xp_awarded'] as num?)?.toInt() ?? 0;
+                      final completed = result['completed'] as bool? ?? false;
+                      _showResult(context, completed, xp);
+                    }
                   }
                 },
               ),

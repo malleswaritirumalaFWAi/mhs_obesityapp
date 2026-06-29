@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/api/api_client.dart';
 import '../../core/providers/daily_stats_provider.dart';
 import '../../core/providers/meal_stats_provider.dart';
 import '../../core/providers/tasks_provider.dart';
 import '../../core/router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/neu.dart';
+import '../../core/widgets/neu_card.dart';
 
 IconData _iconFor(String name) {
   const map = <String, IconData>{
@@ -99,15 +102,46 @@ String? _mealTypeFor(String _icon) => null;
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-class TodayPlanScreen extends ConsumerWidget {
+class TodayPlanScreen extends ConsumerStatefulWidget {
   const TodayPlanScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(tasksProvider);
+  ConsumerState<TodayPlanScreen> createState() => _TodayPlanScreenState();
+}
 
+class _TodayPlanScreenState extends ConsumerState<TodayPlanScreen> {
+  // null = viewing today; positive = offset into the past (1 = yesterday, etc.)
+  int _dayOffset = 0;
+  List<TaskItem>? _historyTasks;
+  bool _historyLoading = false;
+
+  Future<void> _loadDay(int offset, int todayProgramDay, ApiClient api) async {
+    if (offset == 0) {
+      setState(() { _dayOffset = 0; _historyTasks = null; });
+      return;
+    }
+    setState(() { _dayOffset = offset; _historyLoading = true; });
+    try {
+      final targetDay = (todayProgramDay - offset).clamp(1, 84);
+      final res = await api.getJson('/today?day=$targetDay');
+      final rawTasks = (res['tasks'] as List?) ?? [];
+      final tasks = rawTasks
+          .map((t) => TaskItem.fromJson(Map<String, dynamic>.from(t as Map)))
+          .toList();
+      if (mounted) setState(() { _historyTasks = tasks; _historyLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() { _historyTasks = []; _historyLoading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ref.watch(tasksProvider);
+    final api = ref.read(apiClientProvider);
+
+    final displayTasks = _dayOffset == 0 ? s.tasks : (_historyTasks ?? []);
     final Map<String, List<TaskItem>> sections = {};
-    for (final t in s.tasks) {
+    for (final t in displayTasks) {
       final slot = t.slot.isEmpty
           ? 'Other'
           : t.slot[0].toUpperCase() + t.slot.substring(1);
@@ -115,38 +149,44 @@ class TodayPlanScreen extends ConsumerWidget {
     }
 
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final todayLabel = dayLabels[DateTime.now().weekday - 1];
+    final todayWeekday = DateTime.now().weekday - 1; // 0=Mon … 6=Sun
+    final todayLabel = dayLabels[todayWeekday];
+
+    // Days up to and including today are selectable; future days are not.
+    // offset 0 = today, 1 = yesterday, etc.
+    int offsetFor(String label) {
+      final idx = dayLabels.indexOf(label);
+      return todayWeekday - idx; // positive for past, negative for future
+    }
+
+    final isLoading = s.loading || (_dayOffset != 0 && _historyLoading);
+    final headerDone = _dayOffset == 0 ? s.done : displayTasks.where((t) => t.done).length;
+    final headerTotal = _dayOffset == 0 ? s.total : displayTasks.length;
+    final dayNum = _dayOffset == 0 ? s.day : (s.day - _dayOffset).clamp(1, 84);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         bottom: false,
-        child: s.loading
+        child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // ── Gradient header ──────────────────────────────────────
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: AppColors.orangeGrad,
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(32),
-                        bottomRight: Radius.circular(32),
-                      ),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  // ── Neumorphic header ────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                     child: Column(children: [
                       Row(children: [
                         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('Day ${s.day} / 84',
-                              style: TextStyle(
-                                  color: Colors.white.withOpacity(0.85),
+                          Text('Day $dayNum / 84',
+                              style: const TextStyle(
+                                  color: AppColors.inkMid,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500)),
-                          const Text("Today's Plan",
-                              style: TextStyle(
-                                  color: Colors.white,
+                          Text(_dayOffset == 0 ? "Today's Plan" : 'Past Day',
+                              style: const TextStyle(
+                                  color: AppColors.ink,
                                   fontSize: 24,
                                   fontWeight: FontWeight.w900)),
                         ]),
@@ -154,12 +194,12 @@ class TodayPlanScreen extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: _dayOffset == 0 ? AppColors.coralSoft : AppColors.bg,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(todayLabel,
-                              style: const TextStyle(
-                                  color: Colors.white,
+                              style: TextStyle(
+                                  color: _dayOffset == 0 ? AppColors.coral : AppColors.inkSoft,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13)),
                         ),
@@ -167,23 +207,18 @@ class TodayPlanScreen extends ConsumerWidget {
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.3), width: 1),
-                        ),
+                        decoration: Neu.card(radius: 20),
                         child: Row(children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  s.done == s.total && s.total > 0
-                                      ? 'All done — amazing! 🎉'
-                                      : '${s.done} of ${s.total} tasks done',
+                                  headerDone == headerTotal && headerTotal > 0
+                                      ? 'All done — amazing!'
+                                      : '$headerDone of $headerTotal tasks done',
                                   style: const TextStyle(
-                                      color: Colors.white,
+                                      color: AppColors.ink,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 16),
                                 ),
@@ -191,10 +226,10 @@ class TodayPlanScreen extends ConsumerWidget {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(999),
                                   child: LinearProgressIndicator(
-                                    value: s.total > 0 ? s.done / s.total : 0,
+                                    value: headerTotal > 0 ? headerDone / headerTotal : 0,
                                     minHeight: 6,
-                                    backgroundColor: Colors.white.withOpacity(0.3),
-                                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                    backgroundColor: AppColors.line,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.coral),
                                   ),
                                 ),
                               ],
@@ -208,18 +243,18 @@ class TodayPlanScreen extends ConsumerWidget {
                               alignment: Alignment.center,
                               children: [
                                 CircularProgressIndicator(
-                                  value: s.total > 0 ? s.done / s.total : 0,
+                                  value: headerTotal > 0 ? headerDone / headerTotal : 0,
                                   strokeWidth: 6,
-                                  backgroundColor: Colors.white.withOpacity(0.25),
-                                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                  backgroundColor: AppColors.line,
+                                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.coral),
                                   strokeCap: StrokeCap.round,
                                 ),
                                 Text(
-                                  s.total > 0
-                                      ? '${((s.done / s.total) * 100).round()}%'
+                                  headerTotal > 0
+                                      ? '${((headerDone / headerTotal) * 100).round()}%'
                                       : '0%',
                                   style: const TextStyle(
-                                      color: Colors.white,
+                                      color: AppColors.ink,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 13),
                                 ),
@@ -241,7 +276,15 @@ class TodayPlanScreen extends ConsumerWidget {
                         scrollDirection: Axis.horizontal,
                         children: [
                           for (final d in dayLabels)
-                            _DayChip(label: d, today: d == todayLabel),
+                            _DayChip(
+                              label: d,
+                              isToday: d == todayLabel,
+                              isSelected: offsetFor(d) == _dayOffset,
+                              isFuture: offsetFor(d) < 0,
+                              onTap: offsetFor(d) < 0
+                                  ? null
+                                  : () => _loadDay(offsetFor(d), s.day, api),
+                            ),
                         ],
                       ),
                     ),
@@ -254,10 +297,13 @@ class TodayPlanScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (s.tasks.isEmpty)
+                        if (displayTasks.isEmpty)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 32),
-                            child: Center(child: CircularProgressIndicator()),
+                            child: Center(
+                              child: Text('No tasks for this day.',
+                                  style: TextStyle(color: AppColors.inkSoft)),
+                            ),
                           )
                         else
                           for (final entry in sections.entries) ...[
@@ -265,18 +311,16 @@ class TodayPlanScreen extends ConsumerWidget {
                             for (final task in entry.value)
                               _TaskCard(
                                 task: task,
-                                onTap: _routeFor(task.icon) != null
-                                    ? () async {
+                                // Past-day tasks are read-only
+                                onTap: _dayOffset != 0 || _routeFor(task.icon) == null
+                                    ? null
+                                    : () async {
                                         await context.push(_routeFor(task.icon)!,
                                             extra: task.icon == 'bedtime'
                                                 ? 'evening'
                                                 : _mealTypeFor(task.icon));
                                         ref.read(tasksProvider.notifier).fetch();
-                                      }
-                                    : null,
-                                // Goal-based tasks are NEVER manually completable.
-                                // They complete automatically via markTasksDoneByIcon
-                                // on the backend when the real goal is met.
+                                      },
                                 onComplete: null,
                               ),
                             const SizedBox(height: 8),
@@ -300,17 +344,16 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = name == 'Morning'
-        ? const LinearGradient(
-            colors: [Color(0xFFF7971E), Color(0xFFFFD200)],
-            begin: Alignment.centerLeft, end: Alignment.centerRight)
+    final color = name == 'Morning'
+        ? AppColors.gold
         : name == 'Afternoon'
-            ? const LinearGradient(
-                colors: [Color(0xFF1B4F72), Color(0xFF00B4DB)],
-                begin: Alignment.centerLeft, end: Alignment.centerRight)
-            : const LinearGradient(
-                colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-                begin: Alignment.centerLeft, end: Alignment.centerRight);
+            ? AppColors.sage
+            : AppColors.berry;
+    final softColor = name == 'Morning'
+        ? AppColors.goldSoft
+        : name == 'Afternoon'
+            ? AppColors.sageSoft
+            : AppColors.berrySoft;
 
     final icon = name == 'Morning'
         ? Symbols.wb_sunny_rounded
@@ -323,27 +366,16 @@ class _SectionHeader extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          gradient: gradient,
+          color: softColor,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: (name == 'Morning'
-                      ? const Color(0xFFF7971E)
-                      : name == 'Afternoon'
-                          ? AppColors.tealLight
-                          : const Color(0xFF6A11CB))
-                  .withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Row(children: [
-          Icon(icon, color: Colors.white, size: 16, fill: 1),
+          Icon(icon, color: color, size: 16, fill: 1),
           const SizedBox(width: 8),
           Text(name.toUpperCase(),
-              style: const TextStyle(
-                  color: Colors.white,
+              style: TextStyle(
+                  color: color,
                   fontWeight: FontWeight.w800,
                   fontSize: 12,
                   letterSpacing: 1.2)),
@@ -356,32 +388,51 @@ class _SectionHeader extends StatelessWidget {
 // ── Day chip ───────────────────────────────────────────────────────────────────
 
 class _DayChip extends StatelessWidget {
-  const _DayChip({required this.label, required this.today});
+  const _DayChip({
+    required this.label,
+    required this.isToday,
+    required this.isSelected,
+    required this.isFuture,
+    this.onTap,
+  });
   final String label;
-  final bool today;
+  final bool isToday;
+  final bool isSelected;
+  final bool isFuture;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: today ? 70 : 46,
-      margin: const EdgeInsets.only(right: 10),
-      decoration: BoxDecoration(
-        gradient: today ? AppColors.orangeGrad : null,
-        color: today ? null : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: today ? null : Border.all(color: AppColors.line),
-        boxShadow: today
-            ? [BoxShadow(color: AppColors.orange.withOpacity(0.35), blurRadius: 8, offset: const Offset(0, 3))]
-            : null,
-      ),
-      child: Center(
-        child: Text(
-          today ? 'Today' : label,
-          style: TextStyle(
-              color: today ? Colors.white : AppColors.inkSoft,
-              fontWeight: FontWeight.w700,
-              fontSize: 12),
+    final Color bg = isSelected
+        ? (isToday ? AppColors.coral : AppColors.berry)
+        : isFuture
+            ? AppColors.bg
+            : AppColors.surface;
+    final Color textColor = isSelected
+        ? Colors.white
+        : isFuture
+            ? AppColors.line
+            : AppColors.inkSoft;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: isToday ? 70 : 46,
+        margin: const EdgeInsets.only(right: 10),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: isSelected ? Neu.raised(depth: 0.5) : Neu.small(),
+        ),
+        child: Center(
+          child: Text(
+            isToday ? 'Today' : label,
+            style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 12),
+          ),
         ),
       ),
     );
@@ -400,12 +451,10 @@ class _MealChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: done
-            ? Colors.white.withOpacity(0.35)
-            : Colors.white.withOpacity(0.12),
+        color: done ? AppColors.sageSoft : AppColors.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withOpacity(done ? 0.6 : 0.25),
+          color: done ? AppColors.sage : AppColors.line,
           width: 1,
         ),
       ),
@@ -414,11 +463,11 @@ class _MealChip extends StatelessWidget {
             style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
-                color: Colors.white.withOpacity(done ? 1.0 : 0.5))),
+                color: done ? AppColors.sageDark : AppColors.inkSoft)),
         if (done) ...[
           const SizedBox(width: 3),
-          Icon(Symbols.check_rounded,
-              color: Colors.white, size: 10),
+          const Icon(Symbols.check_rounded,
+              color: AppColors.sageDark, size: 10),
         ],
       ]),
     );
@@ -464,215 +513,156 @@ class _TaskCard extends ConsumerWidget {
     final progressPct =
         (target != null && target > 0) ? (progress! / target).clamp(0.0, 1.0) : null;
 
-    // Only show Start (navigate). Goal tasks are never manually completable.
-    final action = task.done ? null : (onTap != null ? 'Start' : null);
+    // Hide Start if task is done OR if the local progress already meets the goal
+    // (backend may not have marked it done yet due to async lag).
+    final goalReached = progressPct != null && progressPct >= 1.0;
+    final action = (task.done || goalReached) ? null : (onTap != null ? 'Start' : null);
 
-    final isDone = task.done;
+    final isDone = task.done || goalReached;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: GestureDetector(
         onTap: isDone ? null : (onTap != null ? onTap : null),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
+        child: NeuCard(
+          padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── 3D gradient card ──
-              Container(
-                decoration: BoxDecoration(
-                  gradient: c.grad,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: c.accent.withOpacity(0.5),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+              Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                // Accent icon circle
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: isDone ? AppColors.sageSoft : c.soft,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(_iconFor(task.icon),
+                      color: isDone ? AppColors.sageDark : c.accent,
+                      fill: 1, size: 26),
                 ),
-                padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                      // White semi-transparent icon circle
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.22),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.35), width: 1.5),
-                        ),
-                        child: Icon(_iconFor(task.icon),
-                            color: Colors.white, fill: 1, size: 26),
-                      ),
-                      const SizedBox(width: 14),
-                      // Title + subtitle
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(task.title,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800)),
-                            const SizedBox(height: 4),
-                            Row(children: [
-                              Text(task.displayTime,
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white.withOpacity(0.8))),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 5),
-                                child: Text('·',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.white.withOpacity(0.6))),
-                              ),
-                              Expanded(
-                                child: Text(task.subtitle,
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.white.withOpacity(0.75)),
-                                    overflow: TextOverflow.ellipsis),
-                              ),
-                            ]),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Action / done
-                      if (isDone)
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.25),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.5), width: 1.5),
-                          ),
-                          child: const Icon(Symbols.check_rounded,
-                              color: Colors.white, size: 22),
-                        )
-                      else if (action != null)
-                        GestureDetector(
-                          onTap: () {
-                            if (onTap != null) {
-                              onTap!();
-                            } else {
-                              onComplete?.call();
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 9),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Text(action,
-                                style: TextStyle(
-                                    color: c.accent,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12)),
-                          ),
-                        ),
-                    ]),
-
-                    // ── Progress bar ──
-                    if (progressPct != null) ...[
-                      const SizedBox(height: 14),
+                const SizedBox(width: 14),
+                // Title + subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(task.title,
+                          style: const TextStyle(
+                              color: AppColors.ink,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 4),
                       Row(children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(999),
-                            child: LinearProgressIndicator(
-                              value: progressPct,
-                              minHeight: 7,
-                              backgroundColor: Colors.white.withOpacity(0.25),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                  Colors.white),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(progressLabel!,
-                            style: TextStyle(
-                                fontSize: 10,
+                        Text(task.displayTime,
+                            style: const TextStyle(
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white.withOpacity(0.9))),
-                      ]),
-                      // B / L / D chips for the meal task
-                      if ((task.icon == 'restaurant' || task.icon == 'lunch_dining') &&
-                          !meals.loading) ...[
-                        const SizedBox(height: 8),
-                        Row(children: [
-                          _MealChip(label: 'B', done: meals.has('Breakfast')),
-                          const SizedBox(width: 6),
-                          _MealChip(label: 'L', done: meals.has('Lunch')),
-                          const SizedBox(width: 6),
-                          _MealChip(label: 'D', done: meals.has('Dinner')),
-                          const SizedBox(width: 10),
-                          Text(
-                            meals.has('Snacks') ? '+ Snack' : 'Snack optional',
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white.withOpacity(0.6)),
-                          ),
-                        ]),
-                      ],
-                      if (progressPct >= 1.0) ...[
-                        const SizedBox(height: 6),
-                        Row(children: [
-                          const Icon(Symbols.check_circle_rounded,
-                              color: Colors.white, size: 13, fill: 1),
-                          const SizedBox(width: 4),
-                          Text('Goal reached!',
+                                color: AppColors.inkSoft)),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 5),
+                          child: Text('·',
                               style: TextStyle(
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white.withOpacity(0.9))),
-                        ]),
-                      ],
+                                  color: AppColors.inkSoft)),
+                        ),
+                        Expanded(
+                          child: Text(task.subtitle,
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.inkSoft),
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                      ]),
                     ],
-                  ],
-                ),
-              ),
-
-              // ── Top shine highlight (3D convex effect) ──
-              Positioned(
-                top: 0, left: 0, right: 0,
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white.withOpacity(0.18),
-                        Colors.white.withOpacity(0.0),
-                      ],
-                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                // Action / done
+                if (isDone)
+                  const Icon(Symbols.check_circle_rounded,
+                      color: AppColors.sage, fill: 1, size: 28)
+                else if (action != null)
+                  GestureDetector(
+                    onTap: () {
+                      if (onTap != null) {
+                        onTap!();
+                      } else {
+                        onComplete?.call();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: AppColors.coral,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(action,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12)),
+                    ),
+                  ),
+              ]),
+
+              // ── Progress bar ──
+              if (progressPct != null) ...[
+                const SizedBox(height: 14),
+                Row(children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: progressPct,
+                        minHeight: 7,
+                        backgroundColor: AppColors.line,
+                        valueColor: AlwaysStoppedAnimation<Color>(c.accent),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(progressLabel!,
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.inkSoft)),
+                ]),
+                // B / L / D chips for the meal task
+                if ((task.icon == 'restaurant' || task.icon == 'lunch_dining') &&
+                    !meals.loading) ...[
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    _MealChip(label: 'B', done: meals.has('Breakfast')),
+                    const SizedBox(width: 6),
+                    _MealChip(label: 'L', done: meals.has('Lunch')),
+                    const SizedBox(width: 6),
+                    _MealChip(label: 'D', done: meals.has('Dinner')),
+                    const SizedBox(width: 10),
+                    Text(
+                      meals.has('Snacks') ? '+ Snack' : 'Snack optional',
+                      style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.inkSoft),
+                    ),
+                  ]),
+                ],
+                if (progressPct >= 1.0) ...[
+                  const SizedBox(height: 6),
+                  const Row(children: [
+                    Icon(Symbols.check_circle_rounded,
+                        color: AppColors.sage, size: 13, fill: 1),
+                    SizedBox(width: 4),
+                    Text('Goal reached!',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.sage)),
+                  ]),
+                ],
+              ],
             ],
           ),
         ),

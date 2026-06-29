@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/api/api_client.dart';
@@ -37,7 +41,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
     } catch (_) { if (mounted) setState(() => _loading = false); }
   }
 
-  Future<void> _upload(void Function(void Function()) setSheet) async {
+  Future<void> _uploadUrl(void Function(void Function()) setSheet) async {
     final url = _urlCtrl.text.trim();
     final label = _labelCtrl.text.trim();
     if (url.isEmpty) return;
@@ -61,6 +65,36 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
     }
   }
 
+  Future<void> _pickAndUpload(ImageSource source) async {
+    Navigator.of(context).pop(); // close the sheet first
+    try {
+      final picker = ImagePicker();
+      final XFile? file = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 75,
+      );
+      if (file == null || !mounted) return;
+      setState(() => _uploading = true);
+      final bytes = await File(file.path).readAsBytes();
+      final base64Data = base64Encode(bytes);
+      final mime = file.mimeType ?? 'image/jpeg';
+      final label = 'Week photo';
+      await ref.read(apiClientProvider).postJson('/progress/photos/upload', {
+        'image_base64': base64Data,
+        'mime': mime,
+        'label': label,
+      });
+      if (mounted) _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Upload failed: $e'), backgroundColor: AppColors.coral));
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
   void _showAddDialog() {
     _uploading = false;
     showModalBottomSheet(
@@ -69,16 +103,40 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      // StatefulBuilder gives the sheet its own setSheet() so the button
-      // disables immediately on tap — the parent setState() alone cannot
-      // rebuild the sheet overlay and would leave the button enabled,
-      // causing duplicate uploads on fast double-taps.
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) => Padding(
           padding: EdgeInsets.fromLTRB(24, 20, 24,
             MediaQuery.of(ctx).viewInsets.bottom + 32),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text('Add progress photo', style: T.title(context)),
+            const SizedBox(height: 20),
+            // ── Native picker buttons ──
+            Row(children: [
+              Expanded(
+                child: _PickerButton(
+                  icon: Symbols.camera_alt_rounded,
+                  label: 'Camera',
+                  onTap: () => _pickAndUpload(ImageSource.camera),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _PickerButton(
+                  icon: Symbols.photo_library_rounded,
+                  label: 'Gallery',
+                  onTap: () => _pickAndUpload(ImageSource.gallery),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 20),
+            Row(children: [
+              const Expanded(child: Divider(color: AppColors.line)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text('or paste URL', style: T.small(context)),
+              ),
+              const Expanded(child: Divider(color: AppColors.line)),
+            ]),
             const SizedBox(height: 16),
             TextField(
               controller: _urlCtrl,
@@ -100,47 +158,25 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: _uploading
-                      ? null
-                      : const LinearGradient(
-                          colors: [Color(0xFF1B4F72), Color(0xFF6C63FF)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                  color: _uploading ? AppColors.line : null,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: _uploading
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: const Color(0xFF6C63FF).withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _uploading ? AppColors.line : AppColors.coral,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  onPressed: _uploading ? null : () => _upload(setSheet),
-                  child: _uploading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Text('Save photo',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 16)),
-                ),
+                onPressed: _uploading ? null : () => _uploadUrl(setSheet),
+                child: _uploading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Text('Save photo',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 16)),
               ),
             ),
           ]),
@@ -157,25 +193,13 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.tealGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              child: NeuCard(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -184,27 +208,19 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                       children: [
                         Text('Progress Photos',
                             style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
                         Text('Visualize your transformation',
                             style: TextStyle(
-                                color: Colors.white70, fontSize: 12)),
+                                color: AppColors.inkSoft, fontSize: 12)),
                       ],
                     ),
                   ),
                   GestureDetector(
                     onTap: _showAddDialog,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.add_rounded,
-                          color: Colors.white, size: 20),
-                    ),
+                    child: const Icon(Symbols.add_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                 ]),
               ),
@@ -301,6 +317,37 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PickerButton extends StatelessWidget {
+  const _PickerButton({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: AppColors.bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: AppColors.coral, size: 28),
+          const SizedBox(height: 6),
+          Text(label,
+              style: const TextStyle(
+                  color: AppColors.inkMid,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13)),
+        ]),
       ),
     );
   }

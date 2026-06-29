@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../core/router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/neu_button.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -12,20 +13,12 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       body: Column(
         children: [
-          // ── Hero gradient header ──
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.splashGrad,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(36),
-                bottomRight: Radius.circular(36),
-              ),
-            ),
-            padding: const EdgeInsets.fromLTRB(28, 64, 28, 40),
+          // ── Hero section ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 64, 28, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -36,18 +29,18 @@ class WelcomeScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
+                    color: AppColors.ink,
                     height: 1.15,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
+                const Text(
                   'Real coach · Real science · Real results',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white.withOpacity(0.85),
+                    color: AppColors.inkMid,
                   ),
                 ),
               ],
@@ -63,7 +56,7 @@ class WelcomeScreen extends StatelessWidget {
                 children: [
                   Text('WHY FITQUEST',
                       style: T.label(context)
-                          .copyWith(color: AppColors.orange, letterSpacing: 1.2)),
+                          .copyWith(color: AppColors.coral, letterSpacing: 1.2)),
                   const SizedBox(height: 16),
                   const _Benefit(
                     emoji: '🩺',
@@ -90,40 +83,12 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 32),
 
-                  // ── Gradient CTA ──
-                  GestureDetector(
-                    onTap: () => context.go(Routes.signup),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.orangeGrad,
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.orange.withOpacity(0.4),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Start my journey',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 17,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Icon(Symbols.arrow_forward_rounded,
-                              color: Colors.white, size: 20),
-                        ],
-                      ),
-                    ),
+                  // ── Primary CTA ──
+                  NeuButton.primary(
+                    'Start my journey',
+                    onPressed: () => context.go(Routes.signup),
+                    trailing: const Icon(Symbols.arrow_forward_rounded,
+                        color: Colors.white, size: 20),
                   ),
                   const SizedBox(height: 16),
                   Center(
@@ -136,7 +101,7 @@ class WelcomeScreen extends StatelessWidget {
                         TextSpan(
                             text: 'Sign in',
                             style: T.small(context).copyWith(
-                                color: AppColors.orange,
+                                color: AppColors.coral,
                                 fontWeight: FontWeight.w800)),
                       ])),
                     ),
@@ -170,15 +135,9 @@ class _Benefit extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.line),
       ),
       child: Row(
         children: [
