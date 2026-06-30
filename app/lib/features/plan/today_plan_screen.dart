@@ -162,6 +162,7 @@ class _TodayPlanScreenState extends ConsumerState<TodayPlanScreen> {
     final isLoading = s.loading || (_dayOffset != 0 && _historyLoading);
     final headerDone = _dayOffset == 0 ? s.done : displayTasks.where((t) => t.done).length;
     final headerTotal = _dayOffset == 0 ? s.total : displayTasks.length;
+    final allDone = headerTotal > 0 && headerDone >= headerTotal;
     final dayNum = _dayOffset == 0 ? s.day : (s.day - _dayOffset).clamp(1, 84);
 
     return Scaffold(
@@ -214,11 +215,11 @@ class _TodayPlanScreenState extends ConsumerState<TodayPlanScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  headerDone == headerTotal && headerTotal > 0
+                                  allDone
                                       ? 'All done — amazing!'
                                       : '$headerDone of $headerTotal tasks done',
-                                  style: const TextStyle(
-                                      color: AppColors.ink,
+                                  style: TextStyle(
+                                      color: allDone ? AppColors.sageDark : AppColors.ink,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 16),
                                 ),
@@ -226,41 +227,60 @@ class _TodayPlanScreenState extends ConsumerState<TodayPlanScreen> {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(999),
                                   child: LinearProgressIndicator(
-                                    value: headerTotal > 0 ? headerDone / headerTotal : 0,
+                                    value: headerTotal > 0
+                                        ? (headerDone / headerTotal).clamp(0.0, 1.0)
+                                        : 0,
                                     minHeight: 6,
                                     backgroundColor: AppColors.line,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.coral),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        allDone ? AppColors.sage : AppColors.coral),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(width: 16),
-                          SizedBox(
-                            width: 60,
-                            height: 60,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                CircularProgressIndicator(
-                                  value: headerTotal > 0 ? headerDone / headerTotal : 0,
-                                  strokeWidth: 6,
-                                  backgroundColor: AppColors.line,
-                                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.coral),
-                                  strokeCap: StrokeCap.round,
-                                ),
-                                Text(
-                                  headerTotal > 0
-                                      ? '${((headerDone / headerTotal) * 100).round()}%'
-                                      : '0%',
-                                  style: const TextStyle(
-                                      color: AppColors.ink,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 13),
-                                ),
-                              ],
+                          // At 100%: solid checkmark circle to avoid stroke-cap overlap
+                          if (allDone)
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: const BoxDecoration(
+                                color: AppColors.sageSoft,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Symbols.check_rounded,
+                                  color: AppColors.sageDark, size: 30, fill: 1),
+                            )
+                          else
+                            SizedBox(
+                              width: 60,
+                              height: 60,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    value: headerTotal > 0
+                                        ? (headerDone / headerTotal).clamp(0.0, 1.0)
+                                        : 0,
+                                    strokeWidth: 6,
+                                    backgroundColor: AppColors.line,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(
+                                        AppColors.coral),
+                                    strokeCap: StrokeCap.round,
+                                  ),
+                                  Text(
+                                    headerTotal > 0
+                                        ? '${((headerDone / headerTotal) * 100).round()}%'
+                                        : '0%',
+                                    style: const TextStyle(
+                                        color: AppColors.ink,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
                         ]),
                       ),
                     ]),
