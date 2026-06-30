@@ -92,25 +92,13 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.tealGrad,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                NeuCard(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                   child: Row(children: [
                     GestureDetector(
                       onTap: () => context.pop(),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Symbols.arrow_back_rounded,
-                            color: Colors.white, size: 18),
-                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: AppColors.inkMid, size: 22),
                     ),
                     const SizedBox(width: 14),
                     const Expanded(
@@ -119,16 +107,26 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
                         children: [
                           Text('Diet Plan',
                               style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.ink,
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900)),
                           Text('Your personalized meal guide',
                               style: TextStyle(
-                                  color: Colors.white70, fontSize: 12)),
+                                  color: AppColors.inkSoft, fontSize: 12)),
                         ],
                       ),
                     ),
                     const Text('🥗', style: TextStyle(fontSize: 26)),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: _generating ? null : _generate,
+                      child: _generating
+                          ? const SizedBox(
+                              width: 20, height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.coral))
+                          : const Icon(Symbols.auto_awesome_rounded,
+                              color: AppColors.coral, size: 22),
+                    ),
                   ]),
                 ),
                 const SizedBox(height: 20),

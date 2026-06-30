@@ -9,6 +9,18 @@ const uid = (req) => req.user.uid;
 
 const MEAL_XP = 15; // XP awarded per completed meal
 
+// Default 7-day Indian meal plan — seeded automatically for every new user
+const DEFAULT_PLAN = {
+  title: 'FitQuest Starter 7-Day Indian Meal Plan',
+  meals: Array.from({ length: 7 }, (_, i) => ({
+    day: i + 1,
+    breakfast: { items: [{ name: 'Oats with milk', qty: '1 cup oats (80g) + 200ml milk' }, { name: 'Banana', qty: '1 medium (100g)' }], cal: 320 },
+    lunch:     { items: [{ name: 'Dal rice', qty: '1 cup dal + 1 cup rice (200g)' }, { name: 'Salad', qty: '1 bowl (100g)' }, { name: 'Curd', qty: '1/2 cup (100g)' }], cal: 480 },
+    snack:     { items: [{ name: 'Mixed fruits', qty: '1 cup (150g)' }, { name: 'Nuts', qty: '1 handful (30g)' }], cal: 150 },
+    dinner:    { items: [{ name: 'Roti', qty: '2 pieces (60g each)' }, { name: 'Sabzi', qty: '1 cup (150g)' }, { name: 'Dal', qty: '1/2 cup (100g)' }], cal: 420 },
+  })),
+};
+
 // Quantity lookup for common Indian foods (enriches old string-format plans)
 const ITEM_QTY_LOOKUP = {
   'oats with milk': '1 cup oats (80g) + 200ml milk',
@@ -50,12 +62,22 @@ function enrichItems(items) {
 
 router.get('/', async (req, res) => {
   try {
-    const plan = (await q(
+    let plan = (await q(
       `SELECT dp.*, c.name AS coach_name FROM diet_plans dp
        LEFT JOIN coaches c ON c.id=dp.coach_id
        WHERE dp.user_id=$1 AND dp.status='active' ORDER BY dp.created_at DESC LIMIT 1`,
       [uid(req)]
     )).rows[0] || null;
+
+    // Auto-seed the default plan for new users who have never had one.
+    if (!plan) {
+      const inserted = await q(
+        `INSERT INTO diet_plans (user_id, title, meals, ai_generated, status)
+         VALUES ($1, $2, $3, FALSE, 'active') RETURNING *`,
+        [uid(req), DEFAULT_PLAN.title, JSON.stringify(DEFAULT_PLAN.meals)]
+      );
+      plan = inserted.rows[0];
+    }
 
     const today = new Date().toISOString().slice(0, 10);
     const todayNutrition = (await q(
@@ -172,16 +194,7 @@ router.post('/generate', async (req, res) => {
     [uid(req)]
   )).rows[0] || {};
 
-  const mockPlan = {
-    title: 'AI-Generated 7-Day Indian Meal Plan',
-    meals: Array.from({ length: 7 }, (_, i) => ({
-      day: i + 1,
-      breakfast: { items: [{ name: 'Oats with milk', qty: '1 cup oats (80g) + 200ml milk' }, { name: 'Banana', qty: '1 medium (100g)' }], cal: 320 },
-      lunch:     { items: [{ name: 'Dal rice', qty: '1 cup dal + 1 cup rice (200g)' }, { name: 'Salad', qty: '1 bowl (100g)' }, { name: 'Curd', qty: '1/2 cup (100g)' }], cal: 480 },
-      snack:     { items: [{ name: 'Mixed fruits', qty: '1 cup (150g)' }, { name: 'Nuts', qty: '1 handful (30g)' }], cal: 150 },
-      dinner:    { items: [{ name: 'Roti', qty: '2 pieces (60g each)' }, { name: 'Sabzi', qty: '1 cup (150g)' }, { name: 'Dal', qty: '1/2 cup (100g)' }], cal: 420 },
-    })),
-  };
+  const mockPlan = DEFAULT_PLAN;
 
   try {
     if (process.env.ANTHROPIC_API_KEY) {
