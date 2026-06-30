@@ -69,14 +69,13 @@ const _phases = [
   ),
 ];
 
-// Window options: [hours, protocol name, recommended]
+// Window presets: [hours, recommended]
 const _windows = [
-  (10, '10:14', false),
-  (12, '12:12', false),
-  (14, '14:10', false),
-  (16, '16:8',  true),
-  (18, '18:6',  false),
-  (20, '20:4',  false),
+  (8,  false),
+  (12, false),
+  (14, false),
+  (16, true),
+  (20, false),
 ];
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -88,6 +87,7 @@ class FastingScreen extends ConsumerStatefulWidget {
 
 class _FastingScreenState extends ConsumerState<FastingScreen> {
   int _targetHours = 16;
+  bool _customMode = false;
 
   String _fmt(Duration d) {
     final h = d.inHours;
@@ -313,32 +313,100 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
               Text('Choose your fasting window', style: T.title(context)),
               const SizedBox(height: 6),
               Text(
-                'Longer fasts earn more XP. 16:8 is recommended for beginners.',
+                'Longer fasts earn more XP. 16h is recommended for beginners.',
                 style: T.small(context),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final (hours, protocol, recommended) in _windows)
-                    _WindowChip(
+
+              // Preset chips + Custom chip
+              Row(children: [
+                for (final (hours, recommended) in _windows) ...[
+                  Expanded(
+                    child: _WindowChip(
                       hours: hours,
-                      protocol: protocol,
                       recommended: recommended,
-                      selected: _targetHours == hours,
+                      selected: !_customMode && _targetHours == hours,
                       xp: _xpForHours(hours),
-                      onTap: () => setState(() => _targetHours = hours),
+                      onTap: () => setState(() {
+                        _targetHours = hours;
+                        _customMode = false;
+                      }),
                     ),
+                  ),
+                  const SizedBox(width: 6),
                 ],
-              ),
+                Expanded(
+                  child: _WindowChip(
+                    hours: _customMode ? _targetHours : 0,
+                    recommended: false,
+                    selected: _customMode,
+                    xp: _customMode ? _xpForHours(_targetHours) : 0,
+                    isCustom: true,
+                    onTap: () => setState(() {
+                      _customMode = true;
+                      if (_targetHours < 8 || _windows.any((w) => w.$1 == _targetHours && !_customMode)) {
+                        _targetHours = 20;
+                      }
+                    }),
+                  ),
+                ),
+              ]),
+
+              // Custom slider — shown when Custom chip is selected
+              if (_customMode) ...[
+                const SizedBox(height: 16),
+                NeuCard(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Text('Custom window',
+                            style: T.title(context).copyWith(fontSize: 14)),
+                        const Spacer(),
+                        Text(
+                          '${_targetHours}h  ·  +${_xpForHours(_targetHours)} XP',
+                          style: T.title(context).copyWith(
+                              fontSize: 14, color: AppColors.coral),
+                        ),
+                      ]),
+                      const SizedBox(height: 4),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: AppColors.coral,
+                          inactiveTrackColor: AppColors.line,
+                          thumbColor: AppColors.coral,
+                          overlayColor: AppColors.coralSoft,
+                          trackHeight: 4,
+                        ),
+                        child: Slider(
+                          min: 8,
+                          max: 24,
+                          divisions: 16,
+                          value: _targetHours.toDouble(),
+                          onChanged: (v) =>
+                              setState(() => _targetHours = v.round()),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('8h', style: T.small(context)),
+                          Text('16h', style: T.small(context)),
+                          Text('24h', style: T.small(context)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
             ],
 
             // ── Start / Stop button ─────────────────────────────────────────
             if (!f.active)
               _BigButton(
-                label: 'Start ${_targetHours}h Fast',
+                label: 'Start  ${_targetHours}h Fast  ·  +${_xpForHours(_targetHours)} XP',
                 icon: Symbols.play_circle_rounded,
                 color: AppColors.coral,
                 onTap: () =>
@@ -375,7 +443,7 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
   }
 
   int _xpForHours(int h) {
-    const map = {10: 10, 12: 15, 14: 25, 16: 40, 18: 60, 20: 80};
+    const map = {8: 8, 10: 10, 12: 15, 14: 25, 16: 40, 18: 60, 20: 80};
     return map[h] ?? (h * 4);
   }
 
@@ -460,53 +528,54 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
 class _WindowChip extends StatelessWidget {
   const _WindowChip({
     required this.hours,
-    required this.protocol,
     required this.recommended,
     required this.selected,
     required this.xp,
     required this.onTap,
+    this.isCustom = false,
   });
   final int hours;
-  final String protocol;
-  final bool recommended, selected;
+  final bool recommended, selected, isCustom;
   final int xp;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final label = isCustom ? 'Custom' : '${hours}h';
+    final subLabel = isCustom
+        ? (selected ? '+$xp XP' : 'set')
+        : '+$xp XP';
+
     return GestureDetector(
       onTap: onTap,
       child: NeuCard(
         color: selected ? AppColors.coralSoft : null,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Row(mainAxisSize: MainAxisSize.min, children: [
             Text(
-              protocol,
+              label,
               style: TextStyle(
                 color: selected ? AppColors.coral : AppColors.ink,
                 fontWeight: FontWeight.w900,
-                fontSize: 15,
+                fontSize: 13,
               ),
             ),
             if (recommended) ...[
-              const SizedBox(width: 4),
-              const NeuPill(
-                color: AppColors.sageSoft,
-                child: Text('★',
-                    style: TextStyle(
-                        color: AppColors.sageDark,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900)),
-              ),
+              const SizedBox(width: 3),
+              const Text('★',
+                  style: TextStyle(
+                      color: AppColors.sage,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900)),
             ],
           ]),
           const SizedBox(height: 2),
           Text(
-            '+$xp XP',
+            subLabel,
             style: TextStyle(
               color: selected ? AppColors.coral : AppColors.inkSoft,
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -655,12 +724,7 @@ class _HistoryCard extends StatelessWidget {
     );
   }
 
-  String _protocolName(int h) {
-    for (final (hours, proto, _) in _windows) {
-      if (hours == h) return proto;
-    }
-    return '${h}h';
-  }
+  String _protocolName(int h) => '${h}h';
 }
 
 // ── Big action button ─────────────────────────────────────────────────────────
