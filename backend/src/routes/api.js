@@ -352,8 +352,8 @@ router.post('/checkins', async (req, res, next) => {
       new Date(lastCheckin.created_at) >= localYesterdayStartUtc &&
       new Date(lastCheckin.created_at) <  localMidnightUtc;
 
-    // Increment if consecutive, reset to 1 otherwise (Snapchat-style).
-    const newStreak = wasYesterday ? prevStreak + 1 : 1;
+    // Increment if consecutive, decrement by 1 if a day was missed (min 1).
+    const newStreak = wasYesterday ? prevStreak + 1 : Math.max(prevStreak - 1, 1);
     if (newStreak >= 30) multiplier = 1.5;
     else if (newStreak >= 14) multiplier = 1.2;
     else if (newStreak >= 7) multiplier = 1.1;

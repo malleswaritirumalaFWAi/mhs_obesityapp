@@ -498,6 +498,28 @@ cron.schedule('0 7 * * *', async () => {
   } catch(e) { console.warn('[cron] Morning nudge error:', e.message); }
 });
 
+// Nightly streak decrement: 00:05 — reduce streak by 1 for users who missed yesterday
+cron.schedule('5 0 * * *', async () => {
+  console.log('[cron] Nightly streak decrement...');
+  try {
+    const { pool } = await import('./db.js');
+    const client = await pool.connect();
+    // Decrement streak (min 0) for users with streak > 0 who have no check-in from yesterday (UTC date)
+    const result = await client.query(
+      `UPDATE users SET streak = GREATEST(streak - 1, 0)
+       WHERE streak > 0 AND role = 'user'
+         AND NOT EXISTS (
+           SELECT 1 FROM checkins c
+           WHERE c.user_id = users.id
+             AND c.created_at::date = (CURRENT_DATE - INTERVAL '1 day')::date
+         )
+       RETURNING id, streak`
+    );
+    client.release();
+    console.log(`[cron] Decremented streak for ${result.rowCount} users`);
+  } catch(e) { console.warn('[cron] Streak decrement error:', e.message); }
+});
+
 // Streak at-risk alert: 8pm — warn users who haven't done any tasks today
 cron.schedule('0 20 * * *', async () => {
   console.log('[cron] Streak at-risk check...');
