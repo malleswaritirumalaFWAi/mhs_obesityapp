@@ -736,11 +736,15 @@ router.get('/weekly-progress', async (req, res) => {
     // Use created_at (authoritative registration date) to derive the current program week.
     const user = (await q(`SELECT xp, streak, total_xp, level, created_at FROM users WHERE id=$1`, [uid(req)])).rows[0] || {};
 
-    // Calculate current program day (same logic as dashboard).
+    // Use UTC midnight consistently — avoids getDay()/toISOString() mismatch
+    // when the server runs in a non-UTC timezone (e.g. IST).
     const createdAt = user.created_at ? new Date(user.created_at) : new Date();
-    const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
-    const createdMid = new Date(createdAt); createdMid.setHours(0, 0, 0, 0);
-    const diffDays = Math.floor((todayMid - createdMid) / 86400000);
+    const todayUTC      = new Date().toISOString().slice(0, 10);          // "YYYY-MM-DD"
+    const createdUTC    = createdAt.toISOString().slice(0, 10);
+    const todayMidUTC   = new Date(todayUTC   + 'T00:00:00Z');
+    const createdMidUTC = new Date(createdUTC + 'T00:00:00Z');
+
+    const diffDays = Math.floor((todayMidUTC - createdMidUTC) / 86400000);
     const dayIndex = Math.min(Math.max(diffDays + 1, 1), 84);
 
     // Program week (1–12). Week 1 = days 1-7, Week 2 = days 8-14, etc.
@@ -748,11 +752,11 @@ router.get('/weekly-progress', async (req, res) => {
     const weekDayStart = (weekNum - 1) * 7 + 1;   // first day_index of this week
     const weekDayEnd   = weekDayStart + 6;          // last day_index of this week
 
-    // Calendar dates for the current program week (for meals / checkins).
-    const weekStartDate = new Date(createdMid);
-    weekStartDate.setDate(weekStartDate.getDate() + weekDayStart - 1);
+    // Calendar dates for the current program week — all UTC.
+    const weekStartDate = new Date(createdMidUTC);
+    weekStartDate.setUTCDate(weekStartDate.getUTCDate() + weekDayStart - 1);
     const weekEndDate = new Date(weekStartDate);
-    weekEndDate.setDate(weekEndDate.getDate() + 7);
+    weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 7);
     const weekStartStr = weekStartDate.toISOString().slice(0, 10);
     const weekEndStr   = weekEndDate.toISOString().slice(0, 10);
 
@@ -861,12 +865,18 @@ router.get('/weekly-progress', async (req, res) => {
         [uid(req), weekStartStr, weekEndStr]
       )).rows.map(r => r.d)
     );
-    const todayStr2 = new Date().toISOString().slice(0, 10);
     const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dayActivity = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(weekStartDate); d.setDate(d.getDate() + i);
-      const ds = d.toISOString().slice(0, 10);
-      return { label: DAY_NAMES[d.getDay()], date: ds, active: activeDatesSet.has(ds), isToday: ds === todayStr2, isFuture: ds > todayStr2 };
+      const d = new Date(weekStartDate);
+      d.setUTCDate(d.getUTCDate() + i);          // advance by i days in UTC
+      const ds = d.toISOString().slice(0, 10);   // UTC date string
+      return {
+        label: DAY_NAMES[d.getUTCDay()],          // UTC weekday — matches ds
+        date: ds,
+        active: activeDatesSet.has(ds),
+        isToday: ds === todayUTC,                 // both UTC → correct highlight
+        isFuture: ds > todayUTC,
+      };
     });
 
     // Week score (0–100) — 5 pillars, gracefully handles missing data.
