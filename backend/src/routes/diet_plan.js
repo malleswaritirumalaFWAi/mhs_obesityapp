@@ -9,17 +9,145 @@ const uid = (req) => req.user.uid;
 
 const MEAL_XP = 15; // XP awarded per completed meal
 
-// Default 7-day Indian meal plan — seeded automatically for every new user
-const DEFAULT_PLAN = {
-  title: 'FitQuest Starter 7-Day Indian Meal Plan',
-  meals: Array.from({ length: 7 }, (_, i) => ({
-    day: i + 1,
-    breakfast: { items: [{ name: 'Oats with milk', qty: '1 cup oats (80g) + 200ml milk' }, { name: 'Banana', qty: '1 medium (100g)' }], cal: 320 },
-    lunch:     { items: [{ name: 'Dal rice', qty: '1 cup dal + 1 cup rice (200g)' }, { name: 'Salad', qty: '1 bowl (100g)' }, { name: 'Curd', qty: '1/2 cup (100g)' }], cal: 480 },
-    snack:     { items: [{ name: 'Mixed fruits', qty: '1 cup (150g)' }, { name: 'Nuts', qty: '1 handful (30g)' }], cal: 150 },
-    dinner:    { items: [{ name: 'Roti', qty: '2 pieces (60g each)' }, { name: 'Sabzi', qty: '1 cup (150g)' }, { name: 'Dal', qty: '1/2 cup (100g)' }], cal: 420 },
-  })),
-};
+/**
+ * Build a personalised 7-day plan based on the user's profile.
+ * Varies by food_pref (vegetarian / non-vegetarian / vegan / eggetarian)
+ * and adjusts calorie targets for goal (lose / maintain / gain).
+ */
+function buildDefaultPlan(profile = {}) {
+  const pref  = (profile.food_pref || 'vegetarian').toLowerCase();
+  const goal  = (profile.goal      || 'lose weight').toLowerCase();
+
+  const isVegan    = pref.includes('vegan');
+  const isNonVeg   = pref.includes('non') || pref.includes('chicken') || pref.includes('meat') || pref.includes('fish');
+  const isEgg      = pref.includes('egg') || isNonVeg;
+
+  // Calorie multiplier: lose → base, maintain → +300, gain → +600
+  const calBoost   = goal.includes('maintain') ? 300 : goal.includes('gain') ? 600 : 0;
+  const bump       = (cal) => cal + Math.round(calBoost / 4); // spread across 4 meals
+
+  // ── Breakfast pool ──
+  const bfVeg = [
+    { items: [{ name: 'Oats with milk',   qty: '1 cup (80g) + 200ml milk' },     { name: 'Banana',         qty: '1 medium (100g)' }],                    cal: bump(320) },
+    { items: [{ name: 'Idli',             qty: '3 pieces (150g)' },               { name: 'Sambar',         qty: '1/2 cup (100ml)' },  { name: 'Coconut chutney', qty: '2 tbsp (30g)' }], cal: bump(280) },
+    { items: [{ name: 'Poha',             qty: '1 cup cooked (150g)' },           { name: 'Green tea',      qty: '1 cup (200ml)' }],                       cal: bump(260) },
+    { items: [{ name: 'Upma',             qty: '1 cup cooked (150g)' },           { name: 'Buttermilk',     qty: '1 glass (200ml)' }],                     cal: bump(270) },
+    { items: [{ name: 'Whole wheat roti', qty: '2 rotis (30g each)' },            { name: 'Paneer bhurji',  qty: '1/2 cup (80g)' }],                       cal: bump(340) },
+    { items: [{ name: 'Sprouts salad',    qty: '1 cup (150g)' },                  { name: 'Milk',           qty: '1 glass (200ml)' }],                     cal: bump(250) },
+    { items: [{ name: 'Dalia porridge',   qty: '1 cup cooked (150g)' },           { name: 'Mixed fruits',   qty: '1/2 cup (80g)' }],                       cal: bump(300) },
+  ];
+  const bfEgg = [
+    { items: [{ name: 'Boiled eggs',      qty: '2 whole eggs' },                  { name: 'Whole wheat toast', qty: '2 slices (60g)' }, { name: 'Green tea', qty: '1 cup' }], cal: bump(310) },
+    { items: [{ name: 'Egg omelette',     qty: '2 eggs + 1 tsp oil' },            { name: 'Oats',           qty: '1/2 cup (40g) cooked' }],               cal: bump(320) },
+    { items: [{ name: 'Scrambled eggs',   qty: '2 eggs' },                        { name: 'Multigrain bread', qty: '2 slices (60g)' }],                    cal: bump(300) },
+  ];
+  const bfVegan = [
+    { items: [{ name: 'Oats with soy milk', qty: '1 cup (80g) + 200ml soy milk' }, { name: 'Banana',       qty: '1 medium (100g)' }],                    cal: bump(310) },
+    { items: [{ name: 'Idli',             qty: '3 pieces (150g)' },               { name: 'Sambar',         qty: '1/2 cup (100ml)' }],                    cal: bump(260) },
+    { items: [{ name: 'Poha',             qty: '1 cup cooked (150g)' },           { name: 'Green tea',      qty: '1 cup (200ml)' }],                       cal: bump(240) },
+    { items: [{ name: 'Sprouts bowl',     qty: '1 cup (150g)' },                  { name: 'Coconut water',  qty: '1 glass (200ml)' }],                     cal: bump(230) },
+    { items: [{ name: 'Upma',             qty: '1 cup (150g)' },                  { name: 'Lemon water',    qty: '1 glass' }],                             cal: bump(250) },
+    { items: [{ name: 'Dalia porridge with soy milk', qty: '1 cup cooked' },      { name: 'Apple',          qty: '1 medium (150g)' }],                     cal: bump(290) },
+    { items: [{ name: 'Peanut butter toast', qty: '2 slices whole wheat + 1 tbsp' }, { name: 'Banana',      qty: '1 medium (100g)' }],                    cal: bump(330) },
+  ];
+
+  // ── Lunch pool ──
+  const lunchVeg = [
+    { items: [{ name: 'Dal rice',         qty: '1 cup dal + 1 cup rice (200g)' }, { name: 'Salad',          qty: '1 bowl (100g)' },    { name: 'Curd',    qty: '1/2 cup' }], cal: bump(480) },
+    { items: [{ name: 'Rajma rice',       qty: '1 cup rajma + 1 cup rice' },      { name: 'Salad',          qty: '1 bowl (100g)' }],                       cal: bump(460) },
+    { items: [{ name: 'Chole roti',       qty: '1/2 cup chole + 2 rotis' },       { name: 'Onion salad',    qty: '1/2 cup' }],                             cal: bump(440) },
+    { items: [{ name: 'Paneer sabzi',     qty: '80g paneer + 1 cup sabzi' },      { name: 'Roti',           qty: '2 rotis (60g)' },    { name: 'Dal',     qty: '1/2 cup' }], cal: bump(490) },
+    { items: [{ name: 'Mixed veg khichdi', qty: '1.5 cups cooked (250g)' },       { name: 'Curd',           qty: '1/2 cup' }],                             cal: bump(420) },
+    { items: [{ name: 'Palak dal',        qty: '1 cup' },                          { name: 'Brown rice',     qty: '1 cup cooked' },     { name: 'Salad',   qty: '1 bowl' }], cal: bump(450) },
+    { items: [{ name: 'Vegetable pulao',  qty: '1.5 cups cooked' },               { name: 'Raita',          qty: '1/2 cup' },          { name: 'Papad',   qty: '1 piece' }], cal: bump(470) },
+  ];
+  const lunchNonVeg = [
+    { items: [{ name: 'Chicken curry',    qty: '100g chicken + 1/2 cup gravy' },  { name: 'Rice',           qty: '1 cup cooked (150g)' }, { name: 'Salad', qty: '1 bowl' }], cal: bump(500) },
+    { items: [{ name: 'Grilled chicken',  qty: '120g' },                           { name: 'Roti',           qty: '2 rotis (60g)' },    { name: 'Dal',     qty: '1/2 cup' }], cal: bump(480) },
+    { items: [{ name: 'Fish curry',       qty: '100g fish + 1/2 cup gravy' },     { name: 'Brown rice',     qty: '1 cup cooked' },     { name: 'Salad',   qty: '1 bowl' }], cal: bump(460) },
+    { items: [{ name: 'Egg curry',        qty: '2 eggs + 1/2 cup gravy' },        { name: 'Roti',           qty: '2 rotis' },          { name: 'Sabzi',   qty: '1/2 cup' }], cal: bump(450) },
+    { items: [{ name: 'Dal rice',         qty: '1 cup dal + 1 cup rice' },        { name: 'Boiled egg',     qty: '1 egg' },            { name: 'Salad',   qty: '1 bowl' }], cal: bump(480) },
+    { items: [{ name: 'Chicken rice bowl', qty: '100g chicken + 1 cup rice' },    { name: 'Raita',          qty: '1/2 cup' }],                             cal: bump(490) },
+    { items: [{ name: 'Mutton roti',      qty: '80g mutton + 2 rotis' },          { name: 'Dal',            qty: '1/2 cup' },          { name: 'Salad',   qty: '1 bowl' }], cal: bump(520) },
+  ];
+  const lunchVegan = [
+    { items: [{ name: 'Dal rice',         qty: '1 cup dal + 1 cup rice' },        { name: 'Salad',          qty: '1 bowl' }],                              cal: bump(440) },
+    { items: [{ name: 'Rajma rice',       qty: '1 cup rajma + 1 cup rice' },      { name: 'Salad',          qty: '1 bowl' }],                              cal: bump(430) },
+    { items: [{ name: 'Tofu sabzi',       qty: '100g tofu + 1 cup sabzi' },       { name: 'Roti',           qty: '2 rotis' }],                             cal: bump(410) },
+    { items: [{ name: 'Chole roti',       qty: '1/2 cup chole + 2 rotis' },       { name: 'Onion salad',    qty: '1/2 cup' }],                             cal: bump(430) },
+    { items: [{ name: 'Mixed veg khichdi', qty: '1.5 cups cooked' },              { name: 'Coconut water',  qty: '1 glass' }],                             cal: bump(390) },
+    { items: [{ name: 'Palak dal',        qty: '1 cup' },                          { name: 'Brown rice',     qty: '1 cup cooked' }],                       cal: bump(400) },
+    { items: [{ name: 'Vegetable pulao',  qty: '1.5 cups cooked' },               { name: 'Cucumber raita (soy curd)', qty: '1/2 cup' }],                 cal: bump(420) },
+  ];
+
+  // ── Snack pool ──
+  const snackVeg = [
+    { items: [{ name: 'Mixed fruits',     qty: '1 cup (150g)' },                  { name: 'Nuts',           qty: '1 handful (30g)' }],                     cal: bump(150) },
+    { items: [{ name: 'Roasted chana',    qty: '30g' },                            { name: 'Green tea',      qty: '1 cup' }],                               cal: bump(130) },
+    { items: [{ name: 'Buttermilk',       qty: '1 glass (200ml)' },               { name: 'Apple',          qty: '1 medium (150g)' }],                     cal: bump(140) },
+    { items: [{ name: 'Curd with fruits', qty: '1/2 cup curd + 1/2 cup fruits' }],                                                                          cal: bump(160) },
+    { items: [{ name: 'Makhana',          qty: '1 cup roasted (30g)' },           { name: 'Green tea',      qty: '1 cup' }],                               cal: bump(120) },
+    { items: [{ name: 'Banana',           qty: '1 medium (100g)' },               { name: 'Peanut butter',  qty: '1 tbsp (15g)' }],                        cal: bump(180) },
+    { items: [{ name: 'Sprouts chaat',    qty: '1 cup (100g)' },                  { name: 'Lemon water',    qty: '1 glass' }],                             cal: bump(130) },
+  ];
+  const snackNonVeg = [
+    { items: [{ name: 'Boiled egg',       qty: '1 egg' },                          { name: 'Apple',          qty: '1 medium (150g)' }],                     cal: bump(160) },
+    { items: [{ name: 'Mixed fruits',     qty: '1 cup (150g)' },                  { name: 'Nuts',           qty: '1 handful (30g)' }],                     cal: bump(150) },
+    { items: [{ name: 'Roasted chana',    qty: '30g' },                            { name: 'Green tea',      qty: '1 cup' }],                               cal: bump(130) },
+    { items: [{ name: 'Buttermilk',       qty: '1 glass' },                       { name: 'Banana',         qty: '1 medium (100g)' }],                     cal: bump(150) },
+    { items: [{ name: 'Chicken tikka',    qty: '60g (2 pieces)' },                { name: 'Green tea',      qty: '1 cup' }],                               cal: bump(170) },
+    { items: [{ name: 'Makhana',          qty: '1 cup (30g)' },                   { name: 'Green tea',      qty: '1 cup' }],                               cal: bump(120) },
+    { items: [{ name: 'Banana',           qty: '1 medium (100g)' },               { name: 'Peanut butter',  qty: '1 tbsp' }],                              cal: bump(180) },
+  ];
+
+  // ── Dinner pool ──
+  const dinnerVeg = [
+    { items: [{ name: 'Roti',             qty: '2 pieces (60g)' },                { name: 'Sabzi',          qty: '1 cup (150g)' },     { name: 'Dal',     qty: '1/2 cup' }], cal: bump(420) },
+    { items: [{ name: 'Moong dal khichdi', qty: '1.5 cups cooked' },              { name: 'Curd',           qty: '1/2 cup' }],                             cal: bump(380) },
+    { items: [{ name: 'Paneer roti',      qty: '80g paneer + 2 rotis' },          { name: 'Dal',            qty: '1/2 cup' },          { name: 'Salad',   qty: '1 bowl' }], cal: bump(440) },
+    { items: [{ name: 'Vegetable soup',   qty: '1 bowl (200ml)' },                { name: 'Roti',           qty: '2 pieces (60g)' },   { name: 'Sabzi',   qty: '1/2 cup' }], cal: bump(360) },
+    { items: [{ name: 'Brown rice',       qty: '1 cup cooked (150g)' },           { name: 'Rajma',          qty: '1/2 cup' },          { name: 'Salad',   qty: '1 bowl' }], cal: bump(430) },
+    { items: [{ name: 'Chapati',          qty: '3 pieces (30g each)' },           { name: 'Mixed veg sabzi', qty: '1 cup' },           { name: 'Dal',     qty: '1/2 cup' }], cal: bump(410) },
+    { items: [{ name: 'Oats soup',        qty: '1 bowl' },                         { name: 'Roti',           qty: '1 piece (30g)' },    { name: 'Curd',    qty: '1/2 cup' }], cal: bump(340) },
+  ];
+  const dinnerNonVeg = [
+    { items: [{ name: 'Grilled chicken',  qty: '100g' },                           { name: 'Roti',           qty: '2 pieces (60g)' },   { name: 'Salad',   qty: '1 bowl' }], cal: bump(430) },
+    { items: [{ name: 'Fish curry',       qty: '100g fish + 1/2 cup gravy' },     { name: 'Roti',           qty: '2 pieces' },         { name: 'Dal',     qty: '1/2 cup' }], cal: bump(440) },
+    { items: [{ name: 'Egg bhurji',       qty: '2 eggs + 1/2 cup veg' },          { name: 'Roti',           qty: '2 pieces (60g)' },   { name: 'Salad',   qty: '1 bowl' }], cal: bump(400) },
+    { items: [{ name: 'Chicken soup',     qty: '1 bowl (200ml)' },                { name: 'Roti',           qty: '2 pieces (60g)' },   { name: 'Sabzi',   qty: '1/2 cup' }], cal: bump(380) },
+    { items: [{ name: 'Dal roti',         qty: '1/2 cup dal + 2 rotis' },         { name: 'Boiled egg',     qty: '1 egg' },            { name: 'Salad',   qty: '1 bowl' }], cal: bump(420) },
+    { items: [{ name: 'Chicken tikka',    qty: '100g' },                           { name: 'Roti',           qty: '2 pieces (60g)' },   { name: 'Dal',     qty: '1/2 cup' }], cal: bump(450) },
+    { items: [{ name: 'Mutton soup',      qty: '1 bowl (150ml)' },                { name: 'Brown rice',     qty: '1/2 cup cooked' },   { name: 'Sabzi',   qty: '1/2 cup' }], cal: bump(410) },
+  ];
+  const dinnerVegan = [
+    { items: [{ name: 'Roti',             qty: '2 pieces (60g)' },                { name: 'Sabzi',          qty: '1 cup (150g)' },     { name: 'Dal',     qty: '1/2 cup' }], cal: bump(400) },
+    { items: [{ name: 'Moong dal khichdi', qty: '1.5 cups cooked' },              { name: 'Coconut water',  qty: '1 glass' }],                             cal: bump(360) },
+    { items: [{ name: 'Tofu stir-fry',    qty: '100g tofu + 1 cup veg' },         { name: 'Brown rice',     qty: '1/2 cup cooked' }],                     cal: bump(380) },
+    { items: [{ name: 'Vegetable soup',   qty: '1 bowl (200ml)' },                { name: 'Roti',           qty: '2 pieces (60g)' }],                      cal: bump(330) },
+    { items: [{ name: 'Rajma roti',       qty: '1/2 cup rajma + 2 rotis' },       { name: 'Salad',          qty: '1 bowl' }],                              cal: bump(400) },
+    { items: [{ name: 'Lentil soup',      qty: '1 bowl (200ml)' },                { name: 'Chapati',        qty: '2 pieces (60g)' }],                      cal: bump(360) },
+    { items: [{ name: 'Vegetable biryani (no ghee)', qty: '1.5 cups' },           { name: 'Cucumber salad', qty: '1 bowl' }],                              cal: bump(390) },
+  ];
+
+  const bf     = isVegan ? bfVegan    : bfVeg;
+  const lunch  = isVegan ? lunchVegan : isNonVeg ? lunchNonVeg  : lunchVeg;
+  const snack  = isNonVeg ? snackNonVeg : snackVeg;
+  const dinner = isVegan ? dinnerVegan : isNonVeg ? dinnerNonVeg : dinnerVeg;
+
+  const label = isVegan ? 'Vegan' : isNonVeg ? 'Non-Vegetarian' : 'Vegetarian';
+  const goalLabel = goal.includes('maintain') ? 'Maintenance' : goal.includes('gain') ? 'Muscle Gain' : 'Weight Loss';
+
+  return {
+    title: `FitQuest 7-Day ${label} ${goalLabel} Plan`,
+    meals: Array.from({ length: 7 }, (_, i) => ({
+      day:       i + 1,
+      breakfast: bf[i],
+      lunch:     lunch[i],
+      snack:     snack[i],
+      dinner:    dinner[i],
+    })),
+  };
+}
 
 // Quantity lookup for common Indian foods (enriches old string-format plans)
 const ITEM_QTY_LOOKUP = {
@@ -69,12 +197,17 @@ router.get('/', async (req, res) => {
       [uid(req)]
     )).rows[0] || null;
 
-    // Auto-seed the default plan for new users who have never had one.
+    // Auto-seed a profile-aware plan for new users who have never had one.
     if (!plan) {
+      const profileRow = (await q(
+        `SELECT p.food_pref, p.goal FROM profiles p WHERE p.user_id=$1`,
+        [uid(req)]
+      )).rows[0] || {};
+      const defaultPlan = buildDefaultPlan(profileRow);
       const inserted = await q(
         `INSERT INTO diet_plans (user_id, title, meals, ai_generated, status)
          VALUES ($1, $2, $3, FALSE, 'active') RETURNING *`,
-        [uid(req), DEFAULT_PLAN.title, JSON.stringify(DEFAULT_PLAN.meals)]
+        [uid(req), defaultPlan.title, JSON.stringify(defaultPlan.meals)]
       );
       plan = inserted.rows[0];
     }
@@ -194,7 +327,7 @@ router.post('/generate', async (req, res) => {
     [uid(req)]
   )).rows[0] || {};
 
-  const mockPlan = DEFAULT_PLAN;
+  const mockPlan = buildDefaultPlan(profile);
 
   try {
     if (process.env.ANTHROPIC_API_KEY) {
