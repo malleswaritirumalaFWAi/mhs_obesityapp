@@ -23,6 +23,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   String? _validationError;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(sessionProvider.notifier).clearError();
+    });
+  }
+
+  @override
   void dispose() {
     _email.dispose();
     _password.dispose();
@@ -30,8 +38,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   }
 
   Future<void> _submit() async {
+    final emailRe = RegExp(r'^[\w.+-]+@[\w-]+\.[a-z]{2,}$', caseSensitive: false);
     if (_email.text.trim().isEmpty || _password.text.isEmpty) {
       setState(() => _validationError = 'Email and password are required');
+      return;
+    }
+    if (!emailRe.hasMatch(_email.text.trim())) {
+      setState(() => _validationError = 'Enter a valid email address');
       return;
     }
     setState(() => _validationError = null);
@@ -50,36 +63,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final error = _validationError ?? s.error;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       body: Column(
         children: [
-          // ── Gradient header ──
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.tealGrad,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(36),
-                bottomRight: Radius.circular(36),
-              ),
-            ),
+          // ── Header ──
+          Padding(
             padding: EdgeInsets.fromLTRB(
-                24, MediaQuery.of(context).padding.top + 20, 24, 32),
+                24, MediaQuery.of(context).padding.top + 20, 24, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
                   onTap: () => context.go(Routes.welcome),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Symbols.arrow_back_rounded,
-                        color: Colors.white, size: 20),
-                  ),
+                  child: const Icon(Symbols.arrow_back_rounded,
+                      color: AppColors.inkMid, size: 24),
                 ),
                 const SizedBox(height: 20),
                 const Text('👋', style: TextStyle(fontSize: 40)),
@@ -87,16 +84,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 const Text(
                   'Welcome Back',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.ink,
                       fontSize: 30,
                       fontWeight: FontWeight.w900,
                       height: 1.1),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                const Text(
                   'Continue your FitQuest journey.',
-                  style: TextStyle(
-                      color: Colors.white.withOpacity(0.85), fontSize: 15),
+                  style: TextStyle(color: AppColors.inkMid, fontSize: 15),
                 ),
               ],
             ),
@@ -157,49 +153,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       ]),
                     ),
 
-                  GestureDetector(
-                    onTap: s.busy ? null : _submit,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      decoration: BoxDecoration(
-                        gradient: s.busy
-                            ? null
-                            : AppColors.tealGrad,
-                        color: s.busy ? AppColors.line : null,
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: s.busy
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: AppColors.teal.withOpacity(0.4),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                      ),
-                      child: Center(
-                        child: s.busy
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text('Sign in',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 17)),
-                                  SizedBox(width: 10),
-                                  Icon(Symbols.arrow_forward_rounded,
-                                      color: Colors.white, size: 20),
-                                ],
-                              ),
-                      ),
-                    ),
+                  NeuButton.primary(
+                    'Sign in',
+                    loading: s.busy,
+                    onPressed: s.busy ? null : _submit,
+                    trailing: const Icon(Symbols.arrow_forward_rounded,
+                        color: Colors.white, size: 20),
                   ),
                   const SizedBox(height: 20),
                   Center(
@@ -212,7 +171,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         TextSpan(
                             text: 'Sign up',
                             style: T.small(context).copyWith(
-                                color: AppColors.teal,
+                                color: AppColors.coral,
                                 fontWeight: FontWeight.w800)),
                       ])),
                     ),

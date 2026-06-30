@@ -27,6 +27,26 @@ const otpVerifyLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// 5 signup attempts per IP per hour — prevents spam account creation
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => req.ip || 'unknown',
+  message: { message: 'Too many sign-up attempts. Please try again in an hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// 10 signin attempts per email per 15 min — prevents password brute-force
+const signinLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => req.body?.email?.toLowerCase() || req.ip || 'unknown',
+  message: { message: 'Too many sign-in attempts. Please wait 15 minutes and try again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 function genCode() {
   // 6-digit numeric, no crypto needed for dev OTP
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -98,7 +118,7 @@ router.post('/otp/verify', otpVerifyLimiter, async (req, res) => {
 });
 
 // POST /auth/signup { name, phone, email, password }
-router.post('/signup', async (req, res) => {
+router.post('/signup', signupLimiter, async (req, res) => {
   try {
     const { name, phone, email, password } = req.body || {};
     if (!name?.trim() || !phone?.trim() || !email?.trim() || !password)
@@ -109,6 +129,10 @@ router.post('/signup', async (req, res) => {
     const existing = await q(`SELECT id FROM users WHERE email=$1`, [email.toLowerCase().trim()]);
     if (existing.rows.length > 0)
       return res.status(409).json({ message: 'This email is already registered. Please sign in.' });
+
+    const existingPhone = await q(`SELECT id FROM users WHERE phone=$1`, [phone.trim()]);
+    if (existingPhone.rows.length > 0)
+      return res.status(409).json({ message: 'This phone number is already registered. Please sign in.' });
 
     const hash = await bcrypt.hash(password, 10);
     const u = await q(
@@ -173,7 +197,7 @@ router.post('/admin-login', async (req, res) => {
 });
 
 // POST /auth/signin { email, password }
-router.post('/signin', async (req, res) => {
+router.post('/signin', signinLimiter, async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email?.trim() || !password)

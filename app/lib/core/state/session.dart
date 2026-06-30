@@ -153,7 +153,7 @@ class SessionController extends StateNotifier<SessionState> {
     try {
       final res = await _api.postJson('/auth/signup', {
         'name': name,
-        'phone': phone,
+        'phone': phone.startsWith('+') ? phone : '+91$phone',
         'email': email,
         'password': password,
       });
@@ -223,6 +223,8 @@ class SessionController extends StateNotifier<SessionState> {
       return false;
     }
   }
+
+  void clearError() => state = state.copyWith(error: null);
 
   void completeOnboarding() => state = state.copyWith(onboarded: true);
 

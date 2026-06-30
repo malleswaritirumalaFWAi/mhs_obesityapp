@@ -7,6 +7,7 @@ import '../../core/router.dart';
 import '../../core/state/session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_misc.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -20,8 +21,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _phone = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirm = TextEditingController();
   bool _obscure = true;
+  bool _obscureConfirm = true;
   String? _validationError;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(sessionProvider.notifier).clearError();
+    });
+  }
 
   @override
   void dispose() {
@@ -29,15 +40,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     _phone.dispose();
     _email.dispose();
     _password.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
   String? _validate() {
     if (_name.text.trim().isEmpty) return 'Full name is required';
-    if (_phone.text.trim().length < 10) return 'Enter a valid 10-digit phone number';
+    final digits = _phone.text.trim().replaceAll(RegExp(r'\D'), '');
+    if (digits.length != 10) return 'Enter a valid 10-digit phone number';
     final emailRe = RegExp(r'^[\w.+-]+@[\w-]+\.[a-z]{2,}$', caseSensitive: false);
     if (!emailRe.hasMatch(_email.text.trim())) return 'Enter a valid email address';
     if (_password.text.length < 8) return 'Password must be at least 8 characters';
+    if (_password.text != _confirm.text) return 'Passwords do not match';
     return null;
   }
 
@@ -50,7 +64,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     setState(() => _validationError = null);
     final ok = await ref.read(sessionProvider.notifier).signUp(
           _name.text.trim(),
-          _phone.text.trim(),
+          _phone.text.trim().replaceAll(RegExp(r'\D'), ''),
           _email.text.trim(),
           _password.text,
         );
@@ -63,36 +77,20 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     final error = _validationError ?? s.error;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       body: Column(
         children: [
-          // ── Gradient header ──
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.orangeGrad,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(36),
-                bottomRight: Radius.circular(36),
-              ),
-            ),
+          // ── Header ──
+          Padding(
             padding: EdgeInsets.fromLTRB(
-                24, MediaQuery.of(context).padding.top + 20, 24, 32),
+                24, MediaQuery.of(context).padding.top + 20, 24, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
                   onTap: () => context.go(Routes.welcome),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Symbols.arrow_back_rounded,
-                        color: Colors.white, size: 20),
-                  ),
+                  child: const Icon(Symbols.arrow_back_rounded,
+                      color: AppColors.inkMid, size: 24),
                 ),
                 const SizedBox(height: 20),
                 const Text('🏆', style: TextStyle(fontSize: 40)),
@@ -100,16 +98,15 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 const Text(
                   'Join FitQuest',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.ink,
                       fontSize: 30,
                       fontWeight: FontWeight.w900,
                       height: 1.1),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                const Text(
                   'Start your 12-week transformation today.',
-                  style: TextStyle(
-                      color: Colors.white.withOpacity(0.85), fontSize: 15),
+                  style: TextStyle(color: AppColors.inkMid, fontSize: 15),
                 ),
               ],
             ),
@@ -173,6 +170,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  Text('CONFIRM PASSWORD', style: T.label(context)),
+                  const SizedBox(height: 8),
+                  NeuTextField(
+                    controller: _confirm,
+                    hint: 'Re-enter password',
+                    obscureText: _obscureConfirm,
+                    suffix: GestureDetector(
+                      onTap: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                      child: Icon(
+                        _obscureConfirm
+                            ? Symbols.visibility_rounded
+                            : Symbols.visibility_off_rounded,
+                        color: AppColors.inkSoft,
+                        size: 22,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   if (error != null)
@@ -195,47 +211,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       ]),
                     ),
 
-                  GestureDetector(
-                    onTap: s.busy ? null : _submit,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      decoration: BoxDecoration(
-                        gradient: s.busy ? null : AppColors.orangeGrad,
-                        color: s.busy ? AppColors.line : null,
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: s.busy
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: AppColors.orange.withOpacity(0.4),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                      ),
-                      child: Center(
-                        child: s.busy
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text('Create account',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 17)),
-                                  SizedBox(width: 10),
-                                  Icon(Symbols.arrow_forward_rounded,
-                                      color: Colors.white, size: 20),
-                                ],
-                              ),
-                      ),
-                    ),
+                  NeuButton.primary(
+                    'Create account',
+                    loading: s.busy,
+                    onPressed: s.busy ? null : _submit,
+                    trailing: const Icon(Symbols.arrow_forward_rounded,
+                        color: Colors.white, size: 20),
                   ),
                   const SizedBox(height: 16),
                   Center(
@@ -248,7 +229,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         TextSpan(
                             text: 'Sign in',
                             style: T.small(context).copyWith(
-                                color: AppColors.orange,
+                                color: AppColors.coral,
                                 fontWeight: FontWeight.w800)),
                       ])),
                     ),
