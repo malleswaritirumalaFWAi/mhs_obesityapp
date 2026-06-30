@@ -756,12 +756,26 @@ router.get('/weekly-progress', async (req, res) => {
     const weekStartStr = weekStartDate.toISOString().slice(0, 10);
     const weekEndStr   = weekEndDate.toISOString().slice(0, 10);
 
-    // XP from tasks this week (use day_index — reliable even when completed_at is NULL).
-    const weekXp = (await q(
-      `SELECT COALESCE(SUM(xp), 0) AS xp FROM tasks
-       WHERE user_id=$1 AND done=TRUE AND day_index BETWEEN $2 AND $3`,
-      [uid(req), weekDayStart, weekDayEnd]
-    )).rows[0]?.xp ?? 0;
+    // XP from ALL sources this week: tasks + checkins + fasting + lessons.
+    const weekXpRow = (await q(
+      `SELECT COALESCE(SUM(xp_amount), 0) AS total FROM (
+         SELECT xp AS xp_amount FROM tasks
+           WHERE user_id=$1 AND done=TRUE AND day_index BETWEEN $2 AND $3
+         UNION ALL
+         SELECT 10 AS xp_amount FROM checkins
+           WHERE user_id=$1 AND created_at::date >= $4 AND created_at::date < $5
+         UNION ALL
+         SELECT l.xp AS xp_amount FROM user_lesson_progress ulp
+           JOIN lessons l ON l.id = ulp.lesson_id
+           WHERE ulp.user_id=$1 AND ulp.completed_at::date >= $4 AND ulp.completed_at::date < $5
+         UNION ALL
+         SELECT xp_awarded AS xp_amount FROM fasting_sessions
+           WHERE user_id=$1 AND completed=TRUE
+             AND ended_at::date >= $4 AND ended_at::date < $5
+       ) combined`,
+      [uid(req), weekDayStart, weekDayEnd, weekStartStr, weekEndStr]
+    )).rows[0];
+    const weekXp = Number(weekXpRow?.total ?? 0);
 
     // Tasks done / total this week.
     const tasksThisWeek = (await q(
@@ -770,14 +784,14 @@ router.get('/weekly-progress', async (req, res) => {
       [uid(req), weekDayStart, weekDayEnd]
     )).rows[0] || { done: 0, total: 0 };
 
-    // Meals logged this week (checkins table uses created_at, not logged_at).
+    // Meals logged this week.
     const mealsThisWeek = (await q(
       `SELECT COUNT(*) AS count FROM meals
        WHERE user_id=$1 AND created_at::date >= $2 AND created_at::date < $3`,
       [uid(req), weekStartStr, weekEndStr]
     )).rows[0]?.count ?? 0;
 
-    // Average mood this week (checkins table uses created_at, not checked_at).
+    // Average mood this week.
     const avgMood = (await q(
       `SELECT ROUND(AVG(mood), 1) AS avg FROM checkins
        WHERE user_id=$1 AND mood >= 0
@@ -785,7 +799,7 @@ router.get('/weekly-progress', async (req, res) => {
       [uid(req), weekStartStr, weekEndStr]
     )).rows[0]?.avg ?? null;
 
-    // Weight change: last reading minus first reading this week (actual direction).
+    // Weight change: last reading minus first reading this week.
     const weightRows = (await q(
       `SELECT weight FROM checkins WHERE user_id=$1 AND weight IS NOT NULL
        AND created_at::date >= $2 AND created_at::date < $3 ORDER BY created_at`,
@@ -795,18 +809,54 @@ router.get('/weekly-progress', async (req, res) => {
       ? Number(weightRows[weightRows.length - 1].weight) - Number(weightRows[0].weight)
       : null;
 
-    const rank = (await q(
-      `SELECT RANK() OVER (ORDER BY weekly_xp DESC) AS rank FROM group_members WHERE user_id=$1`,
-      [uid(req)]
-    )).rows[0]?.rank ?? null;
+    // Fasting sessions completed this week.
+    const fastingCount = Number((await q(
+      `SELECT COUNT(*) AS count FROM fasting_sessions
+       WHERE user_id=$1 AND completed=TRUE
+         AND ended_at::date >= $2 AND ended_at::date < $3`,
+      [uid(req), weekStartStr, weekEndStr]
+    )).rows[0]?.count ?? 0);
 
-    // Day-by-day activity for each of the 7 days in the program week.
+    // Lessons completed this week.
+    const lessonsCompleted = Number((await q(
+      `SELECT COUNT(*) AS count FROM user_lesson_progress
+       WHERE user_id=$1 AND completed_at::date >= $2 AND completed_at::date < $3`,
+      [uid(req), weekStartStr, weekEndStr]
+    )).rows[0]?.count ?? 0);
+
+    // Checkins this week (for activity tracking).
+    const checkinsCount = Number((await q(
+      `SELECT COUNT(*) AS count FROM checkins
+       WHERE user_id=$1 AND created_at::date >= $2 AND created_at::date < $3`,
+      [uid(req), weekStartStr, weekEndStr]
+    )).rows[0]?.count ?? 0);
+
+    // Rank within the user's group (fixed: window fn runs over all members first).
+    const rankRow = (await q(
+      `SELECT rank FROM (
+         SELECT user_id, RANK() OVER (ORDER BY weekly_xp DESC) AS rank
+         FROM group_members
+         WHERE group_id IN (SELECT group_id FROM group_members WHERE user_id=$1 LIMIT 1)
+       ) sub WHERE user_id=$1`,
+      [uid(req)]
+    )).rows[0];
+    const rank = rankRow?.rank ? Number(rankRow.rank) : null;
+
+    // Day-by-day activity — active if any checkin, meal, fast, or lesson that day.
     const activeDatesSet = new Set(
       (await q(
-        `SELECT DISTINCT created_at::date::text AS d FROM (
-           SELECT created_at FROM checkins WHERE user_id=$1 AND created_at::date>=$2 AND created_at::date<$3
+        `SELECT DISTINCT d FROM (
+           SELECT created_at::date::text AS d FROM checkins
+             WHERE user_id=$1 AND created_at::date>=$2 AND created_at::date<$3
            UNION ALL
-           SELECT created_at FROM meals   WHERE user_id=$1 AND created_at::date>=$2 AND created_at::date<$3
+           SELECT created_at::date::text AS d FROM meals
+             WHERE user_id=$1 AND created_at::date>=$2 AND created_at::date<$3
+           UNION ALL
+           SELECT ended_at::date::text AS d FROM fasting_sessions
+             WHERE user_id=$1 AND completed=TRUE AND ended_at::date>=$2 AND ended_at::date<$3
+           UNION ALL
+           SELECT completed_at::date::text AS d FROM user_lesson_progress
+             WHERE user_id=$1 AND completed_at::date>=$2 AND completed_at::date<$3
          ) combined`,
         [uid(req), weekStartStr, weekEndStr]
       )).rows.map(r => r.d)
@@ -819,13 +869,18 @@ router.get('/weekly-progress', async (req, res) => {
       return { label: DAY_NAMES[d.getDay()], date: ds, active: activeDatesSet.has(ds), isToday: ds === todayStr2, isFuture: ds > todayStr2 };
     });
 
-    // Week score (0–100) weighted across 4 pillars.
+    // Week score (0–100) — 5 pillars, gracefully handles missing data.
     const tTotal = Number(tasksThisWeek.total);
-    const taskPct  = tTotal > 0 ? (Number(tasksThisWeek.done) / tTotal) * 100 : 0;
-    const dietPct  = Math.min((Number(mealsThisWeek) / 21) * 100, 100);
-    const moodPct  = avgMood ? (Number(avgMood) / 5) * 100 : 50;
-    const streakPct = Math.min(((user.streak ?? 0) / 7) * 100, 100);
-    const weekScore = Math.round(taskPct * 0.4 + dietPct * 0.3 + moodPct * 0.2 + streakPct * 0.1);
+    // If no tasks seeded yet, fall back to checkin consistency as activity proxy.
+    const taskPct    = tTotal > 0 ? (Number(tasksThisWeek.done) / tTotal) * 100
+                                   : Math.min((checkinsCount / 7) * 100, 100);
+    const dietPct    = Math.min((Number(mealsThisWeek) / 21) * 100, 100);
+    const moodPct    = avgMood != null ? (Number(avgMood) / 5) * 100 : 50;
+    const streakPct  = Math.min(((user.streak ?? 0) / 7) * 100, 100);
+    const fastingPct = Math.min((fastingCount / 3) * 100, 100); // 3 fasts/week = 100%
+    const weekScore  = Math.round(
+      taskPct * 0.30 + dietPct * 0.25 + moodPct * 0.20 + streakPct * 0.15 + fastingPct * 0.10
+    );
     const stars = weekScore >= 75 ? 3 : weekScore >= 45 ? 2 : 1;
 
     const WEEK_CHALLENGES = [
@@ -846,7 +901,7 @@ router.get('/weekly-progress', async (req, res) => {
 
     res.json({
       week_number: weekNum,
-      week_xp: Number(weekXp),
+      week_xp: weekXp,
       week_score: weekScore,
       stars,
       streak: user.streak ?? 0,
@@ -855,9 +910,12 @@ router.get('/weekly-progress', async (req, res) => {
       tasks_total: tTotal,
       meals_logged: Number(mealsThisWeek),
       meals_target: 21,
-      avg_mood: avgMood ? Number(avgMood) : null,
+      avg_mood: avgMood != null ? Number(avgMood) : null,
       weight_change: weightChange,
-      rank: rank ? Number(rank) : null,
+      fasting_count: fastingCount,
+      lessons_completed: lessonsCompleted,
+      checkins_count: checkinsCount,
+      rank,
       day_activity: dayActivity,
       next_week_challenge: nextWeekChallenge,
     });

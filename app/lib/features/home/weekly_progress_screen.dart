@@ -25,30 +25,19 @@ class WeeklyProgressScreen extends ConsumerWidget {
           loading: () => Column(children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.tealGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              child: NeuCard(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
                     child: Text('Weekly Progress',
                         style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.ink,
                             fontSize: 20,
                             fontWeight: FontWeight.w900)),
                   ),
@@ -61,30 +50,19 @@ class WeeklyProgressScreen extends ConsumerWidget {
           error: (_, __) => Column(children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.tealGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              child: NeuCard(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
                     child: Text('Weekly Progress',
                         style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.ink,
                             fontSize: 20,
                             fontWeight: FontWeight.w900)),
                   ),
@@ -95,54 +73,54 @@ class WeeklyProgressScreen extends ConsumerWidget {
             const Expanded(child: Center(child: Text('Could not load progress'))),
           ]),
           data: (d) {
-            final weekNum      = (d['week_number']  as num?)?.toInt()    ?? 1;
-            final weekXp       = (d['week_xp']      as num?)?.toInt()    ?? 0;
-            final weekScore    = (d['week_score']   as num?)?.toInt()    ?? 0;
-            final stars        = (d['stars']        as num?)?.toInt()    ?? 1;
-            final streak       = (d['streak']       as num?)?.toInt()    ?? 0;
-            final rank         = (d['rank']         as num?)?.toInt();
-            final tasksDone    = (d['tasks_done']   as num?)?.toInt()    ?? 0;
-            final tasksTotal   = (d['tasks_total']  as num?)?.toInt()    ?? 0;
-            final mealsLogged  = (d['meals_logged'] as num?)?.toInt()    ?? 0;
-            final mealsTarget  = (d['meals_target'] as num?)?.toInt()    ?? 21;
-            final avgMood      = (d['avg_mood']     as num?)?.toDouble();
-            final weightChange = (d['weight_change'] as num?)?.toDouble();
+            final weekNum          = (d['week_number']       as num?)?.toInt()    ?? 1;
+            final weekXp           = (d['week_xp']           as num?)?.toInt()    ?? 0;
+            final weekScore        = (d['week_score']        as num?)?.toInt()    ?? 0;
+            final stars            = (d['stars']             as num?)?.toInt()    ?? 1;
+            final streak           = (d['streak']            as num?)?.toInt()    ?? 0;
+            final rank             = (d['rank']              as num?)?.toInt();
+            final tasksDone        = (d['tasks_done']        as num?)?.toInt()    ?? 0;
+            final tasksTotal       = (d['tasks_total']       as num?)?.toInt()    ?? 0;
+            final mealsLogged      = (d['meals_logged']      as num?)?.toInt()    ?? 0;
+            final mealsTarget      = (d['meals_target']      as num?)?.toInt()    ?? 21;
+            final avgMood          = (d['avg_mood']          as num?)?.toDouble();
+            final weightChange     = (d['weight_change']     as num?)?.toDouble();
+            final fastingCount     = (d['fasting_count']     as num?)?.toInt()    ?? 0;
+            final lessonsCompleted = (d['lessons_completed'] as num?)?.toInt()    ?? 0;
+            final checkinsCount    = (d['checkins_count']    as num?)?.toInt()    ?? 0;
             final dayActivity  = (d['day_activity'] as List? ?? [])
                 .cast<Map<String, dynamic>>();
             final nextChallenge = d['next_week_challenge'] as String? ?? '';
             final activeDays   = dayActivity.where((x) => x['active'] == true).length;
 
-            return ListView(
+            return RefreshIndicator(
+              color: AppColors.coral,
+              onRefresh: () async =>
+                  ref.invalidate(weeklyProgressProvider),
+              child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.orangeGrad,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                NeuCard(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                   child: Row(children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Symbols.arrow_back_rounded,
-                            color: Colors.white, size: 18),
-                      ),
+                      child: const Icon(Symbols.arrow_back_rounded,
+                          color: AppColors.inkMid, size: 22),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text('Week $weekNum Report',
                           style: const TextStyle(
-                              color: Colors.white,
+                              color: AppColors.ink,
                               fontSize: 20,
                               fontWeight: FontWeight.w900)),
                     ),
-                    const Text('📈', style: TextStyle(fontSize: 26)),
+                    GestureDetector(
+                      onTap: () => ref.invalidate(weeklyProgressProvider),
+                      child: const Icon(Symbols.refresh_rounded,
+                          color: AppColors.inkMid, size: 22),
+                    ),
                   ]),
                 ),
                 const SizedBox(height: 20),
@@ -164,6 +142,16 @@ class WeeklyProgressScreen extends ConsumerWidget {
                   const SizedBox(height: 20),
                 ],
 
+                // ── Quick numbers row ──
+                Row(children: [
+                  _QuickStat(label: 'Check-ins', value: '$checkinsCount', icon: Symbols.fact_check_rounded, color: AppColors.sage),
+                  const SizedBox(width: 10),
+                  _QuickStat(label: 'Fasts done', value: '$fastingCount', icon: Symbols.hourglass_empty_rounded, color: AppColors.berry),
+                  const SizedBox(width: 10),
+                  _QuickStat(label: 'Lessons', value: '$lessonsCompleted', icon: Symbols.menu_book_rounded, color: AppColors.gold),
+                ]),
+                const SizedBox(height: 16),
+
                 // ── 4 Pillar Cards ──
                 Text("This Week's Stats", style: T.title(context)),
                 const SizedBox(height: 12),
@@ -181,7 +169,7 @@ class WeeklyProgressScreen extends ConsumerWidget {
                     icon: Symbols.directions_run_rounded,
                     label: 'Activity',
                     value: '$activeDays / 7 days active',
-                    pct: activeDays / 7,
+                    pct: (activeDays / 7).clamp(0.0, 1.0),
                     color: AppColors.coral,
                     bgColor: AppColors.coralSoft,
                   )),
@@ -300,9 +288,55 @@ class WeeklyProgressScreen extends ConsumerWidget {
                   ]),
                 ),
               ],
-            );
+            )); // end RefreshIndicator + ListView
           },
         ),
+      ),
+    );
+  }
+}
+
+// ─── Quick Stat Chip ─────────────────────────────────────────────────────────
+
+class _QuickStat extends StatelessWidget {
+  const _QuickStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+  final String label, value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(color: AppColors.shadowDark.withOpacity(0.5),
+                blurRadius: 5, offset: const Offset(2, 2)),
+            const BoxShadow(color: AppColors.shadowLight,
+                blurRadius: 5, offset: Offset(-2, -2)),
+          ],
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 5),
+          Text(value,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18)),
+          const SizedBox(height: 2),
+          Text(label,
+              style: T.small(context).copyWith(fontSize: 10),
+              textAlign: TextAlign.center),
+        ]),
       ),
     );
   }
