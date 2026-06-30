@@ -153,7 +153,14 @@ CREATE TABLE IF NOT EXISTS lessons (
   author    TEXT,
   minutes   INTEGER,
   xp        INTEGER NOT NULL DEFAULT 0,
-  status    TEXT NOT NULL DEFAULT 'locked'   -- completed/active/locked
+  status    TEXT NOT NULL DEFAULT 'locked'   -- reference only; actual status computed per-user
+);
+
+CREATE TABLE IF NOT EXISTS user_lesson_progress (
+  user_id      BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  lesson_id    BIGINT REFERENCES lessons(id) ON DELETE CASCADE,
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, lesson_id)
 );
 
 CREATE TABLE IF NOT EXISTS chat_messages (

@@ -276,6 +276,21 @@ async function runMigrations() {
       `ALTER TABLE weekly_challenges ADD COLUMN IF NOT EXISTS phase INTEGER NOT NULL DEFAULT 1`,
       `ALTER TABLE weekly_challenges ADD COLUMN IF NOT EXISTS min_value INTEGER NOT NULL DEFAULT 0`,
       `ALTER TABLE badges ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''`,
+      // Per-user lesson completion tracking (replaces global lessons.status)
+      `CREATE TABLE IF NOT EXISTS user_lesson_progress (
+        user_id    BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        lesson_id  BIGINT REFERENCES lessons(id) ON DELETE CASCADE,
+        completed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, lesson_id)
+      )`,
+      // Remove duplicate lesson rows — keep only the lowest id per (week, title)
+      `DELETE FROM lessons WHERE id NOT IN (
+        SELECT MIN(id) FROM lessons GROUP BY week, title
+      )`,
+      // Unique constraint prevents future duplicate seeds
+      `CREATE UNIQUE INDEX IF NOT EXISTS lessons_week_title_uidx ON lessons (week, title)`,
+      // Reset global status column to 'locked' — status is now computed per-user at query time
+      `UPDATE lessons SET status = 'locked'`,
     ];
 
     for (const sql of migrations) {
@@ -328,27 +343,53 @@ async function runMigrations() {
             xp_reward=EXCLUDED.xp_reward, phase=EXCLUDED.phase
     `).catch((e) => console.warn('[seed challenges]', e.message));
 
-    const lessonCount = (await client.query('SELECT COUNT(*) FROM lessons')).rows[0].count;
-    if (Number(lessonCount) === 0) {
-      await client.query(`
-        INSERT INTO lessons (week, week_name, title, lesson_type, xp, status, author, minutes, content) VALUES
-          (1,'Foundation','Why small habits beat willpower','article',30,'completed','Dr. Roy',5,'Willpower is finite but tiny habits compound. The FitQuest system replaces effort with routine.'),
-          (1,'Foundation','The FitQuest method','video',30,'completed','Dr. Roy',7,'A 3-pillar approach: move daily, eat intentionally, sleep deeply. Small wins create momentum.'),
-          (1,'Foundation','Foundation quiz','quiz',50,'completed',NULL,3,NULL),
-          (2,'Nutrition basics','Reading your plate','article',30,'completed','Dr. Roy',5,'Half plate vegetables, quarter protein, quarter complex carbs. This ratio fits any Indian meal.'),
-          (2,'Nutrition basics','Indian foods for weight loss','video',30,'completed','Dr. Roy',8,'Dal, sabzi, curd, roti — the Indian diet is naturally weight-loss friendly when portioned right.'),
-          (2,'Nutrition basics','Nutrition quiz','quiz',50,'completed',NULL,3,NULL),
-          (3,'Power of walking','Science of 10,000 steps','article',30,'completed','Dr. Roy',5,'Daily walking improves insulin sensitivity and burns 300-400 extra calories without the gym.'),
-          (3,'Power of walking','Why 8K steps changes everything','article',50,'active','Dr. Roy',5,'Research: 8,000 steps/day cuts all-cause mortality by 51%. The gym is optional. Walking is not.'),
-          (3,'Power of walking','Why sleep matters','video',30,'locked','Dr. Roy',5,'Sleep deprivation raises ghrelin (hunger hormone) 24% and cuts fat loss by 55%. Sleep is training.'),
-          (4,'Sleep & recovery','Quick quiz','quiz',100,'locked',NULL,3,NULL),
-          (4,'Sleep & recovery','Sleep cycles explained','article',30,'locked','Dr. Roy',5,NULL),
-          (4,'Sleep & recovery','Recovery for fat loss','video',30,'locked','Dr. Roy',6,NULL),
-          (5,'Strength habits','Why muscle burns fat','article',30,'locked','Dr. Roy',5,NULL),
-          (5,'Strength habits','Bodyweight basics','video',30,'locked','Dr. Roy',8,NULL),
-          (5,'Strength habits','Strength quiz','quiz',50,'locked',NULL,3,NULL)
-      `).catch(e => console.warn('Lessons seed error:', e.message));
-    }
+    // Upsert full 12-week curriculum — idempotent via unique index on (week, title)
+    await client.query(`
+      INSERT INTO lessons (week, week_name, title, lesson_type, xp, status, author, minutes, content) VALUES
+        (1,'Getting Started','Why small habits beat willpower','article',30,'locked','Dr. Roy',5,
+         'Willpower is a limited resource that runs out by evening. The FitQuest system works differently: we build tiny automatic behaviours that require zero willpower. A 2-minute morning weigh-in, logging one meal, a 10-minute walk — each one costs nothing but compounds into transformation. Neuroscience shows habits take 66 days on average to become automatic. Our 84-day programme gives you 18 extra days of buffer. Trust the process.'),
+        (1,'Getting Started','Week 1 foundation quiz','quiz',50,'locked',NULL,3,NULL),
+        (2,'Nutrition','Reading your plate','article',30,'locked','Dr. Roy',5,
+         'The simplest nutrition rule: fill half your plate with non-starchy vegetables, a quarter with lean protein, and a quarter with complex carbs. For Indian meals this means: 2 cups sabzi + 1 cup dal + 1-2 rotis. This naturally gives you 400-500 kcal with fibre that keeps you full for 4+ hours. No calorie counting needed — just rearrange what is already on your thali.'),
+        (2,'Nutrition','Nutrition quiz','quiz',50,'locked',NULL,3,NULL),
+        (3,'Movement','The science of 8,000 steps','article',30,'locked','Dr. Roy',5,
+         'A landmark 2021 JAMA study of 2,110 adults found 8,000 steps/day cut all-cause mortality by 51% vs 4,000 steps. You do not need a gym. A 45-minute brisk walk burns 250-300 calories, improves insulin sensitivity for 24 hours, and releases BDNF — the brain''s growth hormone — which reduces food cravings. Your best fat-burning tool costs nothing and requires no equipment.'),
+        (3,'Movement','Movement quiz','quiz',50,'locked',NULL,3,NULL),
+        (4,'Sleep','Sleep & fat loss — the missing link','article',30,'locked','Dr. Roy',6,
+         'Sleep deprivation of even one night raises ghrelin (hunger hormone) by 24% and cuts leptin (fullness hormone) by 18%. You wake up hungrier and need 300 extra calories to feel satisfied. A 2010 Annals of Internal Medicine study found that dieters sleeping 5.5 hrs lost 55% less fat than those sleeping 8.5 hrs on the same diet. Optimising sleep is the highest-leverage action you can take for fat loss.'),
+        (4,'Sleep','Sleep quiz','quiz',50,'locked',NULL,3,NULL),
+        (5,'Strength','Why muscle burns fat while you sleep','article',30,'locked','Coach Priya',5,
+         'One kilogram of muscle burns an extra 13 kcal per day at rest. Add 3 kg of muscle — common in 12 weeks of consistent training — and you burn 39 extra kcal/day effortlessly. Muscle also acts as a glucose sink: it absorbs blood sugar rapidly, reducing insulin spikes. You do not need a gym; three 20-minute bodyweight sessions per week (squats, push-ups, lunges) are enough to build meaningful metabolic muscle.'),
+        (5,'Strength','Strength quiz','quiz',50,'locked',NULL,3,NULL),
+        (6,'Mindful Eating','Breaking emotional eating cycles','article',40,'locked','Dr. Roy',6,
+         'Emotional eating is triggered by stress, boredom, or loneliness — not true hunger. The H.A.L.T. method stops the cycle: before eating, ask Am I Hungry, Angry, Lonely, or Tired? True hunger builds slowly; emotional hunger is sudden and craves specific foods. Technique: when a craving hits, set a 10-minute timer and drink water. 70% of cravings pass in that window. For the other 30%, choose a small, satisfying portion and eat mindfully without screens.'),
+        (6,'Mindful Eating','Mindful eating quiz','quiz',40,'locked',NULL,3,NULL),
+        (7,'Hydration','Water, metabolism & fat burning','article',30,'locked','Coach Priya',5,
+         'Your liver converts stored fat into usable energy — but only when it is not busy doing the kidneys'' job. Dehydration forces the liver to step in, slowing fat metabolism by up to 30%. Drinking 500 ml of cold water raises metabolic rate by 24-30% for 60 minutes (Journal of Clinical Endocrinology, 2003). Target: 35 ml per kg of body weight daily. For a 70 kg person: 2.45 litres. Spread across 8-9 glasses. Start each morning with 500 ml before tea or coffee.'),
+        (7,'Hydration','Hydration quiz','quiz',30,'locked',NULL,3,NULL),
+        (8,'Stress & Cortisol','Stress, cortisol & belly fat','article',40,'locked','Dr. Roy',7,
+         'Cortisol — the stress hormone — directly signals fat cells in your abdomen to store more fat. Chronic stress keeps cortisol elevated all day. Three evidence-based cortisol reducers: (1) 5 minutes of box breathing (inhale 4s, hold 4s, exhale 4s, hold 4s) drops cortisol by 23% within 30 minutes. (2) A 20-minute walk in nature reduces cortisol by 21%. (3) Laughing for 10 minutes lowers cortisol by 37-70% (Loma Linda University). Stress management is fat loss strategy.'),
+        (8,'Stress & Cortisol','Stress management quiz','quiz',50,'locked',NULL,3,NULL),
+        (9,'Progress Tracking','Tracking without obsessing','article',30,'locked','Coach Priya',5,
+         'Weekly weigh-ins outperform daily weigh-ins. Weight fluctuates 1-2 kg daily from water, food volume, and hormones — daily weighing creates anxiety without signal. The true signal is the 4-week trend. Photo comparisons every 4 weeks reveal fat loss that the scale misses (especially when building muscle). Track three numbers: weekly average weight, waist circumference (monthly), and how your reference outfit fits. These three give you the complete picture.'),
+        (9,'Progress Tracking','Progress quiz','quiz',30,'locked',NULL,3,NULL),
+        (10,'Plateaus','Breaking through weight plateaus','article',40,'locked','Dr. Roy',6,
+         'A weight plateau after 4+ weeks signals metabolic adaptation — your body has recalculated maintenance calories at your new lower weight. Three plateau breakers: (1) Add 2,000 steps/day. (2) Increase protein to 1.6g per kg body weight (reduces muscle loss during deficit). (3) Take a 1-week diet break at maintenance calories — this resets leptin and hunger hormones, making the next deficit phase more effective. Plateaus are biology, not failure. They require strategy, not punishment.'),
+        (10,'Plateaus','Plateau-breaking quiz','quiz',50,'locked',NULL,3,NULL),
+        (11,'Sustainable Habits','Eating out & social eating','article',30,'locked','Coach Priya',5,
+         'Social events are the biggest compliance killer. Strategies that work: (1) Eat a protein-rich snack before the event so you arrive not starving. (2) Use the "one-plate rule" — choose your plate thoughtfully, eat it slowly, and stop. (3) For restaurants: order protein + salad first; decide whether the dessert is truly worth it before it arrives. (4) Alcohol: each drink adds 100-150 empty calories and lowers inhibitions around food. Club soda with lime tastes social and costs zero calories.'),
+        (11,'Sustainable Habits','Sustainable habits quiz','quiz',30,'locked',NULL,3,NULL),
+        (12,'Maintenance','Life after the programme','article',50,'locked','Dr. Roy',8,
+         'Maintaining weight loss requires slightly fewer calories than maintaining your original weight — about 150-200 kcal/day less. Your new maintenance is your goal. The habits that got you here (daily steps, protein at every meal, sleep hygiene, stress management) are permanent now — not temporary tools. Research shows that people who maintain weight loss long-term share four behaviours: they weigh themselves regularly, they exercise daily, they eat breakfast, and they limit screen time during meals. You have practised all four. Congratulations on completing the FitQuest programme.')
+        ,
+        (12,'Maintenance','Final graduation quiz','quiz',100,'locked',NULL,5,NULL)
+      ON CONFLICT (week, title) DO UPDATE
+        SET content = EXCLUDED.content,
+            xp      = EXCLUDED.xp,
+            minutes = EXCLUDED.minutes,
+            week_name = EXCLUDED.week_name,
+            author  = EXCLUDED.author
+    `).catch(e => console.warn('Lessons upsert error:', e.message));
 
     await client.query(`
       INSERT INTO recipes (title,cuisine,diet_type,calories,prep_minutes,ingredients,steps) VALUES

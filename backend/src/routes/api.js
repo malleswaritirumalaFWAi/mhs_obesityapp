@@ -604,43 +604,108 @@ router.post('/posts/:id/comments', async (req, res) => {
 });
 
 // ---- Learning ----
+// Helper: compute current program week for a user (week 1 from day 0, week 2 from day 7, etc.)
+function userCurrentWeek(createdAt) {
+  const days = Math.max(Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000), 0);
+  return Math.min(Math.floor(days / 7) + 1, 12);
+}
+
 router.get('/lessons', async (req, res) => {
   try {
+    const user = (await q(`SELECT created_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
+    const currentWeek = userCurrentWeek(user?.created_at ?? new Date());
+
     const r = await q(
-      `SELECT id, week AS week_number, week_name, title, author, minutes,
-              xp AS xp_reward, status, lesson_type, video_url,
-              (status = 'completed') AS completed
-       FROM lessons ORDER BY week, id`
+      `SELECT l.id,
+              l.week       AS week_number,
+              l.week_name,
+              l.title,
+              l.author,
+              l.minutes,
+              l.xp         AS xp_reward,
+              l.lesson_type,
+              l.video_url,
+              l.content,
+              l.quiz_questions,
+              CASE
+                WHEN ulp.lesson_id IS NOT NULL THEN 'completed'
+                WHEN l.week <= $2              THEN 'active'
+                ELSE                               'locked'
+              END AS status,
+              (ulp.lesson_id IS NOT NULL) AS completed
+       FROM lessons l
+       LEFT JOIN user_lesson_progress ulp
+              ON ulp.lesson_id = l.id AND ulp.user_id = $1
+       ORDER BY l.week, l.id`,
+      [uid(req), currentWeek]
     );
-    res.json({ lessons: r.rows });
+    res.json({ lessons: r.rows, current_week: currentWeek });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
 });
 
 router.get('/lessons/:id', async (req, res) => {
-  const r = await q(
-    `SELECT id, week AS week_number, week_name, title, author, minutes,
-            xp AS xp_reward, status, lesson_type, video_url, content, quiz_questions,
-            (status = 'completed') AS completed
-     FROM lessons WHERE id=$1`, [req.params.id]
-  );
-  if (!r.rows[0]) return res.status(404).json({ message: 'Not found' });
-  const lesson = r.rows[0];
-  if (typeof lesson.content === 'string') {
-    try { lesson.content_slides = JSON.parse(lesson.content); } catch { lesson.content_slides = [lesson.content]; }
+  try {
+    const user = (await q(`SELECT created_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
+    const currentWeek = userCurrentWeek(user?.created_at ?? new Date());
+
+    const r = await q(
+      `SELECT l.id,
+              l.week       AS week_number,
+              l.week_name,
+              l.title,
+              l.author,
+              l.minutes,
+              l.xp         AS xp_reward,
+              l.lesson_type,
+              l.video_url,
+              l.content,
+              l.quiz_questions,
+              CASE
+                WHEN ulp.lesson_id IS NOT NULL THEN 'completed'
+                WHEN l.week <= $3              THEN 'active'
+                ELSE                               'locked'
+              END AS status,
+              (ulp.lesson_id IS NOT NULL) AS completed
+       FROM lessons l
+       LEFT JOIN user_lesson_progress ulp
+              ON ulp.lesson_id = l.id AND ulp.user_id = $2
+       WHERE l.id = $1`,
+      [req.params.id, uid(req), currentWeek]
+    );
+    if (!r.rows[0]) return res.status(404).json({ message: 'Not found' });
+    const lesson = r.rows[0];
+    if (typeof lesson.content === 'string') {
+      try { lesson.content_slides = JSON.parse(lesson.content); } catch { lesson.content_slides = [lesson.content]; }
+    }
+    res.json({ lesson });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
   }
-  res.json({ lesson });
 });
 
-router.post('/lessons/:id/complete', async (req, res) => {
-  const lesson = (await q(`SELECT id, xp FROM lessons WHERE id=$1`, [req.params.id])).rows[0];
-  if (!lesson) return res.status(404).json({ message: 'Not found' });
-  await q(`UPDATE lessons SET status='completed' WHERE id=$1`, [req.params.id]);
-  const xpEarned = lesson.xp || 30;
-  await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [uid(req), xpEarned]);
-  await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), xpEarned]);
-  res.json({ completed: true, xp_earned: xpEarned });
+router.post('/lessons/:id/complete', async (req, res, next) => {
+  try {
+    const lesson = (await q(`SELECT id, xp FROM lessons WHERE id=$1`, [req.params.id])).rows[0];
+    if (!lesson) return res.status(404).json({ message: 'Not found' });
+
+    // Idempotent — only award XP on first completion
+    const inserted = await q(
+      `INSERT INTO user_lesson_progress (user_id, lesson_id)
+       VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING lesson_id`,
+      [uid(req), lesson.id]
+    );
+
+    let xpEarned = 0;
+    if (inserted.rows.length > 0) {
+      xpEarned = lesson.xp || 30;
+      await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [uid(req), xpEarned]);
+      await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), xpEarned]);
+      await updateUserLevel(uid(req));
+    }
+    res.json({ completed: true, xp_earned: xpEarned });
+  } catch (err) { next(err); }
 });
 
 // ---- Health tip of the day ----
