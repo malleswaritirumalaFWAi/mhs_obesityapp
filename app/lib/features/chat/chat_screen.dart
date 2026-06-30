@@ -111,7 +111,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           .read(apiClientProvider)
           .postJson('/chat', {'text': text});
       final reply = res['reply'] as String? ??
-          'Great work staying consistent! Keep it up 💪';
+          'I\'m here to help — what\'s on your mind?';
       if (mounted) {
         setState(() {
           _messages.removeLast();
@@ -126,7 +126,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         setState(() {
           _messages.removeLast();
           _messages.add(_Msg(
-              text: 'Great work staying consistent! Keep it up 💪',
+              text: 'I\'m having trouble connecting right now. Please try again in a moment.',
               fromCoach: true,
               createdAt: DateTime.now()));
           _sending = false;
@@ -153,26 +153,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           children: [
             // ── Header ──
             Container(
-              decoration: const BoxDecoration(
-                gradient: AppColors.tealGrad,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
+              decoration: BoxDecoration(
+                color: AppColors.bg,
+                boxShadow: Neu.small(),
               ),
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
               child: Row(children: [
                 Container(
                   width: 48,
                   height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
+                  decoration: const BoxDecoration(
+                    color: AppColors.sageSoft,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
                   child: const Text('P',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.sageDark,
                           fontWeight: FontWeight.w800,
                           fontSize: 20)),
                 ),
@@ -180,17 +177,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Coach Priya',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.ink,
                           fontWeight: FontWeight.w800,
                           fontSize: 16)),
                   Row(children: [
                     const CircleAvatar(
                         radius: 4,
-                        backgroundColor: Color(0xFF80FFD4)),
+                        backgroundColor: AppColors.sage),
                     const SizedBox(width: 6),
                     const Text('Online',
                         style: TextStyle(
-                            color: Colors.white70, fontSize: 13)),
+                            color: AppColors.inkMid, fontSize: 13)),
                   ]),
                 ]),
                 const Spacer(),
@@ -198,11 +195,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: AppColors.surface,
                     shape: BoxShape.circle,
+                    boxShadow: Neu.small(),
                   ),
                   child: const Icon(Symbols.call_rounded,
-                      color: Colors.white, size: 20),
+                      color: AppColors.inkMid, size: 20),
                 ),
               ]),
             ),

@@ -39,6 +39,14 @@ class FastingNotifier extends StateNotifier<FastingState> {
   final ApiClient _api;
   Timer? _ticker;
 
+  /// Timestamp when the last fast was stopped — used to gate the undo window.
+  DateTime? _stoppedAt;
+  int _lastTargetHours = 16;
+
+  bool get canUndo =>
+      _stoppedAt != null &&
+      DateTime.now().difference(_stoppedAt!).inSeconds < 300; // 5 min window
+
   @override
   void dispose() { _ticker?.cancel(); super.dispose(); }
 
@@ -87,12 +95,33 @@ class FastingNotifier extends StateNotifier<FastingState> {
 
   Future<Map<String, dynamic>> stop() async {
     try {
+      _lastTargetHours = state.targetHours;
       final d = await _api.postJson('/fasting/stop', {});
       _ticker?.cancel();
+      _stoppedAt = DateTime.now();
       state = FastingState(history: state.history);
       load();
       return d;
     } catch (_) { return {}; }
+  }
+
+  /// Undo the last stop if called within 5 minutes.
+  Future<bool> resume() async {
+    try {
+      final d = await _api.postJson('/fasting/resume', {});
+      final s = d['session'] as Map<String, dynamic>?;
+      if (s == null) return false;
+      _stoppedAt = null;
+      state = FastingState(
+        active: true,
+        sessionId: (s['id'] as num?)?.toInt(),
+        startedAt: DateTime.parse(s['started_at'] as String),
+        targetHours: (s['target_hours'] as num?)?.toInt() ?? _lastTargetHours,
+        history: state.history,
+      );
+      _startTicker();
+      return true;
+    } catch (_) { return false; }
   }
 }
 

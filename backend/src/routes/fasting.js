@@ -68,4 +68,22 @@ router.post('/stop', async (req, res) => {
   res.json({ completed, elapsed_hours: Math.round(elapsed * 10) / 10, xp_earned: completed ? 15 : 0 });
 });
 
+// POST /fasting/resume  — undo an accidental stop (within 5 minutes of stopping)
+router.post('/resume', async (req, res) => {
+  const r = await q(
+    `UPDATE fasting_sessions
+     SET ended_at = NULL, completed = FALSE
+     WHERE id = (
+       SELECT id FROM fasting_sessions
+       WHERE user_id=$1 AND ended_at IS NOT NULL
+       ORDER BY ended_at DESC LIMIT 1
+     )
+     AND ended_at > now() - INTERVAL '5 minutes'
+     RETURNING id, started_at, target_hours`,
+    [uid(req)]
+  );
+  if (!r.rows[0]) return res.status(400).json({ message: 'No recent fast to resume. You can start a new one.' });
+  res.json({ session: r.rows[0] });
+});
+
 export default router;

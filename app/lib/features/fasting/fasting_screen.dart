@@ -174,11 +174,12 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                     ),
                   );
                   if (confirmed == true && context.mounted) {
-                    final result = await ref.read(fastingProvider.notifier).stop();
+                    final notifier = ref.read(fastingProvider.notifier);
+                    final result = await notifier.stop();
                     if (context.mounted) {
                       final xp = (result['xp_awarded'] as num?)?.toInt() ?? 0;
                       final completed = result['completed'] as bool? ?? false;
-                      _showResult(context, completed, xp);
+                      _showResult(context, completed, xp, notifier);
                     }
                   }
                 },
@@ -234,13 +235,30 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
     );
   }
 
-  void _showResult(BuildContext context, bool completed, int xp) {
+  void _showResult(BuildContext context, bool completed, int xp, FastingNotifier notifier) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(completed
         ? '🎉 Fast completed! +$xp XP earned'
-        : 'Fast ended early. Keep going next time!'),
+        : 'Fast stopped early.'),
       backgroundColor: completed ? AppColors.sage : AppColors.inkMid,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 10),
+      action: completed
+          ? null
+          : SnackBarAction(
+              label: 'Undo',
+              textColor: Colors.white,
+              onPressed: () async {
+                final ok = await notifier.resume();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(ok ? 'Fast resumed!' : 'Could not resume — too much time has passed.'),
+                    backgroundColor: ok ? AppColors.sage : AppColors.coral,
+                    duration: const Duration(seconds: 3),
+                  ));
+                }
+              },
+            ),
     ));
   }
 }

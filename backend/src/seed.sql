@@ -8,11 +8,11 @@ INSERT INTO groups (id, name, coach_id, starts_on)
 VALUES (1, 'Batch #47', 1, DATE '2026-03-03')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO badges (code, emoji, name, xp) VALUES
-  ('streak_master', '🔥', 'Streak Master', 200),
-  ('steps_100k',    '🏃', '100K Steps',    150),
-  ('clean_week',    '🥗', 'Clean Week',    120)
-ON CONFLICT (code) DO NOTHING;
+INSERT INTO badges (code, emoji, name, xp, description) VALUES
+  ('streak_master', '🔥', 'Streak Master', 200, 'Build a 30-day streak without a break'),
+  ('steps_100k',    '🏃', '100K Steps',    150, 'Accumulate 100,000 total steps across all sessions'),
+  ('clean_week',    '🥗', 'Clean Week',    120, 'Log all meals for 7 consecutive days without skipping')
+ON CONFLICT (code) DO UPDATE SET description=EXCLUDED.description;
 
 INSERT INTO lessons (week, title, author, minutes, xp, status) VALUES
   (1, 'Foundation',        'Coach Priya', 6,  50,  'completed'),
