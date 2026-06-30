@@ -3,6 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../state/session.dart';
 
+class FastingStats {
+  const FastingStats({
+    this.totalCompleted = 0,
+    this.totalHours = 0.0,
+    this.thisWeek = 0,
+  });
+  final int totalCompleted;
+  final double totalHours;
+  final int thisWeek;
+}
+
 class FastingState {
   const FastingState({
     this.active = false,
@@ -11,19 +22,42 @@ class FastingState {
     this.targetHours = 16,
     this.history = const [],
     this.loading = false,
+    this.stats = const FastingStats(),
   });
   final bool active, loading;
   final int? sessionId;
   final DateTime? startedAt;
   final int targetHours;
   final List<Map<String, dynamic>> history;
+  final FastingStats stats;
 
   Duration get elapsed => startedAt != null ? DateTime.now().difference(startedAt!) : Duration.zero;
+  Duration get remaining {
+    if (!active) return Duration.zero;
+    final target = Duration(hours: targetHours);
+    final diff = target - elapsed;
+    return diff.isNegative ? Duration.zero : diff;
+  }
+  DateTime? get breakFastAt => (active && startedAt != null)
+      ? startedAt!.add(Duration(hours: targetHours))
+      : null;
   double get progress => targetHours > 0 ? (elapsed.inMinutes / (targetHours * 60)).clamp(0.0, 1.0) : 0;
   bool get completed => progress >= 1.0;
 
+  /// Current metabolic phase index (0–5) based on elapsed hours.
+  int get phaseIndex {
+    final h = elapsed.inMinutes / 60.0;
+    if (h >= 18) return 5;
+    if (h >= 16) return 4;
+    if (h >= 12) return 3;
+    if (h >= 8)  return 2;
+    if (h >= 4)  return 1;
+    return 0;
+  }
+
   FastingState copyWith({bool? active, int? sessionId, DateTime? startedAt,
-    int? targetHours, List<Map<String,dynamic>>? history, bool? loading}) =>
+    int? targetHours, List<Map<String,dynamic>>? history, bool? loading,
+    FastingStats? stats}) =>
     FastingState(
       active: active ?? this.active,
       sessionId: sessionId ?? this.sessionId,
@@ -31,6 +65,7 @@ class FastingState {
       targetHours: targetHours ?? this.targetHours,
       history: history ?? this.history,
       loading: loading ?? this.loading,
+      stats: stats ?? this.stats,
     );
 }
 
@@ -63,6 +98,12 @@ class FastingNotifier extends StateNotifier<FastingState> {
       final d = await _api.getJson('/fasting');
       final a = d['active'] as Map<String, dynamic>?;
       final history = (d['history'] as List? ?? []).cast<Map<String, dynamic>>();
+      final s = d['stats'] as Map<String, dynamic>? ?? {};
+      final stats = FastingStats(
+        totalCompleted: (s['total_completed'] as num?)?.toInt() ?? 0,
+        totalHours: (s['total_hours'] as num?)?.toDouble() ?? 0.0,
+        thisWeek: (s['this_week'] as num?)?.toInt() ?? 0,
+      );
       if (a != null) {
         state = FastingState(
           active: true,
@@ -70,10 +111,11 @@ class FastingNotifier extends StateNotifier<FastingState> {
           startedAt: DateTime.parse(a['started_at'] as String),
           targetHours: (a['target_hours'] as num?)?.toInt() ?? 16,
           history: history,
+          stats: stats,
         );
         _startTicker();
       } else {
-        state = FastingState(history: history);
+        state = FastingState(history: history, stats: stats);
       }
     } catch (_) { state = const FastingState(); }
   }

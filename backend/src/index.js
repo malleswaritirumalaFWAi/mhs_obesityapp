@@ -291,6 +291,8 @@ async function runMigrations() {
       `CREATE UNIQUE INDEX IF NOT EXISTS lessons_week_title_uidx ON lessons (week, title)`,
       // Reset global status column to 'locked' — status is now computed per-user at query time
       `UPDATE lessons SET status = 'locked'`,
+      // Fasting: store XP awarded per session for accurate history display
+      `ALTER TABLE fasting_sessions ADD COLUMN IF NOT EXISTS xp_awarded INTEGER NOT NULL DEFAULT 0`,
     ];
 
     for (const sql of migrations) {
