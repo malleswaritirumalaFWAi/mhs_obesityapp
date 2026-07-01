@@ -37,26 +37,26 @@ class _Phase {
 const _kPhases = [
   _Phase(
     number: 1, name: 'Awareness',
-    grad: LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFFFB800)]),
-    color: Color(0xFFFF6B35), soft: Color(0xFFFFEDE6), textColor: Color(0xFFB84000),
+    grad: LinearGradient(colors: [Color(0xFFFF7A6B), Color(0xFFFFB3AB)]),
+    color: Color(0xFFFF7A6B), soft: Color(0xFFFFE6E1), textColor: Color(0xFF7A1F18),
     weeks: [1, 2, 3],
   ),
   _Phase(
     number: 2, name: 'Habit Building',
-    grad: LinearGradient(colors: [Color(0xFF11998E), Color(0xFF38EF7D)]),
-    color: Color(0xFF11998E), soft: Color(0xFFDDEFE4), textColor: Color(0xFF0A5C55),
+    grad: LinearGradient(colors: [Color(0xFF2E6B4F), Color(0xFF8BC4A9)]),
+    color: Color(0xFF2E6B4F), soft: Color(0xFFDDEFE4), textColor: Color(0xFF1A3D2C),
     weeks: [4, 5, 6],
   ),
   _Phase(
     number: 3, name: 'Pushing Limits',
-    grad: LinearGradient(colors: [Color(0xFF1B4F72), Color(0xFF2575FC)]),
-    color: Color(0xFF1B4F72), soft: Color(0xFFE3F2FD), textColor: Color(0xFF0D2E44),
+    grad: LinearGradient(colors: [Color(0xFFB788D9), Color(0xFFD4AFEA)]),
+    color: Color(0xFFB788D9), soft: Color(0xFFEFE3F7), textColor: Color(0xFF7B4FA0),
     weeks: [7, 8, 9],
   ),
   _Phase(
     number: 4, name: 'Identity Shift',
-    grad: LinearGradient(colors: [Color(0xFF6A11CB), Color(0xFF9B59B6)]),
-    color: Color(0xFF6A11CB), soft: Color(0xFFEFE3F7), textColor: Color(0xFF3D0A7A),
+    grad: LinearGradient(colors: [Color(0xFFE5B36A), Color(0xFFF0CFA3)]),
+    color: Color(0xFFE5B36A), soft: Color(0xFFFFF3DC), textColor: Color(0xFFA36F1A),
     weeks: [10, 11, 12],
   ),
 ];
@@ -96,12 +96,12 @@ class _WeekMeta {
               : 'Elite';
 
   Color get difficultyColor => week <= 3
-      ? const Color(0xFF38A169)
+      ? const Color(0xFFFF7A6B)
       : week <= 6
-          ? const Color(0xFFD69E2E)
+          ? const Color(0xFF2E6B4F)
           : week <= 9
-              ? const Color(0xFF3182CE)
-              : const Color(0xFF805AD5);
+              ? const Color(0xFFB788D9)
+              : const Color(0xFFE5B36A);
 }
 
 const _kWeeks = [
@@ -601,159 +601,123 @@ class _HeroBanner extends StatelessWidget {
     final daysCompleted = dayProgress.where((d) => d).length;
     final daysRemaining = (target - daysCompleted).clamp(0, 7);
 
-    // Shimmer gradient — subtle brightness sweep
-    final gradColors = [
-      phase.grad.colors[0],
-      Color.lerp(phase.grad.colors[0], Colors.white, 0.25 * shimmerValue)!,
-      phase.grad.colors[1],
-    ];
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradColors,
-            stops: const [0, 0.5, 1],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: phase.color.withOpacity(0.4),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Top white shine
-            Positioned(
-              top: 0, left: 0, right: 0,
-              height: 60,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.white.withOpacity(0.18), Colors.transparent],
-                  ),
-                ),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: phase.soft, width: 2),
+        boxShadow: const [
+          BoxShadow(color: AppColors.shadowDark, blurRadius: 16, offset: Offset(6, 6)),
+          BoxShadow(color: AppColors.shadowLight, blurRadius: 16, offset: Offset(-6, -6)),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Phase + XP row
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: phase.soft,
+                borderRadius: BorderRadius.circular(20),
               ),
+              child: Text('Phase ${phase.number}: ${phase.name}',
+                  style: TextStyle(
+                      color: phase.color, fontSize: 11, fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5)),
             ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                // Phase + XP row
-                Row(children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text('Phase ${phase.number}: ${phase.name}',
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5)),
-                  ),
-                  const Spacer(),
-                  // XP chip
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFB800),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [BoxShadow(color: const Color(0xFFFFB800).withOpacity(0.5),
-                          blurRadius: 8, offset: const Offset(0, 3))],
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Text('⭐', style: TextStyle(fontSize: 11)),
-                      const SizedBox(width: 4),
-                      Text('+$xp XP',
-                          style: const TextStyle(
-                              color: Color(0xFF5C3A00), fontSize: 12, fontWeight: FontWeight.w800)),
-                    ]),
-                  ),
-                ]),
-                const SizedBox(height: 14),
-
-                // Week + Title
-                Text('Week $currentWeek', style: TextStyle(
-                    color: Colors.white.withOpacity(0.8), fontSize: 13, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
-                Text(meta.title, style: const TextStyle(
-                    color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800, height: 1.1)),
-                const SizedBox(height: 16),
-
-                // Day dots
-                Row(children: [
-                  for (int i = 0; i < 7; i++) ...[
-                    _DayDot(
-                      dayNum: i + 1,
-                      filled: i < dayProgress.length ? dayProgress[i] : false,
-                      phaseColor: phase.color,
-                    ),
-                    if (i < 6) const SizedBox(width: 6),
-                  ],
-                ]),
-                const SizedBox(height: 14),
-
-                // Progress bar
-                if (!isCompleted) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: target > 0 ? (daysCompleted / target).clamp(0.0, 1.0) : 0,
-                      minHeight: 6,
-                      backgroundColor: Colors.white.withOpacity(0.25),
-                      valueColor: const AlwaysStoppedAnimation(Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    Text('$daysCompleted / $target days complete',
-                        style: TextStyle(color: Colors.white.withOpacity(0.9),
-                            fontSize: 12, fontWeight: FontWeight.w600)),
-                    const Spacer(),
-                    if (daysRemaining > 0)
-                      Text('$daysRemaining days left',
-                          style: TextStyle(color: Colors.white.withOpacity(0.75),
-                              fontSize: 12, fontWeight: FontWeight.w500)),
-                  ]),
-                ] else
-                  Row(children: [
-                    const Text('✅ ', style: TextStyle(fontSize: 16)),
-                    Text('Challenge Complete!',
-                        style: const TextStyle(color: Colors.white,
-                            fontSize: 14, fontWeight: FontWeight.w700)),
-                    const Spacer(),
-                    Text('+$xp XP earned 🏅',
-                        style: TextStyle(color: Colors.white.withOpacity(0.85),
-                            fontSize: 12, fontWeight: FontWeight.w600)),
-                  ]),
-
-                const SizedBox(height: 14),
-                // Science fact
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('💡', style: TextStyle(fontSize: 14)),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(meta.scienceFact,
-                        style: TextStyle(color: Colors.white.withOpacity(0.9),
-                            fontSize: 12, fontWeight: FontWeight.w500, height: 1.4))),
-                  ]),
-                ),
+            const Spacer(),
+            // XP chip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.goldSoft,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Text('⭐', style: TextStyle(fontSize: 11)),
+                const SizedBox(width: 4),
+                Text('+$xp XP',
+                    style: const TextStyle(
+                        color: AppColors.goldDark, fontSize: 12, fontWeight: FontWeight.w800)),
               ]),
             ),
-          ],
-        ),
+          ]),
+          const SizedBox(height: 14),
+
+          // Week + Title
+          Text('Week $currentWeek', style: const TextStyle(
+              color: AppColors.inkMid, fontSize: 13, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(meta.title, style: const TextStyle(
+              color: AppColors.ink, fontSize: 22, fontWeight: FontWeight.w800, height: 1.1)),
+          const SizedBox(height: 16),
+
+          // Day dots
+          Row(children: [
+            for (int i = 0; i < 7; i++) ...[
+              _DayDot(
+                dayNum: i + 1,
+                filled: i < dayProgress.length ? dayProgress[i] : false,
+                phaseColor: phase.color,
+              ),
+              if (i < 6) const SizedBox(width: 6),
+            ],
+          ]),
+          const SizedBox(height: 14),
+
+          // Progress bar
+          if (!isCompleted) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: target > 0 ? (daysCompleted / target).clamp(0.0, 1.0) : 0,
+                minHeight: 6,
+                backgroundColor: AppColors.line,
+                valueColor: AlwaysStoppedAnimation(phase.color),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(children: [
+              Text('$daysCompleted / $target days complete',
+                  style: const TextStyle(color: AppColors.inkMid,
+                      fontSize: 12, fontWeight: FontWeight.w600)),
+              const Spacer(),
+              if (daysRemaining > 0)
+                Text('$daysRemaining days left',
+                    style: const TextStyle(color: AppColors.inkSoft,
+                        fontSize: 12, fontWeight: FontWeight.w500)),
+            ]),
+          ] else
+            Row(children: [
+              const Text('✅ ', style: TextStyle(fontSize: 16)),
+              const Text('Challenge Complete!',
+                  style: TextStyle(color: AppColors.ink,
+                      fontSize: 14, fontWeight: FontWeight.w700)),
+              const Spacer(),
+              Text('+$xp XP earned 🏅',
+                  style: const TextStyle(color: AppColors.goldDark,
+                      fontSize: 12, fontWeight: FontWeight.w600)),
+            ]),
+
+          const SizedBox(height: 14),
+          // Science fact
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.bg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('💡', style: TextStyle(fontSize: 14)),
+              const SizedBox(width: 8),
+              Expanded(child: Text(meta.scienceFact,
+                  style: const TextStyle(color: AppColors.inkMid,
+                      fontSize: 12, fontWeight: FontWeight.w500, height: 1.4))),
+            ]),
+          ),
+        ]),
       ),
     );
   }
@@ -776,22 +740,22 @@ class _DayDot extends StatelessWidget {
       height: filled ? 32 : 28,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: filled ? Colors.white : Colors.white.withOpacity(0.2),
+        color: filled ? phaseColor : AppColors.bg,
         border: Border.all(
-          color: filled ? Colors.white : Colors.white.withOpacity(0.4),
-          width: 1.5,
+          color: filled ? phaseColor : AppColors.line,
+          width: filled ? 2 : 1.5,
         ),
         boxShadow: filled
-            ? [BoxShadow(color: Colors.white.withOpacity(0.4), blurRadius: 8, spreadRadius: 1)]
+            ? [BoxShadow(color: phaseColor.withOpacity(0.3), blurRadius: 6, spreadRadius: 1)]
             : null,
       ),
       child: Center(
         child: filled
-            ? Icon(Symbols.check_rounded, size: 14, color: phaseColor,
+            ? const Icon(Symbols.check_rounded, size: 14, color: Colors.white,
                 weight: 700, fill: 1)
             : Text('$dayNum',
-                style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                style: const TextStyle(
+                    color: AppColors.inkSoft,
                     fontSize: 10, fontWeight: FontWeight.w700)),
       ),
     );
@@ -813,7 +777,7 @@ class _PhaseTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 44,
+      height: 64,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -827,17 +791,16 @@ class _PhaseTabBar extends StatelessWidget {
             onTap: () => onSelect(i),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 10),
+              margin: const EdgeInsets.only(right: 14, top: 10, bottom: 10),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(
-                gradient: isSelected ? phase.grad : null,
-                color: isSelected ? null : AppColors.surface,
+                color: isSelected ? phase.color : AppColors.surface,
                 borderRadius: BorderRadius.circular(22),
                 boxShadow: isSelected
                     ? [BoxShadow(color: phase.color.withOpacity(0.35),
                         blurRadius: 12, offset: const Offset(0, 4))]
-                    : [BoxShadow(color: AppColors.shadowDark, blurRadius: 6,
-                        offset: const Offset(2, 2)),
+                    : [const BoxShadow(color: AppColors.shadowDark, blurRadius: 6,
+                        offset: Offset(2, 2)),
                        const BoxShadow(color: AppColors.shadowLight, blurRadius: 6,
                            offset: Offset(-2, -2))],
               ),
@@ -925,7 +888,7 @@ class _WeekCard extends StatelessWidget {
         Container(
           width: 44, height: 44,
           decoration: BoxDecoration(
-            gradient: phase.grad,
+            color: phase.color,
             shape: BoxShape.circle,
           ),
           child: const Icon(Symbols.check_rounded, color: Colors.white, size: 22, fill: 1, weight: 700),
@@ -969,145 +932,110 @@ class _WeekCard extends StatelessWidget {
   }
 
   Widget _buildActive(BuildContext context, _WeekMeta meta, _Phase phase, int daysCompleted) {
-    // Shimmer color sweep on gradient
-    final c0 = Color.lerp(phase.grad.colors[0], Colors.white, 0.2 * shimmerValue)!;
-    final c1 = Color.lerp(phase.grad.colors[1], Colors.white, 0.1 * shimmerValue)!;
-
-    // Pulse border opacity
-    final borderOpacity = 0.5 + 0.5 * pulseValue;
-
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: phase.color.withOpacity(0.4), width: 2),
         boxShadow: [
-          BoxShadow(
-            color: phase.color.withOpacity(0.25 + 0.15 * pulseValue),
-            blurRadius: 16 + 8 * pulseValue,
-            offset: const Offset(0, 6),
-          ),
+          BoxShadow(color: AppColors.shadowDark, blurRadius: 10, offset: const Offset(4, 4)),
+          const BoxShadow(color: AppColors.shadowLight, blurRadius: 10, offset: Offset(-4, -4)),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [c0, c1],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: phase.soft,
+              borderRadius: BorderRadius.circular(12),
             ),
-            border: Border.all(
-              color: Colors.white.withOpacity(borderOpacity),
-              width: 1.5,
-            ),
-            borderRadius: BorderRadius.circular(20),
+            child: Text('ACTIVE NOW',
+                style: TextStyle(color: phase.color, fontSize: 10,
+                    fontWeight: FontWeight.w800, letterSpacing: 0.8)),
           ),
-          child: Stack(children: [
-            // Shine
-            Positioned(
-              top: 0, left: 0, right: 0, height: 40,
-              child: Container(
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.goldSoft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text('+${meta.xp} XP',
+                style: const TextStyle(color: AppColors.goldDark,
+                    fontSize: 11, fontWeight: FontWeight.w800)),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          const Text('', style: TextStyle(fontSize: 12)),
+          Text('Week $week', style: const TextStyle(
+              color: AppColors.inkMid, fontSize: 12,
+              fontWeight: FontWeight.w600)),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: phase.soft,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(meta.difficulty, style: TextStyle(
+                color: phase.color, fontSize: 10, fontWeight: FontWeight.w700)),
+          ),
+        ]),
+        const SizedBox(height: 4),
+        Text(meta.title, style: const TextStyle(
+            color: AppColors.ink, fontSize: 18, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 12),
+        // Day dots mini
+        if (dayProgress != null)
+          Row(children: [
+            for (int i = 0; i < 7; i++) ...[
+              Container(
+                width: 24, height: 24,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                    colors: [Colors.white.withOpacity(0.2), Colors.transparent],
+                  shape: BoxShape.circle,
+                  color: (i < dayProgress!.length && dayProgress![i])
+                      ? phase.color
+                      : AppColors.bg,
+                  border: Border.all(
+                    color: (i < dayProgress!.length && dayProgress![i])
+                        ? phase.color
+                        : AppColors.line,
+                    width: 1.5,
                   ),
                 ),
+                child: Center(
+                  child: (i < dayProgress!.length && dayProgress![i])
+                      ? const Icon(Symbols.check_rounded, size: 12,
+                          color: Colors.white, weight: 700, fill: 1)
+                      : Text('${i + 1}', style: const TextStyle(
+                          color: AppColors.inkSoft,
+                          fontSize: 9, fontWeight: FontWeight.w700)),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text('ACTIVE NOW',
-                        style: TextStyle(color: Colors.white, fontSize: 10,
-                            fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFB800),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text('+${meta.xp} XP',
-                        style: const TextStyle(color: Color(0xFF5C3A00),
-                            fontSize: 11, fontWeight: FontWeight.w800)),
-                  ),
-                ]),
-                const SizedBox(height: 10),
-                Row(children: [
-                  Text('Week $week', style: TextStyle(
-                      color: Colors.white.withOpacity(0.8), fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(meta.difficulty, style: const TextStyle(
-                        color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
-                  ),
-                ]),
-                const SizedBox(height: 4),
-                Text(meta.title, style: const TextStyle(
-                    color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 12),
-                // Day dots mini
-                if (dayProgress != null)
-                  Row(children: [
-                    for (int i = 0; i < 7; i++) ...[
-                      Container(
-                        width: 24, height: 24,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: (i < dayProgress!.length && dayProgress![i])
-                              ? Colors.white
-                              : Colors.white.withOpacity(0.2),
-                          border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
-                        ),
-                        child: Center(
-                          child: (i < dayProgress!.length && dayProgress![i])
-                              ? Icon(Symbols.check_rounded, size: 12,
-                                  color: phase.color, weight: 700, fill: 1)
-                              : Text('${i + 1}', style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 9, fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                      if (i < 6) const SizedBox(width: 4),
-                    ],
-                  ]),
-                const SizedBox(height: 10),
-                Row(children: [
-                  Text('$daysCompleted / ${meta.target} days',
-                      style: const TextStyle(color: Colors.white,
-                          fontSize: 13, fontWeight: FontWeight.w700)),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text('View Details',
-                        style: TextStyle(
-                            color: phase.color, fontSize: 12, fontWeight: FontWeight.w800)),
-                  ),
-                ]),
-              ]),
-            ),
+              if (i < 6) const SizedBox(width: 4),
+            ],
           ]),
-        ),
-      ),
+        const SizedBox(height: 10),
+        Row(children: [
+          Text('$daysCompleted / ${meta.target} days',
+              style: const TextStyle(color: AppColors.ink,
+                  fontSize: 13, fontWeight: FontWeight.w700)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.coral,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text('View Details',
+                style: TextStyle(
+                    color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
+          ),
+        ]),
+      ]),
     );
   }
 
@@ -1199,12 +1127,7 @@ class _MiniTimeline extends StatelessWidget {
                   width: 22, height: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: isCompleted
-                        ? phase.grad
-                        : isActive
-                            ? phase.grad
-                            : null,
-                    color: isLocked ? AppColors.bg : null,
+                    color: (isCompleted || isActive) ? phase.color : AppColors.bg,
                     border: isActive
                         ? Border.all(color: phase.color, width: 2)
                         : isLocked
@@ -1225,7 +1148,7 @@ class _MiniTimeline extends StatelessWidget {
                                   ? Colors.white
                                   : isLocked
                                       ? AppColors.inkSoft
-                                      : Colors.white,
+                                      : AppColors.inkSoft,
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                             )),
@@ -1242,13 +1165,16 @@ class _MiniTimeline extends StatelessWidget {
         const SizedBox(height: 10),
         // Phase legend
         Row(children: _kPhases.map((p) => Expanded(
-          child: Row(children: [
-            Container(width: 8, height: 8, decoration: BoxDecoration(
-                gradient: p.grad, shape: BoxShape.circle)),
-            const SizedBox(width: 4),
-            Flexible(child: Text('P${p.number}', style: TextStyle(
-                fontSize: 9, color: p.color, fontWeight: FontWeight.w700))),
-          ]),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Container(width: 8, height: 8, decoration: BoxDecoration(
+                  color: p.color, shape: BoxShape.circle)),
+              const SizedBox(width: 4),
+              Text('P${p.number}', style: TextStyle(
+                  fontSize: 9, color: p.color, fontWeight: FontWeight.w700)),
+            ]),
+          ),
         )).toList()),
       ]),
     );
@@ -1288,9 +1214,11 @@ class _ChallengeDetailSheet extends StatelessWidget {
           color: AppColors.bg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: ListView(
+        child: Column(
+          children: [
+            Expanded(child: ListView(
           controller: scrollCtrl,
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
           children: [
             // Handle
             Center(child: Container(
@@ -1301,70 +1229,76 @@ class _ChallengeDetailSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2)),
             )),
 
-            // Header gradient strip
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(gradient: phase.grad),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.25),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text('Phase ${phase.number} · Week ${meta.week}',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-                    ),
-                    const Spacer(),
-                    // Status pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        isCompleted ? '✅ Done' : isActive ? '⚡ Active' : '🔒 Locked',
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-                  Text(meta.title, style: const TextStyle(
-                      color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800, height: 1.1)),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    // XP badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFB800),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text('⭐ +$xp XP',
-                          style: const TextStyle(color: Color(0xFF5C3A00),
-                              fontSize: 12, fontWeight: FontWeight.w800)),
-                    ),
-                    const SizedBox(width: 8),
-                    // Difficulty badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(meta.difficulty,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                    ),
-                  ]),
-                ]),
+            // Header strip
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: phase.soft, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: AppColors.shadowDark, blurRadius: 8, offset: Offset(3, 3)),
+                  BoxShadow(color: AppColors.shadowLight, blurRadius: 8, offset: Offset(-3, -3)),
+                ],
               ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: phase.soft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text('Phase ${phase.number} · Week ${meta.week}',
+                        style: TextStyle(
+                            color: phase.color, fontSize: 11, fontWeight: FontWeight.w700)),
+                  ),
+                  const Spacer(),
+                  // Status pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isCompleted ? AppColors.sageSoft : isActive ? phase.soft : AppColors.bg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      isCompleted ? '✅ Done' : isActive ? '⚡ Active' : '🔒 Locked',
+                      style: TextStyle(
+                          color: isCompleted ? AppColors.sageDark : isActive ? phase.color : AppColors.inkSoft,
+                          fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 10),
+                Text(meta.title, style: const TextStyle(
+                    color: AppColors.ink, fontSize: 22, fontWeight: FontWeight.w800, height: 1.1)),
+                const SizedBox(height: 10),
+                Row(children: [
+                  // XP badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.goldSoft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text('⭐ +$xp XP',
+                        style: const TextStyle(color: AppColors.goldDark,
+                            fontSize: 12, fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(width: 8),
+                  // Difficulty badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: phase.soft,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(meta.difficulty,
+                        style: TextStyle(
+                            color: phase.color, fontSize: 12, fontWeight: FontWeight.w700)),
+                  ),
+                ]),
+              ]),
             ),
             const SizedBox(height: 20),
 
@@ -1492,7 +1426,7 @@ class _ChallengeDetailSheet extends StatelessWidget {
                     Container(
                       width: 22, height: 22,
                       decoration: BoxDecoration(
-                        gradient: phase.grad,
+                        color: phase.color,
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -1528,39 +1462,41 @@ class _ChallengeDetailSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.6),
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(children: [
                       const Text('💡', style: TextStyle(fontSize: 14)),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(meta.scienceFact, style: TextStyle(
-                          color: phase.textColor, fontSize: 12,
+                      Expanded(child: Text(meta.scienceFact, style: const TextStyle(
+                          color: AppColors.inkMid, fontSize: 12,
                           fontWeight: FontWeight.w600, height: 1.4))),
                     ]),
                   ),
                 ])),
               ]),
             ),
-            const SizedBox(height: 24),
-
-            // CTA button
-            NeuButton(
-              expand: true,
-              gradient: isCompleted ? null : isLocked ? null : phase.grad,
-              color: isCompleted
-                  ? AppColors.sageSoft
-                  : isLocked
-                      ? AppColors.surface
-                      : null,
-              foreground: isCompleted ? AppColors.sageDark : isLocked ? AppColors.inkSoft : Colors.white,
-              onPressed: isLocked ? null : () => Navigator.of(context).pop(),
-              child: Text(
-                isCompleted ? '✅ Challenge Completed!' : isActive ? '⚡ Keep Going!' : '🔒 Locked',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: isCompleted ? AppColors.sageDark : isLocked ? AppColors.inkSoft : Colors.white,
+          ],
+        )),
+            // Sticky CTA button always visible at bottom
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              child: NeuButton(
+                expand: true,
+                color: isCompleted
+                    ? AppColors.sageSoft
+                    : isLocked
+                        ? AppColors.surface
+                        : AppColors.coral,
+                foreground: isCompleted ? AppColors.sageDark : isLocked ? AppColors.inkSoft : Colors.white,
+                onPressed: isLocked ? null : () => Navigator.of(context).pop(),
+                child: Text(
+                  isCompleted ? '✅ Challenge Completed!' : isActive ? '⚡ Keep Going!' : '🔒 Locked',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: isCompleted ? AppColors.sageDark : isLocked ? AppColors.inkSoft : Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -1615,109 +1551,103 @@ class _Week6MilestoneDialogState extends State<_Week6MilestoneDialog>
       child: Dialog(
         insetPadding: const EdgeInsets.all(20),
         backgroundColor: Colors.transparent,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF11998E), Color(0xFF38EF7D), Color(0xFF1B4F72)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(children: [
-                const Text('🎉', style: TextStyle(fontSize: 48)),
-                const SizedBox(height: 8),
-                const Text('Halfway There!', style: TextStyle(
-                    color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 4),
-                Text('You\'ve completed Phase 1 & 2', style: TextStyle(
-                    color: Colors.white.withOpacity(0.85), fontSize: 14)),
-                const SizedBox(height: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: const [
+              BoxShadow(color: AppColors.shadowDark, blurRadius: 24, offset: Offset(8, 8)),
+              BoxShadow(color: AppColors.shadowLight, blurRadius: 24, offset: Offset(-8, -8)),
+            ],
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(children: [
+              const Text('🎉', style: TextStyle(fontSize: 48)),
+              const SizedBox(height: 8),
+              const Text('Halfway There!', style: TextStyle(
+                  color: AppColors.ink, fontSize: 28, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 4),
+              const Text('You\'ve completed Phase 1 & 2', style: TextStyle(
+                  color: AppColors.inkMid, fontSize: 14)),
+              const SizedBox(height: 24),
 
-                // Weight stats
-                Row(children: [
-                  Expanded(child: _StatCard(
-                    label: 'Start Weight',
-                    value: '${widget.startWeight.toStringAsFixed(1)} kg',
-                    icon: '⚖️',
-                  )),
-                  const SizedBox(width: 12),
-                  Expanded(child: _StatCard(
-                    label: 'Now',
-                    value: '${widget.currentWeight.toStringAsFixed(1)} kg',
-                    icon: '📉',
-                  )),
-                ]),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(children: [
-                    Text(lostStr, style: const TextStyle(
-                        color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
-                    Text('lost in 6 weeks', style: TextStyle(
-                        color: Colors.white.withOpacity(0.8), fontSize: 13)),
-                  ]),
+              // Weight stats
+              Row(children: [
+                Expanded(child: _StatCard(
+                  label: 'Start Weight',
+                  value: '${widget.startWeight.toStringAsFixed(1)} kg',
+                  icon: '⚖️',
+                )),
+                const SizedBox(width: 12),
+                Expanded(child: _StatCard(
+                  label: 'Now',
+                  value: '${widget.currentWeight.toStringAsFixed(1)} kg',
+                  icon: '📉',
+                )),
+              ]),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.sageSoft,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 20),
+                child: Column(children: [
+                  Text(lostStr, style: const TextStyle(
+                      color: AppColors.sageDark, fontSize: 32, fontWeight: FontWeight.w900)),
+                  const Text('lost in 6 weeks', style: TextStyle(
+                      color: AppColors.inkMid, fontSize: 13)),
+                ]),
+              ),
+              const SizedBox(height: 20),
 
-                // Weight chart
-                if (widget.weightHistory.isNotEmpty) ...[
-                  Container(
-                    height: 140,
-                    padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: _WeightChart(spots: widget.weightHistory, color: Colors.white),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-
+              // Weight chart
+              if (widget.weightHistory.isNotEmpty) ...[
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  height: 140,
+                  padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: AppColors.bg,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Text(
-                    'You\'ve built the habits that make lasting change possible. '
-                    'The next 6 weeks will push you further — but you\'re ready. 💪',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white.withOpacity(0.9),
-                        fontSize: 13, height: 1.5),
-                  ),
+                  child: _WeightChart(spots: widget.weightHistory, color: AppColors.sageDark),
                 ),
                 const SizedBox(height: 20),
+              ],
 
-                GestureDetector(
-                  onTap: widget.onContinue,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.2),
-                            blurRadius: 12, offset: const Offset(0, 4))
-                      ],
-                    ),
-                    child: const Text('Continue to Phase 3 →',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Color(0xFF11998E),
-                            fontSize: 16, fontWeight: FontWeight.w800)),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.bg,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-              ]),
-            ),
+                child: const Text(
+                  'You\'ve built the habits that make lasting change possible. '
+                  'The next 6 weeks will push you further — but you\'re ready. 💪',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.inkMid,
+                      fontSize: 13, height: 1.5),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              GestureDetector(
+                onTap: widget.onContinue,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.coral,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text('Continue to Phase 3 →',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white,
+                          fontSize: 16, fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ]),
           ),
         ),
       ),
@@ -1772,9 +1702,9 @@ class _Week12MilestoneDialogState extends State<_Week12MilestoneDialog>
       rotation: _rng.nextDouble() * math.pi * 2,
       vRotation: (_rng.nextDouble() - 0.5) * 0.1,
       color: [
-        const Color(0xFFFFB800), const Color(0xFFFF6B35), const Color(0xFF6A11CB),
-        const Color(0xFF11998E), const Color(0xFF2575FC), const Color(0xFFFF416C),
-        Colors.white, const Color(0xFF38EF7D),
+        AppColors.gold, AppColors.coral, AppColors.berry,
+        AppColors.sageDark, AppColors.sage, AppColors.goldDark,
+        AppColors.coralSoft, AppColors.berrySoft,
       ][i % 8],
     ));
   }
@@ -1821,111 +1751,106 @@ class _Week12MilestoneDialogState extends State<_Week12MilestoneDialog>
         child: Dialog(
           insetPadding: const EdgeInsets.all(16),
           backgroundColor: Colors.transparent,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF1A0533), Color(0xFF6A11CB), Color(0xFF2575FC)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(children: [
-                  const Text('🏆', style: TextStyle(fontSize: 52)),
-                  const SizedBox(height: 8),
-                  const Text('Transformation Complete!', style: TextStyle(
-                      color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
-                      textAlign: TextAlign.center),
-                  const SizedBox(height: 4),
-                  Text('You did it. 12 weeks of consistency.',
-                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13)),
-                  const SizedBox(height: 24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const [
+                BoxShadow(color: AppColors.shadowDark, blurRadius: 24, offset: Offset(8, 8)),
+                BoxShadow(color: AppColors.shadowLight, blurRadius: 24, offset: Offset(-8, -8)),
+              ],
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(children: [
+                const Text('🏆', style: TextStyle(fontSize: 52)),
+                const SizedBox(height: 8),
+                const Text('Transformation Complete!', style: TextStyle(
+                    color: AppColors.ink, fontSize: 24, fontWeight: FontWeight.w900),
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 4),
+                const Text('You did it. 12 weeks of consistency.',
+                    style: TextStyle(color: AppColors.inkMid, fontSize: 13)),
+                const SizedBox(height: 24),
 
-                  // Stats grid
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 2.2,
-                    children: [
-                      _StatCard(label: 'Started At', value: '${widget.startWeight.toStringAsFixed(1)} kg', icon: '⚖️'),
-                      _StatCard(label: 'Finished At', value: '${widget.currentWeight.toStringAsFixed(1)} kg', icon: '🎯'),
-                      _StatCard(label: 'Total Lost', value: lostStr, icon: '📉'),
-                      _StatCard(label: 'XP Earned', value: '${widget.totalXp}', icon: '⭐'),
-                      _StatCard(label: 'Total Steps', value: '$stepsK steps', icon: '👟'),
-                      _StatCard(label: 'Best Streak', value: '${widget.longestStreak} days', icon: '🔥'),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Weight trend chart
-                  if (widget.weightHistory.isNotEmpty) ...[
-                    Container(
-                      height: 150,
-                      padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('12-Week Weight Trend',
-                            style: TextStyle(color: Colors.white.withOpacity(0.8),
-                                fontSize: 11, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 4),
-                        Expanded(child: _WeightChart(
-                            spots: widget.weightHistory, color: const Color(0xFF38EF7D))),
-                      ]),
-                    ),
-                    const SizedBox(height: 20),
+                // Stats grid
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 2.2,
+                  children: [
+                    _StatCard(label: 'Started At', value: '${widget.startWeight.toStringAsFixed(1)} kg', icon: '⚖️'),
+                    _StatCard(label: 'Finished At', value: '${widget.currentWeight.toStringAsFixed(1)} kg', icon: '🎯'),
+                    _StatCard(label: 'Total Lost', value: lostStr, icon: '📉'),
+                    _StatCard(label: 'XP Earned', value: '${widget.totalXp}', icon: '⭐'),
+                    _StatCard(label: 'Total Steps', value: '$stepsK steps', icon: '👟'),
+                    _StatCard(label: 'Best Streak', value: '${widget.longestStreak} days', icon: '🔥'),
                   ],
+                ),
+                const SizedBox(height: 20),
 
-                  // Achievement card
+                // Weight trend chart
+                if (widget.weightHistory.isNotEmpty) ...[
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    height: 150,
+                    padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFFFFB800), Color(0xFFFF6B35)]),
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [BoxShadow(
-                          color: const Color(0xFFFFB800).withOpacity(0.4),
-                          blurRadius: 16, offset: const Offset(0, 6))],
+                      color: AppColors.bg,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Row(children: [
-                      const Text('🎓', style: TextStyle(fontSize: 32)),
-                      const SizedBox(width: 12),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('FitQuest Graduate', style: TextStyle(
-                            color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
-                        Text('12-Week Challenge · ${lost.toStringAsFixed(1)} kg lost',
-                            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12)),
-                      ])),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('12-Week Weight Trend',
+                          style: TextStyle(color: AppColors.inkMid,
+                              fontSize: 11, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Expanded(child: _WeightChart(
+                          spots: widget.weightHistory, color: AppColors.sageDark)),
                     ]),
                   ),
                   const SizedBox(height: 20),
+                ],
 
-                  GestureDetector(
-                    onTap: widget.onClose,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text('Close',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Color(0xFF6A11CB),
-                              fontSize: 16, fontWeight: FontWeight.w800)),
-                    ),
+                // Achievement card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.goldSoft,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.gold, width: 1.5),
                   ),
-                ]),
-              ),
+                  child: Row(children: [
+                    const Text('🎓', style: TextStyle(fontSize: 32)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('FitQuest Graduate', style: TextStyle(
+                          color: AppColors.goldDark, fontSize: 16, fontWeight: FontWeight.w900)),
+                      Text('12-Week Challenge · ${lost.toStringAsFixed(1)} kg lost',
+                          style: const TextStyle(color: AppColors.inkMid, fontSize: 12)),
+                    ])),
+                  ]),
+                ),
+                const SizedBox(height: 20),
+
+                GestureDetector(
+                  onTap: widget.onClose,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.coral,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text('Close',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white,
+                            fontSize: 16, fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ]),
             ),
           ),
         ),
@@ -1944,7 +1869,7 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.18),
+      color: AppColors.bg,
       borderRadius: BorderRadius.circular(14),
     ),
     child: Row(children: [
@@ -1955,9 +1880,9 @@ class _StatCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(value, style: const TextStyle(
-              color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
-          Text(label, style: TextStyle(
-              color: Colors.white.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w600)),
+              color: AppColors.ink, fontSize: 14, fontWeight: FontWeight.w800)),
+          Text(label, style: const TextStyle(
+              color: AppColors.inkSoft, fontSize: 10, fontWeight: FontWeight.w600)),
         ],
       )),
     ]),

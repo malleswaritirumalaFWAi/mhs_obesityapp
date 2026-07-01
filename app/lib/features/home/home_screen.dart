@@ -12,6 +12,8 @@ import '../../core/router.dart';
 import '../../core/state/session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/neu.dart';
+import '../../core/widgets/neu_card.dart';
 
 // Maps icon string from backend to Flutter IconData.
 IconData _iconFor(String name) {
@@ -60,22 +62,15 @@ class HomeScreen extends ConsumerWidget {
     final total = tasksState.total;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         bottom: false,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // ── Gradient header ──
-            Container(
-              decoration: const BoxDecoration(
-                gradient: AppColors.orangeGrad,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-              ),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            // ── Neumorphic hero header ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Column(
                 children: [
                   // Top bar
@@ -84,14 +79,14 @@ class HomeScreen extends ConsumerWidget {
                       Text(
                         'Hi, ${name.isNotEmpty ? name : 'there'} 👋',
                         style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.ink,
                             fontSize: 20,
                             fontWeight: FontWeight.w800),
                       ),
                       Text(
                         'Day ${tasksState.day} / 84',
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.85),
+                        style: const TextStyle(
+                            color: AppColors.inkMid,
                             fontSize: 13,
                             fontWeight: FontWeight.w500),
                       ),
@@ -106,11 +101,12 @@ class HomeScreen extends ConsumerWidget {
                           Container(
                             width: 42, height: 42,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.25),
+                              color: AppColors.surface,
                               shape: BoxShape.circle,
+                              boxShadow: Neu.small(),
                             ),
                             child: const Icon(Symbols.notifications_rounded,
-                                color: Colors.white, size: 22),
+                                color: AppColors.inkMid, size: 22),
                           ),
                           if (unreadCount > 0)
                             Positioned(
@@ -118,12 +114,12 @@ class HomeScreen extends ConsumerWidget {
                               child: Container(
                                 width: 16, height: 16,
                                 decoration: const BoxDecoration(
-                                    color: Colors.white, shape: BoxShape.circle),
+                                    color: AppColors.coral, shape: BoxShape.circle),
                                 alignment: Alignment.center,
                                 child: Text(
                                   unreadCount > 9 ? '9+' : '$unreadCount',
                                   style: const TextStyle(
-                                      color: AppColors.orange, fontSize: 9,
+                                      color: Colors.white, fontSize: 9,
                                       fontWeight: FontWeight.w900),
                                 ),
                               ),
@@ -136,12 +132,7 @@ class HomeScreen extends ConsumerWidget {
                   // Hero progress card
                   Container(
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                          color: Colors.white.withOpacity(0.35), width: 1.5),
-                    ),
+                    decoration: Neu.card(radius: 24),
                     child: Row(children: [
                       Expanded(
                         child: Column(
@@ -150,7 +141,7 @@ class HomeScreen extends ConsumerWidget {
                             const Text(
                               "Today's Progress",
                               style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.inkSoft,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600),
                             ),
@@ -162,7 +153,7 @@ class HomeScreen extends ConsumerWidget {
                                       ? 'All done! 🎉'
                                       : '$done of $total tasks done',
                               style: const TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.ink,
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900),
                             ),
@@ -172,20 +163,20 @@ class HomeScreen extends ConsumerWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.25),
+                                  color: AppColors.coralSoft,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: const Text('🔥 On a roll!',
                                     style: TextStyle(
-                                        color: Colors.white,
+                                        color: AppColors.coral,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 12)),
                               )
                             else
-                              Text(
+                              const Text(
                                 'Keep going, you\'re doing great!',
                                 style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: AppColors.inkSoft,
                                     fontSize: 12),
                               ),
                           ],
@@ -203,9 +194,9 @@ class HomeScreen extends ConsumerWidget {
                               child: CircularProgressIndicator(
                                 value: total > 0 ? done / total : 0,
                                 strokeWidth: 8,
-                                backgroundColor: Colors.white.withOpacity(0.25),
+                                backgroundColor: AppColors.line,
                                 valueColor: const AlwaysStoppedAnimation<Color>(
-                                    Colors.white),
+                                    AppColors.coral),
                                 strokeCap: StrokeCap.round,
                               ),
                             ),
@@ -215,13 +206,13 @@ class HomeScreen extends ConsumerWidget {
                                 Text(
                                   '$done/$total',
                                   style: const TextStyle(
-                                      color: Colors.white,
+                                      color: AppColors.ink,
                                       fontSize: 20,
                                       fontWeight: FontWeight.w900),
                                 ),
                                 const Text('DONE',
                                     style: TextStyle(
-                                        color: Colors.white,
+                                        color: AppColors.inkSoft,
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700)),
                               ],
@@ -247,8 +238,8 @@ class HomeScreen extends ConsumerWidget {
                     child: _QuickAction(
                       emoji: '☀️',
                       label: 'Check-in',
-                      color: AppColors.orange,
-                      soft: AppColors.orangeSoft,
+                      color: AppColors.coral,
+                      soft: AppColors.coralSoft,
                       onTap: () async {
                         await context.push(Routes.checkin);
                         ref.read(tasksProvider.notifier).fetch();
@@ -303,7 +294,7 @@ class HomeScreen extends ConsumerWidget {
                 Expanded(
                   child: _Stat(
                     icon: Symbols.directions_walk_rounded,
-                    color: AppColors.orange,
+                    color: AppColors.coral,
                     label: 'Steps',
                     value: stats.stepsLabel,
                     sub: stats.stepsSub,
@@ -346,7 +337,7 @@ class HomeScreen extends ConsumerWidget {
                   onTap: () => context.go(Routes.today),
                   child: Text('See all →',
                       style: T.small(context).copyWith(
-                          color: AppColors.orange,
+                          color: AppColors.coral,
                           fontWeight: FontWeight.w700)),
                 ),
               ]),
@@ -396,70 +387,48 @@ class HomeScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(children: [
                 Expanded(
-                  child: GestureDetector(
+                  child: NeuCard(
                     onTap: () => context.go(Routes.group),
-                    child: Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.orangeGrad,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                              color: AppColors.orange.withOpacity(0.3),
-                              blurRadius: 12, offset: const Offset(0, 4)),
-                        ],
-                      ),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('🏆', style: TextStyle(fontSize: 28)),
-                        const SizedBox(height: 8),
-                        const Text('Your Rank',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 12,
-                                fontWeight: FontWeight.w500)),
-                        const Text('#12',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 28,
-                                fontWeight: FontWeight.w900)),
-                        const Text('Top 5% this week',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 11,
-                                fontWeight: FontWeight.w500)),
-                      ]),
-                    ),
+                    padding: const EdgeInsets.all(18),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('🏆', style: TextStyle(fontSize: 28)),
+                      const SizedBox(height: 8),
+                      const Text('Your Rank',
+                          style: TextStyle(
+                              color: AppColors.inkSoft, fontSize: 12,
+                              fontWeight: FontWeight.w500)),
+                      const Text('#12',
+                          style: TextStyle(
+                              color: AppColors.coral, fontSize: 28,
+                              fontWeight: FontWeight.w900)),
+                      const Text('Top 5% this week',
+                          style: TextStyle(
+                              color: AppColors.inkSoft, fontSize: 11,
+                              fontWeight: FontWeight.w500)),
+                    ]),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: GestureDetector(
+                  child: NeuCard(
                     onTap: () => context.push(Routes.weeklyProgress),
-                    child: Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.tealGrad,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                              color: AppColors.teal.withOpacity(0.3),
-                              blurRadius: 12, offset: const Offset(0, 4)),
-                        ],
-                      ),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('📈', style: TextStyle(fontSize: 28)),
-                        const SizedBox(height: 8),
-                        const Text('This Week',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 12,
-                                fontWeight: FontWeight.w500)),
-                        const Text('Progress',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 20,
-                                fontWeight: FontWeight.w900)),
-                        const Text('Tap to see summary',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 11,
-                                fontWeight: FontWeight.w500)),
-                      ]),
-                    ),
+                    padding: const EdgeInsets.all(18),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('📈', style: TextStyle(fontSize: 28)),
+                      const SizedBox(height: 8),
+                      const Text('This Week',
+                          style: TextStyle(
+                              color: AppColors.inkSoft, fontSize: 12,
+                              fontWeight: FontWeight.w500)),
+                      const Text('Progress',
+                          style: TextStyle(
+                              color: AppColors.ink, fontSize: 20,
+                              fontWeight: FontWeight.w900)),
+                      const Text('Tap to see summary',
+                          style: TextStyle(
+                              color: AppColors.inkSoft, fontSize: 11,
+                              fontWeight: FontWeight.w500)),
+                    ]),
                   ),
                 ),
               ]),
@@ -469,48 +438,36 @@ class HomeScreen extends ConsumerWidget {
             // ── Coach card ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GestureDetector(
+              child: NeuCard(
                 onTap: () => context.go(Routes.chat),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 12, offset: const Offset(0, 4)),
-                    ],
+                child: Row(children: [
+                  Container(
+                    width: 48, height: 48,
+                    decoration: const BoxDecoration(
+                        color: AppColors.coralSoft, shape: BoxShape.circle),
+                    alignment: Alignment.center,
+                    child: const Text('M',
+                        style: TextStyle(
+                            color: AppColors.coral,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18)),
                   ),
-                  child: Row(children: [
-                    Container(
-                      width: 48, height: 48,
-                      decoration: const BoxDecoration(
-                          gradient: AppColors.orangeGrad, shape: BoxShape.circle),
-                      alignment: Alignment.center,
-                      child: const Text('M',
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('Coach Mira',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 18)),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('Coach Mira',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700, fontSize: 15,
-                                color: Color(0xFF1A1A2E))),
-                        Text(
-                          'You crushed steps today. Try a 10-min stretch before bed 🌙',
-                          style: T.small(context),
-                        ),
-                      ]),
-                    ),
-                    const Icon(Symbols.arrow_forward_rounded,
-                        color: AppColors.orange),
-                  ]),
-                ),
+                              fontWeight: FontWeight.w700, fontSize: 15,
+                              color: AppColors.ink)),
+                      Text(
+                        'You crushed steps today. Try a 10-min stretch before bed 🌙',
+                        style: T.small(context),
+                      ),
+                    ]),
+                  ),
+                  const Icon(Symbols.arrow_forward_rounded,
+                      color: AppColors.coral),
+                ]),
               ),
             ),
             const SizedBox(height: 16),
@@ -748,37 +705,21 @@ class _WaterSheetState extends ConsumerState<_WaterSheet> {
         const SizedBox(height: 20),
         SizedBox(
           width: double.infinity,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1B4F72), Color(0xFF6C63FF)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6C63FF).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18)),
-                  padding: const EdgeInsets.symmetric(vertical: 16)),
-              onPressed: () {
-                ref.read(dailyStatsProvider.notifier).updateWater(_glasses);
-                Navigator.pop(context);
-              },
-              child: const Text('Save',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-            ),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.coral,
+                shadowColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18)),
+                padding: const EdgeInsets.symmetric(vertical: 16)),
+            onPressed: () async {
+              await ref.read(dailyStatsProvider.notifier).updateWater(_glasses);
+              ref.read(tasksProvider.notifier).fetch();
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Save',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
           ),
         ),
       ]),
@@ -809,15 +750,7 @@ class _Stat extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 10, offset: const Offset(0, 3)),
-          ],
-        ),
+        decoration: Neu.card(radius: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -861,15 +794,7 @@ class _QuickAction extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8, offset: const Offset(0, 3)),
-          ],
-        ),
+        decoration: Neu.card(radius: 16),
         child: Column(children: [
           Container(
             width: 44, height: 44,
@@ -913,15 +838,7 @@ class _LinkCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8, offset: const Offset(0, 3)),
-          ],
-        ),
+        decoration: Neu.card(radius: 18),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(emoji, style: const TextStyle(fontSize: 24)),
           const SizedBox(height: 8),
@@ -962,15 +879,7 @@ class _Task extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8, offset: const Offset(0, 2)),
-            ],
-          ),
+          decoration: Neu.card(radius: 18),
           child: Row(
             children: [
               Container(
@@ -979,11 +888,11 @@ class _Task extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: done
                       ? AppColors.sageSoft
-                      : AppColors.orange.withOpacity(0.1),
+                      : AppColors.coralSoft,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon,
-                    color: done ? AppColors.sageDark : AppColors.orange,
+                    color: done ? AppColors.sageDark : AppColors.coral,
                     fill: 1),
               ),
               const SizedBox(width: 14),
@@ -1008,7 +917,7 @@ class _Task extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      gradient: AppColors.orangeGrad,
+                      color: AppColors.coral,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(action!,

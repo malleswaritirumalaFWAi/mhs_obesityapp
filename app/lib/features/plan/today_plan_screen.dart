@@ -291,7 +291,7 @@ class _TodayPlanScreenState extends ConsumerState<TodayPlanScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: SizedBox(
-                      height: 48,
+                      height: 60,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: [
@@ -439,7 +439,7 @@ class _DayChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: isToday ? 70 : 46,
-        margin: const EdgeInsets.only(right: 10),
+        margin: const EdgeInsets.only(right: 10, top: 6, bottom: 6),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(18),

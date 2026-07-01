@@ -10,6 +10,7 @@ import '../../core/providers/user_provider.dart';
 import '../../core/providers/gamification_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/neu.dart';
 import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
@@ -136,6 +137,38 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
     }
   }
 
+  Future<void> _confirmAndSave() async {
+    final todayEntry = _history.isNotEmpty && _history.first.isToday
+        ? _history.first
+        : null;
+    if (todayEntry != null) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Already checked in today',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          content: const Text(
+              'You have already submitted your morning check-in for today. Do you want to update it with the new details?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel',
+                  style: TextStyle(color: AppColors.inkMid, fontWeight: FontWeight.w700)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Update',
+                  style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    await _save();
+  }
+
   Future<void> _save() async {
     setState(() => _busy = true);
     try {
@@ -190,33 +223,34 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Gradient section header
+        // Section header
         Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           decoration: BoxDecoration(
-            gradient: AppColors.orangeGrad,
+            color: AppColors.coralSoft,
             borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.coral.withOpacity(0.3)),
           ),
           child: Row(children: [
             const Icon(Symbols.history_rounded,
-                color: Colors.white, size: 18, fill: 1),
+                color: AppColors.coral, size: 18, fill: 1),
             const SizedBox(width: 10),
             const Expanded(
               child: Text('Check-in history',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.coral,
                       fontWeight: FontWeight.w800,
                       fontSize: 15)),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text('${_history.length} total',
                   style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.inkMid,
                       fontWeight: FontWeight.w700,
                       fontSize: 11)),
             ),
@@ -286,25 +320,13 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.orangeGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              NeuCard(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -313,12 +335,12 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                       children: [
                         Text('Morning check-in',
                             style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.ink,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900)),
                         Text('Log your mood & weight',
                             style: TextStyle(
-                                color: Colors.white70, fontSize: 12)),
+                                color: AppColors.inkSoft, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -358,7 +380,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                   ]),
                 ),
                 const SizedBox(height: 14),
-                Text('Update today\'s check-in',
+                Text('You can update today\'s entry below',
                     style: T.small(context)
                         .copyWith(color: AppColors.inkSoft)),
                 const SizedBox(height: 10),
@@ -453,10 +475,10 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
 
               // ── Save button ──
               NeuButton.primary(
-                'Save check-in',
+                todayEntry != null ? 'Update check-in' : 'Save check-in',
                 loading: _busy,
                 trailing: const Icon(Symbols.check_rounded, size: 20),
-                onPressed: _save,
+                onPressed: _busy ? null : _confirmAndSave,
               ),
 
               // ── Recent history ──
@@ -488,17 +510,20 @@ class _CheckinDayHeader extends StatelessWidget {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          gradient: isToday
-              ? AppColors.orangeGrad
+          color: isToday
+              ? AppColors.coralSoft
               : isYesterday
-                  ? AppColors.tealGrad
-                  : null,
-          color: (!isToday && !isYesterday) ? AppColors.bg : null,
+                  ? AppColors.sageSoft
+                  : AppColors.bg,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(dateLabel,
             style: TextStyle(
-                color: (isToday || isYesterday) ? Colors.white : AppColors.inkSoft,
+                color: isToday
+                    ? AppColors.coral
+                    : isYesterday
+                        ? AppColors.sageDark
+                        : AppColors.inkSoft,
                 fontWeight: FontWeight.w800,
                 fontSize: 12)),
       ),
@@ -523,15 +548,10 @@ class _HistoryCard extends StatelessWidget {
       child: Stack(children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.line),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2))
-            ],
+            boxShadow: Neu.small(),
           ),
           padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

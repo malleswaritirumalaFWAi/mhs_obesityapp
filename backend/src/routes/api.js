@@ -223,7 +223,7 @@ router.post('/movement/add', async (req, res) => {
   );
   const steps = r.rows[0]?.steps ?? 0;
   if (steps >= goal) {
-    markTasksDoneByIcon(uid(req), ['directions_run', 'directions_walk']).catch(() => {});
+    await markTasksDoneByIcon(uid(req), ['directions_run', 'directions_walk']);
   }
   if (add > 0) {
     const ux = (await q(`SELECT double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
@@ -255,7 +255,7 @@ router.post('/hydration/add', async (req, res) => {
   );
   const glasses = r.rows[0]?.water ?? 0;
   if (glasses >= 8) {
-    markTasksDoneByIcon(uid(req), ['water_drop']).catch(() => {});
+    await markTasksDoneByIcon(uid(req), ['water_drop']);
   }
   const uxh = (await q(`SELECT double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
   const dxph = uxh?.double_xp_expires_at && new Date(uxh.double_xp_expires_at) > new Date() ? 10 : 5;
@@ -291,6 +291,10 @@ router.post('/stats/today', async (req, res) => {
      ON CONFLICT (user_id, date) DO UPDATE SET ${sets.join(', ')}`,
     vals
   );
+  // Mark hydration task done if water reached 8 via home screen card
+  if (water !== undefined && Number(water) >= 8) {
+    await markTasksDoneByIcon(uid(req), ['water_drop']);
+  }
   res.json({ updated: true });
 });
 
@@ -300,19 +304,8 @@ router.post('/checkins', async (req, res, next) => {
   const { mood, weight, notes, tz_offset } = req.body || {};
   if (mood === undefined || mood === null || mood < 0 || mood > 4)
     return res.status(400).json({ message: 'mood must be 0–4' });
-  await q(`INSERT INTO checkins (user_id, mood, weight, notes) VALUES ($1,$2,$3,$4)`,
-    [uid(req), mood, weight, notes]);
 
-  // Mark morning check-in task done only when BOTH mood AND weight are logged.
-  const parsedWeight = weight !== undefined && weight !== null && !isNaN(Number(weight)) && Number(weight) > 0;
-  if (parsedWeight) {
-    markTasksDoneByIcon(uid(req), ['wb_sunny']).catch(() => {});
-  }
-
-  // Streak logic — timezone-aware using client-supplied tz_offset (minutes from UTC).
-  // e.g. IST = +330. Falls back to UTC (0) if not provided.
-  // We compute local-midnight boundaries as UTC timestamps so all DB comparisons
-  // use raw TIMESTAMPTZ ranges — no ::date casts that would silently shift to UTC.
+  // Timezone-aware today boundaries (IST = +330, falls back to UTC).
   const tzOffsetMin = Number(tz_offset ?? 0);
   const nowMs = Date.now();
   const localNow = new Date(nowMs + tzOffsetMin * 60000);
@@ -323,15 +316,27 @@ router.post('/checkins', async (req, res, next) => {
   const localTodayEndUtc       = new Date(localMidnightUtc.getTime() + 86400000);
   const localYesterdayStartUtc = new Date(localMidnightUtc.getTime() - 86400000);
 
-  // Has the user already checked in during local-today?
-  // OFFSET 1 skips the row we just inserted so we detect a *prior* check-in today.
-  const alreadyCheckedToday = (await q(
-    `SELECT id FROM checkins
-     WHERE user_id=$1 AND mood >= 0
-       AND created_at >= $2 AND created_at < $3
-     ORDER BY id DESC OFFSET 1 LIMIT 1`,
+  // One entry per day: update today's record if it exists, otherwise insert.
+  const existingToday = (await q(
+    `SELECT id FROM checkins WHERE user_id=$1 AND mood >= 0
+       AND created_at >= $2 AND created_at < $3 ORDER BY id DESC LIMIT 1`,
     [uid(req), localMidnightUtc, localTodayEndUtc]
   )).rows[0];
+
+  const isUpdate = !!existingToday;
+  if (isUpdate) {
+    await q(`UPDATE checkins SET mood=$1, weight=$2, notes=$3, created_at=NOW() WHERE id=$4`,
+      [mood, weight, notes, existingToday.id]);
+  } else {
+    await q(`INSERT INTO checkins (user_id, mood, weight, notes) VALUES ($1,$2,$3,$4)`,
+      [uid(req), mood, weight, notes]);
+  }
+
+  // Mark morning check-in task done only when BOTH mood AND weight are logged.
+  const parsedWeight = weight !== undefined && weight !== null && !isNaN(Number(weight)) && Number(weight) > 0;
+  if (parsedWeight) {
+    await markTasksDoneByIcon(uid(req), ['wb_sunny']);
+  }
 
   const prevUser = (await q(`SELECT streak, total_xp FROM users WHERE id=$1`, [uid(req)])).rows[0] || {};
   const prevStreak = prevUser.streak || 0;
@@ -340,8 +345,10 @@ router.post('/checkins', async (req, res, next) => {
   let streak = prevStreak;
   let multiplier = 1.0;
 
-  if (!alreadyCheckedToday) {
+  // Only award XP and update streak on the FIRST checkin of the day.
+  if (!isUpdate) {
     // Was the user's previous check-in within the local-yesterday window?
+    // OFFSET 1 skips the row we just inserted to get the prior check-in.
     const lastCheckin = (await q(
       `SELECT created_at FROM checkins
        WHERE user_id=$1 AND mood >= 0
@@ -435,18 +442,41 @@ router.get('/checkins', async (req, res) => {
 
 // ---- Evening weigh-in ----
 router.post('/weighin', async (req, res) => {
-  const { weight, notes, evening_mood } = req.body || {};
+  const { weight, notes, evening_mood, tz_offset } = req.body || {};
   if (!weight) return res.status(400).json({ message: 'weight is required' });
   const mood = (evening_mood !== undefined && evening_mood !== null && evening_mood >= 0 && evening_mood <= 4)
     ? Number(evening_mood)
     : null;
-  await q(
-    `INSERT INTO checkins (user_id, mood, weight, notes, evening_mood) VALUES ($1, -1, $2, $3, $4)`,
-    [uid(req), parseFloat(weight), notes || null, mood]
+
+  // Timezone-aware today boundaries — same approach as /checkins.
+  const tzOffsetMin = Number(tz_offset ?? 0);
+  const localNow = new Date(Date.now() + tzOffsetMin * 60000);
+  const localMidnightUtc = new Date(
+    Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate())
+    - tzOffsetMin * 60000
   );
-  markTasksDoneByIcon(uid(req), ['scale']).catch(() => {});
-  await q(`UPDATE users SET xp = xp + 5 WHERE id=$1`, [uid(req)]);
-  res.json({ saved: true, xp_awarded: 5 });
+  const localTodayEndUtc = new Date(localMidnightUtc.getTime() + 86400000);
+
+  // One entry per day: update today's record if it exists, otherwise insert.
+  const existingToday = (await q(
+    `SELECT id FROM checkins WHERE user_id=$1 AND mood=-1
+       AND created_at >= $2 AND created_at < $3 ORDER BY id DESC LIMIT 1`,
+    [uid(req), localMidnightUtc, localTodayEndUtc]
+  )).rows[0];
+
+  if (existingToday) {
+    await q(`UPDATE checkins SET weight=$1, notes=$2, evening_mood=$3, created_at=NOW() WHERE id=$4`,
+      [parseFloat(weight), notes || null, mood, existingToday.id]);
+    res.json({ saved: true, xp_awarded: 0 });
+  } else {
+    await q(
+      `INSERT INTO checkins (user_id, mood, weight, notes, evening_mood) VALUES ($1, -1, $2, $3, $4)`,
+      [uid(req), parseFloat(weight), notes || null, mood]
+    );
+    await markTasksDoneByIcon(uid(req), ['scale']);
+    await q(`UPDATE users SET xp = xp + 5 WHERE id=$1`, [uid(req)]);
+    res.json({ saved: true, xp_awarded: 5 });
+  }
 });
 
 router.get('/weighin', async (req, res) => {

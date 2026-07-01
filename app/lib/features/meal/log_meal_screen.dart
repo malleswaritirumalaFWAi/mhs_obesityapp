@@ -123,6 +123,9 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
   bool _analyzing = false;
   String? _analysisError;
 
+  // Save guard
+  bool _saving = false;
+
   // History
   List<_MealEntry> _history = [];
   bool _loadingHistory = true;
@@ -317,6 +320,9 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
   }
 
   Future<void> _save() async {
+    if (_saving) return; // guard against double-tap / rapid re-submit
+    setState(() => _saving = true);
+
     final r = _result;
     final selectedType = _mealTypes[_mealType].label;
     final api = ref.read(apiClientProvider);
@@ -332,6 +338,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       });
     } catch (_) {
       if (!mounted) return;
+      setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Could not save meal. Check your connection and try again.'),
@@ -348,6 +355,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
     ref.read(mealStatsProvider.notifier).addMealType(selectedType);
     ref.invalidate(tasksProvider);
     setState(() {
+      _saving = false;
       _photoBytes = null;
       _result = null;
       _analysisError = null;
@@ -371,25 +379,13 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.orangeGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              NeuCard(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -398,12 +394,12 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                       children: [
                         Text('Log meal',
                             style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
                         Text('Snap a photo to analyze nutrition',
                             style: TextStyle(
-                                color: Colors.white70, fontSize: 12)),
+                                color: AppColors.inkSoft, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -673,7 +669,8 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                     flex: 2,
                     child: NeuButton.primary(
                       'Save · +5 XP',
-                      onPressed: _save,
+                      loading: _saving,
+                      onPressed: _saving ? null : _save,
                     ),
                   ),
                 ]),
@@ -951,17 +948,21 @@ class _HistorySectionHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
-        gradient: AppColors.orangeGrad,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(color: AppColors.shadowDark, blurRadius: 6, offset: Offset(2, 2)),
+          BoxShadow(color: AppColors.shadowLight, blurRadius: 6, offset: Offset(-2, -2)),
+        ],
       ),
       child: Row(children: [
         const Icon(Symbols.restaurant_rounded,
-            color: Colors.white, size: 18, fill: 1),
+            color: AppColors.coral, size: 18, fill: 1),
         const SizedBox(width: 10),
         const Expanded(
           child: Text('Meal history',
               style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.ink,
                   fontWeight: FontWeight.w800,
                   fontSize: 15)),
         ),
@@ -969,12 +970,12 @@ class _HistorySectionHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
+              color: AppColors.coralSoft,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text('$count logged',
                 style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.coral,
                     fontWeight: FontWeight.w700,
                     fontSize: 11)),
           ),

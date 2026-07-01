@@ -136,6 +136,15 @@ router.post('/analyze', async (req, res) => {
 router.post('/', async (req, res) => {
   const { meal_type, items, calories, carbs, protein, fat, photo_url } = req.body || {};
 
+  // Idempotency guard: block duplicate submissions of the same meal_type
+  // within a 30-second window (catches double-tap / slow-network re-submits).
+  const recent = (await q(
+    `SELECT id FROM meals WHERE user_id=$1 AND meal_type=$2
+       AND created_at > NOW() - INTERVAL '30 seconds' LIMIT 1`,
+    [req.user.uid, meal_type]
+  )).rows[0];
+  if (recent) return res.json({ id: recent.id, xp_awarded: 0, combo_bonus: 0, duplicate: true });
+
   // Check active perks before inserting
   const userRow = (await q(`SELECT double_xp_expires_at, cheat_meal_passes FROM users WHERE id=$1`, [req.user.uid])).rows[0] || {};
   const doubleXpActive = userRow.double_xp_expires_at && new Date(userRow.double_xp_expires_at) > new Date();
@@ -171,7 +180,7 @@ router.post('/', async (req, res) => {
   );
   const types = todayMeals.rows.map(m => m.meal_type);
   if (['Breakfast', 'Lunch', 'Dinner'].every(t => types.includes(t))) {
-    markTasksDoneByIcon(req.user.uid, ['restaurant']).catch(() => {});
+    await markTasksDoneByIcon(req.user.uid, ['restaurant']);
   }
 
   // Combo bonus: all 4 meal types logged today
