@@ -74,6 +74,22 @@ async function sendSms(phone, code) {
   }
 }
 
+// TEMPORARILY DISABLED — OTP login closed until MSG91 is configured and tested.
+// Anyone with the APK could exploit the dev fallback (fixed OTP in console logs).
+// To re-enable: remove the two disabled routes below and uncomment the original handlers.
+
+// POST /auth/otp/request { phone }
+router.post('/otp/request', (_req, res) => {
+  res.status(503).json({ message: 'OTP login is temporarily unavailable. Please use email/password to sign in.' });
+});
+
+// POST /auth/otp/verify { phone, code }
+router.post('/otp/verify', (_req, res) => {
+  res.status(503).json({ message: 'OTP login is temporarily unavailable. Please use email/password to sign in.' });
+});
+
+/*  ── ORIGINAL OTP HANDLERS (restore when MSG91 is live) ──────────────────────
+
 // POST /auth/otp/request { phone }
 router.post('/otp/request', otpRequestLimiter, async (req, res) => {
   const { phone } = req.body || {};
@@ -116,6 +132,8 @@ router.post('/otp/verify', otpVerifyLimiter, async (req, res) => {
 
   res.json({ token: signToken(user), onboarded: user.onboarded });
 });
+
+──────────────────────────────────────────────────────────────────────────── */
 
 // POST /auth/signup { name, phone, email, password }
 router.post('/signup', signupLimiter, async (req, res) => {
