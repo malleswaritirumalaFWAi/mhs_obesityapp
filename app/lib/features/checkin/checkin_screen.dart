@@ -69,6 +69,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
   final _notes = TextEditingController();
   bool _busy = false;
   bool _loadingHistory = true;
+  String? _weightError;
   int _visibleGroups = 2; // today + yesterday by default
   List<_CheckinEntry> _history = [];
 
@@ -138,6 +139,14 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
   }
 
   Future<void> _confirmAndSave() async {
+    // Weight is mandatory.
+    final w = double.tryParse(_weight.text.trim());
+    if (w == null || w <= 0) {
+      setState(() => _weightError = 'Please enter your weight');
+      return;
+    }
+    setState(() => _weightError = null);
+
     final todayEntry = _history.isNotEmpty && _history.first.isToday
         ? _history.first
         : null;
@@ -445,7 +454,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                           decimal: true),
                       style: T.h2(context),
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (_) => setState(() { _weightError = null; }),
                       decoration: InputDecoration(
                         border: InputBorder.none,
                         hintText: 'Enter weight',
@@ -457,7 +466,11 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                   Text('kg', style: T.body(context)),
                 ]),
               ),
-              if (progressText.isNotEmpty) ...[
+              if (_weightError != null) ...[
+                const SizedBox(height: 6),
+                Text(_weightError!,
+                    style: T.small(context).copyWith(color: AppColors.coral)),
+              ] else if (progressText.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(progressText, style: T.small(context)),
               ],

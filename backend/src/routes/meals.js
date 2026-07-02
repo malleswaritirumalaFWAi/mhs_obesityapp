@@ -202,6 +202,38 @@ router.post('/', async (req, res) => {
   res.json({ id: r.rows[0].id, xp_awarded: baseXp + bonusXp, combo_bonus: bonusXp, double_xp_active: !!doubleXpActive, cheat_meal_used: useCheatPass });
 });
 
+// PUT /meals/:id  -> append new items/macros to an existing meal entry (update flow)
+router.put('/:id', async (req, res) => {
+  const { items, calories, carbs, protein, fat } = req.body || {};
+  const mealId = parseInt(req.params.id, 10);
+  if (!mealId) return res.status(400).json({ message: 'Invalid meal id' });
+
+  const existing = (await q(
+    `SELECT id, items, calories, carbs, protein, fat FROM meals WHERE id=$1 AND user_id=$2`,
+    [mealId, req.user.uid]
+  )).rows[0];
+  if (!existing) return res.status(404).json({ message: 'Meal not found' });
+
+  let existingItems = [];
+  try { existingItems = JSON.parse(existing.items || '[]'); } catch (_) {}
+  const newItems = Array.isArray(items) ? items : [];
+  const mergedItems = [...existingItems, ...newItems];
+
+  await q(
+    `UPDATE meals SET items=$1, calories=$2, carbs=$3, protein=$4, fat=$5, created_at=NOW() WHERE id=$6`,
+    [
+      JSON.stringify(mergedItems),
+      (Number(existing.calories) || 0) + (Number(calories) || 0),
+      (Number(existing.carbs)   || 0) + (Number(carbs)    || 0),
+      (Number(existing.protein) || 0) + (Number(protein)  || 0),
+      (Number(existing.fat)     || 0) + (Number(fat)      || 0),
+      mealId,
+    ]
+  );
+
+  res.json({ updated: true });
+});
+
 // GET /meals  -> last 60 meals for the logged-in user, newest first
 router.get('/', async (req, res) => {
   const r = await q(

@@ -142,42 +142,31 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.orangeGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              NeuCard(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(children: [
                   GestureDetector(
                     onTap: _back,
-                    child: Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
                     child: Text('About You',
                         style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.ink,
                             fontSize: 18,
                             fontWeight: FontWeight.w900)),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: AppColors.coralSoft,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text('${_step + 1} of $_totalSteps',
                         style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.coral,
                             fontWeight: FontWeight.w700,
                             fontSize: 13)),
                   ),

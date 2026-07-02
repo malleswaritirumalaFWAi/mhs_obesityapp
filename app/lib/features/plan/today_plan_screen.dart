@@ -367,12 +367,12 @@ class _SectionHeader extends StatelessWidget {
     final color = name == 'Morning'
         ? AppColors.gold
         : name == 'Afternoon'
-            ? AppColors.sage
+            ? AppColors.coral
             : AppColors.berry;
     final softColor = name == 'Morning'
         ? AppColors.goldSoft
         : name == 'Afternoon'
-            ? AppColors.sageSoft
+            ? AppColors.coralSoft
             : AppColors.berrySoft;
 
     final icon = name == 'Morning'

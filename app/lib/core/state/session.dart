@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../config.dart';
+import '../services/notification_service.dart';
 
 /// Increments every time a different user logs in or any user logs out.
 /// All user-specific providers watch this so they re-fetch automatically.
@@ -91,6 +92,7 @@ class SessionController extends StateNotifier<SessionState> {
         onboarded: onboarded,
         name: user?['name'] as String?,
       );
+      NotificationService.instance.initialize(_api);
     } on DioException catch (e) {
       if (e.response != null) {
         // HTTP error (401/403) — token invalid or expired, force re-login.
@@ -134,6 +136,7 @@ class SessionController extends StateNotifier<SessionState> {
       final onboarded = res['onboarded'] == true;
       _bumpUserKey();
       state = state.copyWith(status: AuthStatus.signedIn, busy: false, onboarded: onboarded);
+      NotificationService.instance.initialize(_api);
       return true;
     } on DioException catch (e) {
       if (AppConfig.demoMode && code == '123456') {

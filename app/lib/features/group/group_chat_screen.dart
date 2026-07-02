@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../core/providers/group_chat_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
 
 class GroupChatScreen extends ConsumerStatefulWidget {
@@ -46,25 +47,13 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.tealGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              child: NeuCard(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -73,27 +62,19 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
                       children: [
                         Text('Cohort Chat',
                             style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
                         Text('Chat with your batch members',
                             style: TextStyle(
-                                color: Colors.white70, fontSize: 12)),
+                                color: AppColors.inkSoft, fontSize: 12)),
                       ],
                     ),
                   ),
                   GestureDetector(
                     onTap: () => ref.read(groupChatProvider.notifier).load(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.refresh_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.refresh_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                 ]),
               ),

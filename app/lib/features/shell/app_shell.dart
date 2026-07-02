@@ -81,7 +81,7 @@ class _NavItem extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppColors.orange : Colors.transparent,
+          color: selected ? AppColors.coral : Colors.transparent,
           borderRadius: BorderRadius.circular(Neu.rPill),
           boxShadow: selected ? Neu.small() : null,
         ),

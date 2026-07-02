@@ -106,7 +106,7 @@ class _AdminContentPanelState extends State<AdminContentPanel>
           child: TabBar(
             controller: _tab,
             indicator: BoxDecoration(
-              gradient: AppColors.tealGrad,
+              color: AppColors.sageDark,
               borderRadius: BorderRadius.circular(14),
             ),
             indicatorSize: TabBarIndicatorSize.tab,
@@ -409,22 +409,10 @@ class _ContentCardState extends State<_ContentCard> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            gradient: allUnlocked
-                                ? null
-                                : AppColors.tealGrad,
                             color: allUnlocked
                                 ? AppColors.coralSoft
-                                : null,
+                                : AppColors.sageDark,
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: allUnlocked
-                                ? null
-                                : [
-                                    BoxShadow(
-                                        color:
-                                            AppColors.teal.withValues(alpha: 0.3),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3)),
-                                  ],
                           ),
                           child: Text(
                             allUnlocked ? 'Lock All' : 'Unlock All',

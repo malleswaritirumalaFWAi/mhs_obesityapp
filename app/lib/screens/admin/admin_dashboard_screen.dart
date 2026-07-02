@@ -75,15 +75,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       backgroundColor: AppColors.bg,
       body: Column(
         children: [
-          // ── Gradient header ────────────────────────────────────────────
+          // ── Header ────────────────────────────────────────────
           Container(
             width: double.infinity,
             decoration: const BoxDecoration(
-              gradient: AppColors.tealGrad,
+              color: AppColors.surface,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(28),
                 bottomRight: Radius.circular(28),
               ),
+              boxShadow: [
+                BoxShadow(color: AppColors.shadowDark, blurRadius: 12, offset: Offset(4, 4)),
+                BoxShadow(color: AppColors.shadowLight, blurRadius: 12, offset: Offset(-4, -4)),
+              ],
             ),
             padding: EdgeInsets.fromLTRB(
                 20, MediaQuery.of(context).padding.top + 16, 20, 20),
@@ -93,29 +97,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 Container(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                  decoration: const BoxDecoration(
+                    color: AppColors.coralSoft,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Symbols.admin_panel_settings_rounded,
-                      color: Colors.white, size: 24),
+                      color: AppColors.coral, size: 24),
                 ),
                 const SizedBox(width: 14),
-                Expanded(
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Admin Dashboard',
                         style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.ink,
                             fontSize: 20,
                             fontWeight: FontWeight.w900),
                       ),
                       Text(
                         'FitQuest — Manage users & content',
                         style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
+                            color: AppColors.inkSoft,
                             fontSize: 12),
                       ),
                     ],
@@ -124,36 +128,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 // Refresh users button
                 GestureDetector(
                   onTap: _loadingUsers ? null : _loadUsers,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: _loadingUsers
-                        ? const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
-                        : const Icon(Symbols.refresh_rounded,
-                            color: Colors.white, size: 20),
-                  ),
+                  child: _loadingUsers
+                      ? const SizedBox(
+                          width: 22, height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.coral))
+                      : const Icon(Symbols.refresh_rounded,
+                          color: AppColors.inkMid, size: 22),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 // Logout button
                 GestureDetector(
                   onTap: _logout,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Symbols.logout_rounded,
-                        color: Colors.white, size: 20),
-                  ),
+                  child: const Icon(Symbols.logout_rounded,
+                      color: AppColors.inkMid, size: 22),
                 ),
               ],
             ),
@@ -224,7 +211,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             child: TabBar(
               controller: _tab,
               indicator: BoxDecoration(
-                gradient: AppColors.orangeGrad,
+                color: AppColors.coral,
                 borderRadius: BorderRadius.circular(14),
               ),
               indicatorSize: TabBarIndicatorSize.tab,

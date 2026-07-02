@@ -38,31 +38,24 @@ class LearningHubScreen extends ConsumerWidget {
     final weekProgress =
         totalInWeek > 0 ? lessonPosInWeek / totalInWeek : 0.0;
 
+    // Overall progress across all weekly article lessons (one per week)
+    final weeklyArticles = state.lessons.where((l) => l.lessonType == 'article').toList();
+    final totalWeeks = weeklyArticles.length;
+    final completedWeeks = weeklyArticles.where((l) => l.completed).length;
+
     return Scaffold(
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
           children: [
-            // ── Gradient header ──
-            Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.tealGrad,
-                borderRadius: BorderRadius.circular(20),
-              ),
+            // ── Header ──
+            NeuCard(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Row(children: [
                 GestureDetector(
                   onTap: () => context.pop(),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Symbols.arrow_back_rounded,
-                        color: Colors.white, size: 18),
-                  ),
+                  child: const Icon(Symbols.arrow_back_rounded,
+                      color: AppColors.inkMid, size: 22),
                 ),
                 const SizedBox(width: 14),
                 const Expanded(
@@ -71,28 +64,63 @@ class LearningHubScreen extends ConsumerWidget {
                     children: [
                       Text('Learning Hub',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.ink,
                               fontSize: 20,
                               fontWeight: FontWeight.w900)),
                       Text('Lessons, tips & weekly goals',
                           style: TextStyle(
-                              color: Colors.white70, fontSize: 12)),
+                              color: AppColors.inkSoft, fontSize: 12)),
                     ],
                   ),
                 ),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Symbols.notifications_rounded,
-                      color: Colors.white, size: 18),
-                ),
+                const Icon(Symbols.notifications_rounded,
+                    color: AppColors.inkMid, size: 22),
               ]),
             ),
             const SizedBox(height: 20),
+
+            // ── Overall weekly progress bar ──────────────────────────────────
+            if (!state.loading && totalWeeks > 0) ...[
+              NeuCard(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      const Icon(Symbols.school_rounded,
+                          color: AppColors.berry, size: 18, fill: 1),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '$completedWeeks of $totalWeeks weekly lessons completed',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
+                      ),
+                      Text(
+                        '${(completedWeeks / totalWeeks * 100).round()}%',
+                        style: const TextStyle(
+                            color: AppColors.berry,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13),
+                      ),
+                    ]),
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: totalWeeks > 0 ? completedWeeks / totalWeeks : 0,
+                        minHeight: 8,
+                        backgroundColor: AppColors.berrySoft,
+                        valueColor:
+                            const AlwaysStoppedAnimation(AppColors.berry),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // ── Active lesson hero card ──────────────────────────────────────
             if (state.loading)

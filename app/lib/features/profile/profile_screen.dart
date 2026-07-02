@@ -23,7 +23,7 @@ class ProfileScreen extends ConsumerWidget {
     final userAsync = ref.watch(userProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         bottom: false,
         child: userAsync.when(
@@ -57,26 +57,22 @@ class ProfileScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Gradient hero ──
-        Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.orangeGrad,
-            borderRadius: BorderRadius.circular(20),
-          ),
+        // ── Neumorphic hero ──
+        NeuCard(
           padding: const EdgeInsets.all(16),
           child: Column(children: [
             Row(children: [
               Container(
                 width: 50,
                 height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.25),
+                decoration: const BoxDecoration(
+                  color: AppColors.coralSoft,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: Text(initial,
                     style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.coral,
                         fontWeight: FontWeight.w800,
                         fontSize: 22)),
               ),
@@ -87,7 +83,7 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     Text(name,
                         style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.ink,
                             fontWeight: FontWeight.w800,
                             fontSize: 17)),
                     const SizedBox(height: 4),
@@ -96,12 +92,12 @@ class ProfileScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: AppColors.coralSoft,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text('🔥 $streak day streak',
                             style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.coral,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 11)),
                       ),
@@ -110,12 +106,12 @@ class ProfileScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: AppColors.goldSoft,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(level,
                             style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.goldDark,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 11)),
                       ),
@@ -125,70 +121,60 @@ class ProfileScreen extends ConsumerWidget {
               ),
               GestureDetector(
                 onTap: () => context.push(Routes.settings),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Symbols.settings_rounded,
-                      color: Colors.white, size: 20),
-                ),
+                child: const Icon(Symbols.settings_rounded,
+                    color: AppColors.inkMid, size: 22),
               ),
             ]),
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
+                color: AppColors.bg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: Colors.white.withOpacity(0.3), width: 1),
               ),
               child: Row(children: [
                 Expanded(
                     child: Column(children: [
                   Text('$xp',
                       style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.ink,
                           fontWeight: FontWeight.w900,
                           fontSize: 18)),
-                  Text('XP',
+                  const Text('XP',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: AppColors.inkSoft,
                           fontSize: 12)),
                 ])),
                 Container(
                     width: 1,
                     height: 28,
-                    color: Colors.white.withOpacity(0.3)),
+                    color: AppColors.line),
                 Expanded(
                     child: Column(children: [
                   Text(royalRank != null ? '#$royalRank' : '#—',
                       style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.ink,
                           fontWeight: FontWeight.w900,
                           fontSize: 18)),
-                  Text('Rank',
+                  const Text('Rank',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: AppColors.inkSoft,
                           fontSize: 12)),
                 ])),
                 Container(
                     width: 1,
                     height: 28,
-                    color: Colors.white.withOpacity(0.3)),
+                    color: AppColors.line),
                 Expanded(
                     child: Column(children: [
                   Text('${badges.length}',
                       style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.ink,
                           fontWeight: FontWeight.w900,
                           fontSize: 18)),
-                  Text('Badges',
+                  const Text('Badges',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: AppColors.inkSoft,
                           fontSize: 12)),
                 ])),
               ]),

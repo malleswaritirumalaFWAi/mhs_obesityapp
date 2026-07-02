@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,12 +23,27 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
   bool _loading = true;
   bool _uploading = false;
   final _urlCtrl = TextEditingController();
-  final _labelCtrl = TextEditingController();
+  final _commentCtrl = TextEditingController();
 
   @override
   void initState() { super.initState(); _load(); }
   @override
-  void dispose() { _urlCtrl.dispose(); _labelCtrl.dispose(); super.dispose(); }
+  void dispose() { _urlCtrl.dispose(); _commentCtrl.dispose(); super.dispose(); }
+
+  String _formatDate(String iso) {
+    if (iso.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final months = ['Jan','Feb','Mar','Apr','May','Jun',
+                      'Jul','Aug','Sep','Oct','Nov','Dec'];
+      final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+      final m = dt.minute.toString().padLeft(2, '0');
+      final ampm = dt.hour < 12 ? 'AM' : 'PM';
+      return '${months[dt.month - 1]} ${dt.day}, ${dt.year}  $h:$m $ampm';
+    } catch (_) {
+      return iso.length >= 10 ? iso.substring(0, 10) : iso;
+    }
+  }
 
   Future<void> _load() async {
     try {
@@ -43,17 +57,17 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
 
   Future<void> _uploadUrl(void Function(void Function()) setSheet) async {
     final url = _urlCtrl.text.trim();
-    final label = _labelCtrl.text.trim();
+    final comment = _commentCtrl.text.trim();
     if (url.isEmpty) return;
     setSheet(() => _uploading = true);
     try {
       await ref.read(apiClientProvider).postJson('/progress/photos', {
         'photo_url': url,
-        'label': label.isEmpty ? 'Progress photo' : label,
+        'comment': comment.isEmpty ? null : comment,
       });
       if (mounted) {
         _urlCtrl.clear();
-        _labelCtrl.clear();
+        _commentCtrl.clear();
         Navigator.of(context).pop();
         _load();
       }
@@ -65,7 +79,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
     }
   }
 
-  Future<void> _pickAndUpload(ImageSource source) async {
+  Future<void> _pickAndUpload(ImageSource source, String comment) async {
     Navigator.of(context).pop(); // close the sheet first
     try {
       final picker = ImagePicker();
@@ -77,16 +91,18 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       );
       if (file == null || !mounted) return;
       setState(() => _uploading = true);
-      final bytes = await File(file.path).readAsBytes();
+      final bytes = await file.readAsBytes();
       final base64Data = base64Encode(bytes);
       final mime = file.mimeType ?? 'image/jpeg';
-      final label = 'Week photo';
       await ref.read(apiClientProvider).postJson('/progress/photos/upload', {
         'image_base64': base64Data,
         'mime': mime,
-        'label': label,
+        'comment': comment.isEmpty ? null : comment,
       });
-      if (mounted) _load();
+      if (mounted) {
+        _commentCtrl.clear();
+        _load();
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Upload failed: $e'), backgroundColor: AppColors.coral));
@@ -107,16 +123,27 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
         builder: (ctx, setSheet) => Padding(
           padding: EdgeInsets.fromLTRB(24, 20, 24,
             MediaQuery.of(ctx).viewInsets.bottom + 32),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
+          child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text('Add progress photo', style: T.title(context)),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            // ── Comment field (shared between camera/gallery/URL paths) ──
+            TextField(
+              controller: _commentCtrl,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Comment (optional)',
+                hintText: 'e.g. Feeling stronger this week!',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
             // ── Native picker buttons ──
             Row(children: [
               Expanded(
                 child: _PickerButton(
                   icon: Symbols.camera_alt_rounded,
                   label: 'Camera',
-                  onTap: () => _pickAndUpload(ImageSource.camera),
+                  onTap: () => _pickAndUpload(ImageSource.camera, _commentCtrl.text.trim()),
                 ),
               ),
               const SizedBox(width: 12),
@@ -124,7 +151,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                 child: _PickerButton(
                   icon: Symbols.photo_library_rounded,
                   label: 'Gallery',
-                  onTap: () => _pickAndUpload(ImageSource.gallery),
+                  onTap: () => _pickAndUpload(ImageSource.gallery, _commentCtrl.text.trim()),
                 ),
               ),
             ]),
@@ -143,15 +170,6 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
               decoration: const InputDecoration(
                 labelText: 'Photo URL',
                 hintText: 'https://...',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _labelCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Label (optional)',
-                hintText: 'e.g. Week 4 front',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -180,7 +198,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
               ),
             ),
           ]),
-        ),
+        )),
       ),
     );
   }
@@ -255,32 +273,52 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                       itemCount: _photos.length,
                       itemBuilder: (_, i) {
                         final p = _photos[i];
-                        final week = p['week'] as int? ?? i + 1;
-                        final label = p['label'] as String? ?? 'Week $week';
                         final url = p['photo_url'] as String? ?? '';
-                        final date = p['taken_at'] as String? ?? '';
+                        final comment = p['comment'] as String? ?? '';
+                        final createdAt = p['created_at'] as String? ?? '';
+                        final dateLabel = _formatDate(createdAt);
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: NeuCard(
                             padding: const EdgeInsets.all(14),
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Row(children: [
-                                NeuPill(
-                                  color: AppColors.coralSoft,
-                                  child: Text('Week $week',
-                                    style: const TextStyle(
-                                      color: AppColors.coral, fontWeight: FontWeight.w700, fontSize: 12)),
-                                ),
+                                const Icon(Symbols.photo_camera_rounded,
+                                    color: AppColors.coral, size: 16),
+                                const SizedBox(width: 6),
+                                Text('Photo ${_photos.length - i}',
+                                  style: const TextStyle(
+                                    color: AppColors.coral, fontWeight: FontWeight.w700, fontSize: 13)),
                                 const Spacer(),
-                                if (date.isNotEmpty)
-                                  Text(date.substring(0, 10), style: T.small(context)),
+                                if (dateLabel.isNotEmpty)
+                                  Text(dateLabel, style: T.small(context)),
                               ]),
                               const SizedBox(height: 10),
-                              if (url.isNotEmpty)
+                              if (url.isNotEmpty && url.startsWith('http'))
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(14),
                                   child: Image.network(
                                     url,
+                                    height: 200,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.bg,
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: const Center(
+                                        child: Icon(Symbols.broken_image_rounded,
+                                          color: AppColors.inkSoft, size: 40)),
+                                    ),
+                                  ),
+                                )
+                              else if (url.startsWith('data:image'))
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Image.memory(
+                                    base64Decode(url.split(',').last),
                                     height: 200,
                                     width: double.infinity,
                                     fit: BoxFit.cover,
@@ -307,8 +345,10 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                                     child: Icon(Symbols.photo_rounded,
                                       color: AppColors.inkSoft, size: 40)),
                                 ),
-                              const SizedBox(height: 10),
-                              Text(label, style: T.title(context).copyWith(fontSize: 14)),
+                              if (comment.isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                Text(comment, style: T.body(context).copyWith(fontSize: 13)),
+                              ],
                             ]),
                           ),
                         );

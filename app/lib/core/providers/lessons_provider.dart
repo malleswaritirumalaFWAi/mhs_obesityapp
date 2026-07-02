@@ -130,18 +130,9 @@ class LessonsNotifier extends StateNotifier<LessonsState> {
   Future<void> complete(int id) async {
     try {
       await _api.postJson('/lessons/$id/complete', null);
-      state = LessonsState(
-        loading: false,
-        lessons: state.lessons.map((l) => l.id == id
-            ? LessonItem(
-                id: l.id, title: l.title, weekNumber: l.weekNumber,
-                weekName: l.weekName, lessonType: l.lessonType,
-                xpReward: l.xpReward, status: 'completed',
-                content: l.content, videoUrl: l.videoUrl,
-                quizQuestions: l.quizQuestions, completed: true,
-                author: l.author, minutes: l.minutes)
-            : l).toList(),
-      );
+      // Re-fetch from backend so the newly unlocked next lesson becomes 'active'
+      // and the progress bar updates correctly.
+      await fetch();
     } catch (_) {}
   }
 }

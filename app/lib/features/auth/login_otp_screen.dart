@@ -8,6 +8,7 @@ import '../../core/router.dart';
 import '../../core/state/session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_misc.dart';
 
 class LoginOtpScreen extends ConsumerStatefulWidget {
@@ -62,21 +63,13 @@ class _LoginOtpScreenState extends ConsumerState<LoginOtpScreen> {
     final step2 = s.status == AuthStatus.otpSent;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       body: Column(
         children: [
-          // ── Gradient header ──
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.splashGrad,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(36),
-                bottomRight: Radius.circular(36),
-              ),
-            ),
+          // ── Header ──
+          Padding(
             padding: EdgeInsets.fromLTRB(
-                24, MediaQuery.of(context).padding.top + 20, 24, 32),
+                24, MediaQuery.of(context).padding.top + 20, 24, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -85,29 +78,21 @@ class _LoginOtpScreenState extends ConsumerState<LoginOtpScreen> {
                     onTap: () => step2
                         ? ref.read(sessionProvider.notifier).resetToPhone()
                         : context.go(Routes.welcome),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 20),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 24),
                   ),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: AppColors.coralSoft,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       'Step ${step2 ? 2 : 1} of 2',
                       style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.coral,
                           fontWeight: FontWeight.w700,
                           fontSize: 13),
                     ),
@@ -120,7 +105,7 @@ class _LoginOtpScreenState extends ConsumerState<LoginOtpScreen> {
                 Text(
                   step2 ? 'Enter the code' : 'Get started',
                   style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.ink,
                       fontSize: 30,
                       fontWeight: FontWeight.w900,
                       height: 1.1),
@@ -130,8 +115,8 @@ class _LoginOtpScreenState extends ConsumerState<LoginOtpScreen> {
                   step2
                       ? 'Sent to +91 ${s.phone ?? ''}'
                       : 'Enter your phone number to receive an OTP.',
-                  style: TextStyle(
-                      color: Colors.white.withOpacity(0.85), fontSize: 15),
+                  style: const TextStyle(
+                      color: AppColors.inkMid, fontSize: 15),
                 ),
               ],
             ),
@@ -192,7 +177,7 @@ class _LoginOtpScreenState extends ConsumerState<LoginOtpScreen> {
                               },
                               child: Text('Resend code',
                                   style: T.small(context).copyWith(
-                                      color: AppColors.orange,
+                                      color: AppColors.coral,
                                       fontWeight: FontWeight.w800)),
                             ),
                     ),
@@ -221,55 +206,12 @@ class _LoginOtpScreenState extends ConsumerState<LoginOtpScreen> {
 
                   const SizedBox(height: 28),
 
-                  GestureDetector(
-                    onTap: s.busy ? null : (step2 ? _verify : _sendOtp),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      decoration: BoxDecoration(
-                        gradient: s.busy
-                            ? null
-                            : const LinearGradient(
-                                colors: [AppColors.orange, AppColors.amber],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                        color: s.busy ? AppColors.line : null,
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: s.busy
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: AppColors.orange.withOpacity(0.4),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                      ),
-                      child: Center(
-                        child: s.busy
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    step2 ? 'Verify & continue' : 'Send OTP',
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 17),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Icon(Symbols.arrow_forward_rounded,
-                                      color: Colors.white, size: 20),
-                                ],
-                              ),
-                      ),
-                    ),
+                  NeuButton.primary(
+                    step2 ? 'Verify & continue' : 'Send OTP',
+                    loading: s.busy,
+                    onPressed: s.busy ? null : (step2 ? _verify : _sendOtp),
+                    trailing: const Icon(Symbols.arrow_forward_rounded,
+                        color: Colors.white, size: 20),
                   ),
                   const SizedBox(height: 20),
                   Center(

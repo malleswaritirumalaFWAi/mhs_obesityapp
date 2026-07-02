@@ -35,7 +35,7 @@ class WeeklyProgressScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
-                    child: Text('Weekly Progress',
+                    child: Text('Week Report',
                         style: TextStyle(
                             color: AppColors.ink,
                             fontSize: 20,
@@ -45,7 +45,14 @@ class WeeklyProgressScreen extends ConsumerWidget {
                 ]),
               ),
             ),
-            const Expanded(child: Center(child: CircularProgressIndicator())),
+            const Expanded(
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.coral,
+                  strokeWidth: 3,
+                ),
+              ),
+            ),
           ]),
           error: (_, __) => Column(children: [
             Padding(

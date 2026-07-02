@@ -22,6 +22,7 @@ import exercisesRoutes    from './routes/exercises.js';
 import coachRoutes        from './routes/coach.js';
 import adminRoutes, { runWeeklyReset } from './routes/admin.js';
 import migrateRoutes      from './routes/migrate.js';
+import { sendPush } from './push.js';
 
 dotenv.config();
 
@@ -293,6 +294,15 @@ async function runMigrations() {
       `UPDATE lessons SET status = 'locked'`,
       // Fasting: store XP awarded per session for accurate history display
       `ALTER TABLE fasting_sessions ADD COLUMN IF NOT EXISTS xp_awarded INTEGER NOT NULL DEFAULT 0`,
+      // Backfill total_xp from xp for users where total_xp was added after they earned XP
+      `UPDATE users SET total_xp = xp WHERE total_xp < xp`,
+      // Deduplicate challenge_entries before adding unique constraint (keeps row with highest progress)
+      `DELETE FROM challenge_entries WHERE id NOT IN (
+        SELECT DISTINCT ON (user_id, challenge_id) id
+        FROM challenge_entries
+        ORDER BY user_id, challenge_id, progress DESC, id DESC
+      )`,
+      `ALTER TABLE challenge_entries ADD CONSTRAINT IF NOT EXISTS challenge_entries_user_challenge_unique UNIQUE (user_id, challenge_id)`,
     ];
 
     for (const sql of migrations) {
@@ -384,7 +394,13 @@ async function runMigrations() {
         (12,'Maintenance','Life after the programme','article',50,'locked','Dr. Roy',8,
          'Maintaining weight loss requires slightly fewer calories than maintaining your original weight — about 150-200 kcal/day less. Your new maintenance is your goal. The habits that got you here (daily steps, protein at every meal, sleep hygiene, stress management) are permanent now — not temporary tools. Research shows that people who maintain weight loss long-term share four behaviours: they weigh themselves regularly, they exercise daily, they eat breakfast, and they limit screen time during meals. You have practised all four. Congratulations on completing the FitQuest programme.')
         ,
-        (12,'Maintenance','Final graduation quiz','quiz',100,'locked',NULL,5,NULL)
+        (12,'Maintenance','Final graduation quiz','quiz',100,'locked',NULL,5,NULL),
+        (13,'Beyond 12 Weeks','Making it permanent — the identity shift','article',40,'locked','Dr. Roy',6,
+         'The most powerful thing that happened in the last 12 weeks is not the weight you lost — it is the identity you built. You are now someone who checks in daily, moves their body, eats mindfully, and manages stress. Research shows identity-based habits stick at 3× the rate of outcome-based habits. Instead of "I want to lose weight," your new story is "I am someone who takes care of their body." Protect that identity in year two the same way you built it in the first 84 days: one small daily action at a time.'),
+        (13,'Beyond 12 Weeks','Long-term maintenance quiz','quiz',50,'locked',NULL,3,NULL),
+        (14,'Advanced Nutrition','Personalising your macro targets','article',40,'locked','Coach Priya',7,
+         'Now that your habits are solid, it is time to fine-tune your macros. Protein: 1.6-2.2 g per kg body weight preserves muscle during a cut and maximises muscle gain during a build phase. Carbohydrates: time your largest carb serving around your workout (within 1 hour before or after) for best energy and recovery. Fat: keep healthy fats (nuts, avocado, ghee in moderation) at 25-35% of total calories for hormone health. Track for 2 weeks, adjust based on energy and scale movement, then step back — you now have the data to self-coach.'),
+        (14,'Advanced Nutrition','Advanced nutrition quiz','quiz',50,'locked',NULL,3,NULL)
       ON CONFLICT (week, title) DO UPDATE
         SET content = EXCLUDED.content,
             xp      = EXCLUDED.xp,
@@ -531,10 +547,13 @@ cron.schedule('0 7 * * *', async () => {
     )).rows;
     const msg = messages[new Date().getDay() % messages.length];
     for (const u of users) {
+      const firstName = u.name?.split(' ')[0] || 'there';
+      const title = `Good morning, ${firstName}!`;
       await client.query(
-        `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'morning_nudge','Good morning, ${u.name?.split(' ')[0] || 'there'}!','${msg}')`,
-        [u.id]
+        `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'morning_nudge',$2,$3)`,
+        [u.id, title, msg]
       ).catch(() => {});
+      sendPush(u.id, title, msg).catch(() => {});
     }
     client.release();
     console.log(`[cron] Morning nudge sent to ${users.length} users`);
@@ -585,10 +604,13 @@ cron.schedule('0 20 * * *', async () => {
         [u.id, today]
       )).rows[0];
       if (!existing) {
+        const title = `Your ${u.streak}-day streak is at risk!`;
+        const body = 'Complete at least one task before midnight to keep your streak alive!';
         await client.query(
-          `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'streak_risk','Your ${u.streak}-day streak is at risk!','Complete at least one task before midnight to keep your streak alive!')`,
-          [u.id]
+          `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'streak_risk',$2,$3)`,
+          [u.id, title, body]
         ).catch(() => {});
+        sendPush(u.id, title, body).catch(() => {});
       }
     }
     client.release();

@@ -56,7 +56,26 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
     try {
       await ref.read(apiClientProvider).postJson('/diet-plan/generate', {});
       await _load();
-    } catch (_) {} finally {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Diet plan refreshed!'),
+            backgroundColor: AppColors.sage,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not refresh diet plan. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
       if (mounted) setState(() => _generating = false);
     }
   }
@@ -118,14 +137,17 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
                     ),
                     const Text('🥗', style: TextStyle(fontSize: 26)),
                     const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: _generating ? null : _generate,
-                      child: _generating
-                          ? const SizedBox(
-                              width: 20, height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.coral))
-                          : const Icon(Symbols.auto_awesome_rounded,
-                              color: AppColors.coral, size: 22),
+                    Tooltip(
+                      message: 'Regenerate diet plan',
+                      child: GestureDetector(
+                        onTap: _generating ? null : _generate,
+                        child: _generating
+                            ? const SizedBox(
+                                width: 20, height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.coral))
+                            : const Icon(Symbols.auto_awesome_rounded,
+                                color: AppColors.coral, size: 22),
+                      ),
                     ),
                   ]),
                 ),

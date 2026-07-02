@@ -67,6 +67,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
   bool _busy = false;
   bool _loadingHistory = true;
   int _visibleGroups = 2;
+  String? _weightError;
   List<_WeighEntry> _history = [];
   double? _startWeight;
   double? _targetWeight;
@@ -127,6 +128,14 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
   }
 
   Future<void> _confirmAndSave() async {
+    // Validate weight first — before showing any dialog.
+    final w = double.tryParse(_weightCtrl.text.trim());
+    if (w == null || w <= 0) {
+      setState(() => _weightError = 'Please enter your weight');
+      return;
+    }
+    setState(() => _weightError = null);
+
     final todaySaved = _history.isNotEmpty && _history.first.dateLabel == 'Today';
     if (todaySaved) {
       final confirmed = await showDialog<bool>(
@@ -157,13 +166,8 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
   }
 
   Future<void> _save() async {
-    final w = double.tryParse(_weightCtrl.text.trim());
-    if (w == null || w <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your weight first')),
-      );
-      return;
-    }
+    // Weight is guaranteed non-null here (checked in _confirmAndSave).
+    final w = double.parse(_weightCtrl.text.trim());
     setState(() => _busy = true);
     Map<String, dynamic> res;
     try {
@@ -522,7 +526,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                           decimal: true),
                       style: T.h1(context),
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (_) => setState(() => _weightError = null),
                       decoration: InputDecoration(
                         border: InputBorder.none,
                         hintText: '0.0',
@@ -536,7 +540,11 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                           .copyWith(color: AppColors.inkSoft)),
                 ]),
               ),
-              if (progressText.isNotEmpty) ...[
+              if (_weightError != null) ...[
+                const SizedBox(height: 6),
+                Text(_weightError!,
+                    style: T.small(context).copyWith(color: AppColors.coral)),
+              ] else if (progressText.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Row(children: [
                   const Icon(Symbols.trending_down_rounded,

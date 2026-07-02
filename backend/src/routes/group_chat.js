@@ -33,13 +33,21 @@ router.post('/group/chat', async (req, res) => {
   const userRow = (await q(`SELECT role FROM users WHERE id=$1`, [uid(req)])).rows[0];
   const type = ['coach', 'admin'].includes(userRow?.role) ? 'coach' : 'user';
 
+  // Check before insert: first message today? (for XP cap)
+  const todayMsgs = (await q(
+    `SELECT COUNT(*) AS c FROM group_chat_messages WHERE user_id=$1 AND created_at::date = CURRENT_DATE`,
+    [uid(req)]
+  )).rows[0]?.c ?? 0;
+  const firstToday = Number(todayMsgs) === 0;
   const r = await q(
     `INSERT INTO group_chat_messages (group_id,user_id,text,type) VALUES ($1,$2,$3,$4) RETURNING *`,
     [gid, uid(req), text.trim(), type]
   );
-  // Award 5 XP (first message only → team_player badge)
-  await q(`UPDATE users SET xp=xp+5, total_xp=total_xp+5 WHERE id=$1`, [uid(req)]);
-  await q(`UPDATE group_members SET weekly_xp=weekly_xp+5 WHERE user_id=$1`, [uid(req)]);
+  // Award 5 XP only on the first message of the day
+  if (firstToday) {
+    await q(`UPDATE users SET xp=xp+5, total_xp=total_xp+5 WHERE id=$1`, [uid(req)]);
+    await q(`UPDATE group_members SET weekly_xp=weekly_xp+5 WHERE user_id=$1`, [uid(req)]);
+  }
   const msgCount = (await q(
     `SELECT COUNT(*) AS c FROM group_chat_messages WHERE user_id=$1`, [uid(req)]
   )).rows[0]?.c ?? 0;

@@ -189,25 +189,13 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.orangeGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              NeuCard(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -216,12 +204,12 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                       children: [
                         Text('Daily Movement',
                             style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
                         Text('Log your activity & steps',
                             style: TextStyle(
-                                color: Colors.white70, fontSize: 12)),
+                                color: AppColors.inkSoft, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -231,25 +219,8 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
               const SizedBox(height: 24),
 
               // ── Hero card ──
-              Container(
-                decoration: BoxDecoration(
-                  gradient: done
-                      ? const LinearGradient(
-                          colors: [AppColors.coral, Color(0xFFFF4500)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : AppColors.orangeGrad,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.orange.withOpacity(0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(24),
+              NeuCard(
+                color: done ? AppColors.sageSoft : AppColors.coralSoft,
                 child: Column(children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -263,10 +234,10 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                             children: [
                               Text(
                                 _loading ? '—' : _formatSteps(_steps),
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 76,
                                     fontWeight: FontWeight.w900,
-                                    color: Colors.white,
+                                    color: done ? AppColors.sageDark : AppColors.coral,
                                     height: 1),
                               ),
                               Padding(
@@ -275,7 +246,7 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                                     style: TextStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.w700,
-                                        color: Colors.white.withOpacity(0.65))),
+                                        color: done ? AppColors.sageDark.withValues(alpha: 0.6) : AppColors.coral.withValues(alpha: 0.6))),
                               ),
                             ],
                           ),
@@ -283,7 +254,7 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                         const SizedBox(height: 2),
                         Text('steps today',
                             style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: done ? AppColors.sageDark : AppColors.coral,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600)),
                       ]),
@@ -291,15 +262,15 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                         width: 74,
                         height: 74,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: done ? AppColors.sageDark.withValues(alpha: 0.12) : AppColors.coral.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: Colors.white.withOpacity(0.4), width: 2),
+                              color: done ? AppColors.sageDark.withValues(alpha: 0.3) : AppColors.coral.withValues(alpha: 0.3), width: 2),
                         ),
                         alignment: Alignment.center,
                         child: Text('${(pct * 100).round()}%',
-                            style: const TextStyle(
-                                color: Colors.white,
+                            style: TextStyle(
+                                color: done ? AppColors.sageDark : AppColors.coral,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 18)),
                       ),
@@ -311,31 +282,30 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                     child: LinearProgressIndicator(
                       value: pct,
                       minHeight: 10,
-                      backgroundColor: Colors.white.withOpacity(0.25),
-                      valueColor:
-                          const AlwaysStoppedAnimation<Color>(Colors.white),
+                      backgroundColor: AppColors.bg,
+                      valueColor: AlwaysStoppedAnimation<Color>(done ? AppColors.sageDark : AppColors.coral),
                     ),
                   ),
                   const SizedBox(height: 14),
                   if (done)
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       const Icon(Symbols.check_circle_rounded,
-                          color: Colors.white, fill: 1, size: 18),
+                          color: AppColors.sageDark, fill: 1, size: 18),
                       const SizedBox(width: 6),
                       const Text('Daily goal reached! 🎉',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.sageDark,
                               fontWeight: FontWeight.w700)),
                     ])
                   else
                     Row(children: [
                       const Icon(Symbols.directions_run_rounded,
-                          color: Colors.white70, size: 14, fill: 1),
+                          color: AppColors.coral, size: 14, fill: 1),
                       const SizedBox(width: 6),
                       Text(
                           '${_formatSteps(remaining)} more steps to goal',
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
+                          style: const TextStyle(
+                              color: AppColors.coral,
                               fontSize: 13,
                               fontWeight: FontWeight.w600)),
                     ]),
@@ -348,7 +318,7 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
-                    gradient: AppColors.orangeGrad,
+                    color: AppColors.coral,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text('PROGRESS',
@@ -371,7 +341,7 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
-                      gradient: AppColors.orangeGrad,
+                      color: AppColors.coral,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text('LOG STEPS',
@@ -411,15 +381,8 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                   padding:
                       const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
                   decoration: BoxDecoration(
-                    gradient: AppColors.orangeGrad,
+                    color: AppColors.sageDark,
                     borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.orange.withOpacity(0.4),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -472,34 +435,29 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
+        NeuCard(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          decoration: BoxDecoration(
-            gradient: AppColors.orangeGrad,
-            borderRadius: BorderRadius.circular(14),
-          ),
           child: Row(children: [
             const Icon(Symbols.directions_run_rounded,
-                color: Colors.white, size: 18, fill: 1),
+                color: AppColors.coral, size: 18, fill: 1),
             const SizedBox(width: 10),
             const Expanded(
               child: Text('Movement history',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.ink,
                       fontWeight: FontWeight.w800,
                       fontSize: 15)),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
+                color: AppColors.coralSoft,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 '${allEntries.length} day${allEntries.length != 1 ? 's' : ''}',
                 style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.coral,
                     fontWeight: FontWeight.w700,
                     fontSize: 11),
               ),
@@ -573,31 +531,19 @@ class _MilestoneRow extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                gradient: reached ? AppColors.orangeGrad : null,
-                color: reached ? null : Colors.white,
+                color: reached ? AppColors.coral : AppColors.bg,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: reached
-                      ? AppColors.orange.withOpacity(0.3)
-                      : const Color(0xFFFFD0B0),
+                  color: reached ? AppColors.coral : AppColors.line,
                   width: reached ? 0 : 1.5,
                 ),
-                boxShadow: reached
-                    ? [
-                        BoxShadow(
-                          color: AppColors.orange.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        )
-                      ]
-                    : null,
               ),
               child: Column(children: [
                 Icon(
                   reached
                       ? Symbols.check_circle_rounded
                       : Symbols.radio_button_unchecked_rounded,
-                  color: reached ? Colors.white : const Color(0xFFFFB07A),
+                  color: reached ? Colors.white : AppColors.coral,
                   fill: 1,
                   size: 22,
                 ),
@@ -607,7 +553,7 @@ class _MilestoneRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: reached ? Colors.white : const Color(0xFFFFB07A),
+                    color: reached ? Colors.white : AppColors.coral,
                   ),
                 ),
               ]),
@@ -685,15 +631,11 @@ class _TipsCard extends StatelessWidget {
     (icon: Symbols.bedtime_rounded,         tip: 'Evening stroll helps lower blood sugar'),
   ];
 
-  static const _tipGradients = [
-    LinearGradient(colors: [AppColors.teal, AppColors.tealLight],
-        begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [AppColors.orange, AppColors.amber],
-        begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [AppColors.coral, Color(0xFFFF9A8B)],
-        begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [AppColors.berry, Color(0xFF9B59B6)],
-        begin: Alignment.topLeft, end: Alignment.bottomRight),
+  static const _tipColors = [
+    AppColors.sageDark,
+    AppColors.gold,
+    AppColors.coral,
+    AppColors.berry,
   ];
 
   @override
@@ -704,7 +646,7 @@ class _TipsCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            gradient: AppColors.orangeGrad,
+            color: AppColors.coral,
             borderRadius: BorderRadius.circular(20),
           ),
           child: const Text('MOVEMENT TIPS',
@@ -735,18 +677,11 @@ class _TipsCard extends StatelessWidget {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      gradient: _tipGradients[i],
+                      color: _tipColors[i].withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _tipGradients[i].colors.first.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
                     ),
                     child: Icon(_tips[i].icon,
-                        color: Colors.white, size: 20, fill: 1),
+                        color: _tipColors[i], size: 20, fill: 1),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -786,12 +721,11 @@ class _MovementDayLabel extends StatelessWidget {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          gradient: isToday
-              ? AppColors.orangeGrad
+          color: isToday
+              ? AppColors.coral
               : isYesterday
-                  ? AppColors.tealGrad
-                  : null,
-          color: (!isToday && !isYesterday) ? AppColors.bg : null,
+                  ? AppColors.sageDark
+                  : AppColors.bg,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(dateLabel,
@@ -837,14 +771,14 @@ class _MovementHistoryCard extends StatelessWidget {
             Container(
               width: 46,
               height: 46,
-              decoration: BoxDecoration(
-                gradient: AppColors.orangeGrad,
+              decoration: const BoxDecoration(
+                color: AppColors.coralSoft,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Text(_formatSteps(entry.steps),
                   style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.coral,
                       fontSize: 13,
                       fontWeight: FontWeight.w900)),
             ),
@@ -885,7 +819,7 @@ class _MovementHistoryCard extends StatelessWidget {
                         child: Container(
                           height: 6,
                           decoration: BoxDecoration(
-                            gradient: AppColors.orangeGrad,
+                            color: AppColors.coral,
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
@@ -900,9 +834,9 @@ class _MovementHistoryCard extends StatelessWidget {
         left: 0, top: 0, bottom: 0,
         child: Container(
           width: 5,
-          decoration: BoxDecoration(
-            gradient: AppColors.orangeGrad,
-            borderRadius: const BorderRadius.only(
+          decoration: const BoxDecoration(
+            color: AppColors.coral,
+            borderRadius: BorderRadius.only(
               topLeft: Radius.circular(16),
               bottomLeft: Radius.circular(16),
             ),

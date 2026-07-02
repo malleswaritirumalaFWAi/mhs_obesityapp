@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/router.dart';
@@ -21,6 +22,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _push = true;
   bool _coachDigest = true;
   bool _leaderboard = false;
+
+  static const _kPush = 'notif_push';
+  static const _kCoachDigest = 'notif_coach_digest';
+  static const _kLeaderboard = 'notif_leaderboard';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) setState(() {
+      _push = prefs.getBool(_kPush) ?? true;
+      _coachDigest = prefs.getBool(_kCoachDigest) ?? true;
+      _leaderboard = prefs.getBool(_kLeaderboard) ?? false;
+    });
+  }
+
+  Future<void> _savePref(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
   Future<void> _logout() async {
     await ref.read(sessionProvider.notifier).signOut();
     if (mounted) context.go(Routes.welcome);
@@ -88,40 +114,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.tealGrad,
-                borderRadius: BorderRadius.circular(20),
-              ),
+            NeuCard(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Row(children: [
                 GestureDetector(
                   onTap: () => context.pop(),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Symbols.arrow_back_rounded,
-                        color: Colors.white, size: 18),
-                  ),
+                  child: const Icon(Symbols.arrow_back_rounded,
+                      color: AppColors.inkMid, size: 22),
                 ),
                 const SizedBox(width: 14),
                 const Expanded(
                   child: Text('Settings',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.ink,
                           fontSize: 20,
                           fontWeight: FontWeight.w900)),
                 ),
-                const Icon(Symbols.tune_rounded, color: Colors.white, size: 22),
+                const Icon(Symbols.tune_rounded, color: AppColors.inkMid, size: 22),
               ]),
             ),
             const SizedBox(height: 20),
@@ -135,17 +149,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     icon: Symbols.notifications_rounded,
                     label: 'Push notifications',
                     value: _push,
-                    onChanged: (v) => setState(() => _push = v)),
+                    onChanged: (v) {
+                      setState(() => _push = v);
+                      _savePref(_kPush, v);
+                    }),
                 _Toggle(
                     icon: Symbols.restaurant_rounded,
                     label: 'Daily coach digest',
                     value: _coachDigest,
-                    onChanged: (v) => setState(() => _coachDigest = v)),
+                    onChanged: (v) {
+                      setState(() => _coachDigest = v);
+                      _savePref(_kCoachDigest, v);
+                    }),
                 _Toggle(
                     icon: Symbols.emoji_events_rounded,
                     label: 'Leaderboard updates',
                     value: _leaderboard,
-                    onChanged: (v) => setState(() => _leaderboard = v),
+                    onChanged: (v) {
+                      setState(() => _leaderboard = v);
+                      _savePref(_kLeaderboard, v);
+                    },
                     last: true),
               ]),
             ),
@@ -153,9 +176,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             Text('ACCOUNT', style: T.label(context)),
             const SizedBox(height: 12),
-            _LinkRow(icon: Symbols.favorite_rounded, label: 'Health goals'),
-            _LinkRow(icon: Symbols.help_rounded, label: 'Help & support'),
-            _LinkRow(icon: Symbols.description_rounded, label: 'Terms & conditions'),
+            _LinkRow(icon: Symbols.favorite_rounded, label: 'Health goals',
+                onTap: () => context.push(Routes.healthGoals)),
+            _LinkRow(icon: Symbols.help_rounded, label: 'Help & support',
+                onTap: () => context.push(Routes.helpSupport)),
+            _LinkRow(icon: Symbols.description_rounded, label: 'Terms & conditions',
+                onTap: () => context.push(Routes.termsConditions)),
             const SizedBox(height: 22),
 
             Text('PRIVACY & DATA (DPDP ACT 2023)', style: T.label(context)),
@@ -245,14 +271,16 @@ class _Toggle extends StatelessWidget {
 }
 
 class _LinkRow extends StatelessWidget {
-  const _LinkRow({required this.icon, required this.label});
+  const _LinkRow({required this.icon, required this.label, required this.onTap});
   final IconData icon;
   final String label;
+  final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: NeuCard(
+        onTap: onTap,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(children: [
           Icon(icon, color: AppColors.inkMid),

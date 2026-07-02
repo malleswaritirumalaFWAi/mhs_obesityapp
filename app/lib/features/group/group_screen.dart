@@ -322,26 +322,22 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
           children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.tealGrad,
-                borderRadius: BorderRadius.circular(20),
-              ),
+            NeuCard(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
               child: Row(children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Batch #47 · 50 members',
+                      const Text('Batch #47 · 50 members',
                           style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: AppColors.inkSoft,
                               fontSize: 12,
                               fontWeight: FontWeight.w500)),
                       const SizedBox(height: 2),
                       const Text('My Group',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.ink,
                               fontSize: 22,
                               fontWeight: FontWeight.w900)),
                     ],
@@ -353,16 +349,16 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: AppColors.sageSoft,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(Symbols.chat_rounded,
-                          color: Colors.white, size: 16),
+                          color: AppColors.sageDark, size: 16),
                       const SizedBox(width: 6),
                       const Text('Group Chat',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.sageDark,
                               fontWeight: FontWeight.w700,
                               fontSize: 12)),
                     ]),

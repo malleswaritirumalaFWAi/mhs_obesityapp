@@ -111,19 +111,19 @@ class _UserCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  gradient: AppColors.tealGrad,
+                  color: AppColors.sageSoft,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
-                    Text('LVL',
+                    const Text('LVL',
                         style: TextStyle(
-                            color: Colors.white.withValues(alpha:0.8),
+                            color: AppColors.sageDark,
                             fontSize: 9,
                             fontWeight: FontWeight.w700)),
                     Text('${user.level}',
                         style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.sageDark,
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
                             height: 1)),

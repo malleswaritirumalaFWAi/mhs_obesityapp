@@ -321,12 +321,91 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
   Future<void> _save() async {
     if (_saving) return; // guard against double-tap / rapid re-submit
-    setState(() => _saving = true);
 
     final r = _result;
     final selectedType = _mealTypes[_mealType].label;
+    final isSnack = selectedType.toLowerCase() == 'snacks';
     final api = ref.read(apiClientProvider);
 
+    // Duplicate detection for Breakfast / Lunch / Dinner (not Snacks).
+    if (!isSnack) {
+      final now = DateTime.now();
+      final todayEntry = _history.where((e) {
+        return e.mealType.toLowerCase() == selectedType.toLowerCase() &&
+            e.createdAt.year == now.year &&
+            e.createdAt.month == now.month &&
+            e.createdAt.day == now.day;
+      }).firstOrNull;
+
+      if (todayEntry != null) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text('Already logged $selectedType today',
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            content: Text(
+                'You already have a $selectedType entry for today. Do you want to add these items to your existing entry?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel',
+                    style: TextStyle(color: AppColors.inkMid, fontWeight: FontWeight.w700)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Update',
+                    style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) return;
+
+        // Append to existing entry via PUT.
+        setState(() => _saving = true);
+        try {
+          await api.putJson('/meals/${todayEntry.id}', {
+            'items': r?.items,
+            'calories': r?.calories,
+            'carbs': r?.carbs,
+            'protein': r?.protein,
+            'fat': r?.fat,
+          });
+        } catch (_) {
+          if (!mounted) return;
+          setState(() => _saving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not update meal. Check your connection and try again.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+        if (!mounted) return;
+        ref.read(mealStatsProvider.notifier).addMealType(selectedType);
+        ref.invalidate(tasksProvider);
+        setState(() {
+          _saving = false;
+          _photoBytes = null;
+          _result = null;
+          _analysisError = null;
+          _loadingHistory = true;
+          _historyError = null;
+        });
+        await _loadHistory();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('$selectedType updated')));
+        }
+        return;
+      }
+    }
+
+    // Normal insert (new meal or snack — snacks always allowed multiple per day).
+    setState(() => _saving = true);
     try {
       await api.postJson('/meals', {
         'meal_type': selectedType,

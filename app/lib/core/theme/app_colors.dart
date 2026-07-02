@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
-/// Neumorphic palette extracted from the FitQuest v2 prototype `style.css`.
+/// Neumorphic palette — FitQuest v2 "Soft Neumorphic Light" design system.
+/// Matches style.css from the v2_neumorphic HTML prototype exactly.
 class AppColors {
   AppColors._();
 
-  // Surfaces — neutral gray matching home screen
-  static const bg = Color(0xFFF5F5F5);
-  static const surface = Color(0xFFFFFFFF);
-  static const shadowDark = Color(0xFFD4D4D4);
+  // Surfaces — warm cream matching v2 prototype
+  static const bg = Color(0xFFF2EFE9);
+  static const surface = Color(0xFFF5F3EF);
+  static const shadowDark = Color(0xFFD9D4CA);
   static const shadowLight = Color(0xFFFFFFFF);
-  static const line = Color(0xFFE8E8E8);
+  static const line = Color(0xFFE5DDD0);
 
-  // Accents
+  // Accents — v2 palette
   static const coral = Color(0xFFFF7A6B);
   static const coralSoft = Color(0xFFFFE6E1);
 
@@ -25,33 +26,35 @@ class AppColors {
 
   static const berry = Color(0xFFB788D9);
   static const berrySoft = Color(0xFFEFE3F7);
+  static const berryDark = Color(0xFF7B4FA0);
 
   // Ink (text)
   static const ink = Color(0xFF2B2A28);
   static const inkMid = Color(0xFF4B4945);
   static const inkSoft = Color(0xFF6B6863);
 
-  // ── Vibrant design tokens (PDF v2) ──
-  static const orange = Color(0xFFFF6B35);
-  static const amber = Color(0xFFFFB800);
-  static const teal = Color(0xFF1B4F72);
-  static const tealLight = Color(0xFF2E86AB);
-  static const orangeSoft = Color(0xFFFFEDE6);
+  // Legacy aliases — mapped to v2 coral so existing references stay warm
+  static const orange = coral;
+  static const amber = gold;
+  static const teal = sageDark;
+  static const tealLight = sage;
+  static const orangeSoft = coralSoft;
 
+  // Neu-friendly accent gradients (coral → berry warm wash)
   static const LinearGradient orangeGrad = LinearGradient(
-    colors: [orange, amber],
+    colors: [coral, berry],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
 
   static const LinearGradient tealGrad = LinearGradient(
-    colors: [teal, tealLight],
+    colors: [sageDark, sage],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient splashGrad = LinearGradient(
-    colors: [teal, Color(0xFF1565C0), orange],
+    colors: [coral, berry],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );

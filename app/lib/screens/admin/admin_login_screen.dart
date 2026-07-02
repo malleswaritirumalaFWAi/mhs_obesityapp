@@ -53,15 +53,19 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       backgroundColor: AppColors.bg,
       body: Column(
         children: [
-          // ── Gradient header ──────────────────────────────────────────────
+          // ── Header ──────────────────────────────────────────────
           Container(
             width: double.infinity,
             decoration: const BoxDecoration(
-              gradient: AppColors.tealGrad,
+              color: AppColors.surface,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(36),
                 bottomRight: Radius.circular(36),
               ),
+              boxShadow: [
+                BoxShadow(color: AppColors.shadowDark, blurRadius: 12, offset: Offset(4, 4)),
+                BoxShadow(color: AppColors.shadowLight, blurRadius: 12, offset: Offset(-4, -4)),
+              ],
             ),
             padding: EdgeInsets.fromLTRB(
                 24, MediaQuery.of(context).padding.top + 20, 24, 36),
@@ -72,13 +76,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 Container(
                   width: 56,
                   height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                  decoration: const BoxDecoration(
+                    color: AppColors.coralSoft,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Symbols.admin_panel_settings_rounded,
-                    color: Colors.white,
+                    color: AppColors.coral,
                     size: 30,
                   ),
                 ),
@@ -86,17 +90,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 const Text(
                   'Admin Panel',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.ink,
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
                     height: 1.1,
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                const Text(
                   'FitQuest — Restricted Access',
-                  style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+                  style: TextStyle(color: AppColors.inkSoft, fontSize: 14),
                 ),
               ],
             ),
@@ -169,14 +172,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       decoration: BoxDecoration(
-                        gradient: _loading ? null : AppColors.tealGrad,
-                        color: _loading ? AppColors.line : null,
+                        color: _loading ? AppColors.line : AppColors.coral,
                         borderRadius: BorderRadius.circular(32),
                         boxShadow: _loading
                             ? null
                             : [
                                 BoxShadow(
-                                  color: AppColors.teal.withValues(alpha: 0.4),
+                                  color: AppColors.coral.withValues(alpha: 0.4),
                                   blurRadius: 16,
                                   offset: const Offset(0, 6),
                                 ),

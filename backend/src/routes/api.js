@@ -215,6 +215,9 @@ router.post('/movement/add', async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
   const add = Math.max(0, parseInt(req.body?.steps ?? 500, 10));
   const goal = 8000;
+  // Check if steps were already logged today (to cap XP to once per day)
+  const existing = await q(`SELECT steps FROM daily_stats WHERE user_id=$1 AND date=$2`, [uid(req), today]);
+  const firstLogToday = !existing.rows[0];
   const r = await q(
     `INSERT INTO daily_stats (user_id, date, steps) VALUES ($1, $2, $3)
      ON CONFLICT (user_id, date) DO UPDATE SET steps = LEAST(daily_stats.steps + $3, 99999)
@@ -225,7 +228,8 @@ router.post('/movement/add', async (req, res) => {
   if (steps >= goal) {
     await markTasksDoneByIcon(uid(req), ['directions_run', 'directions_walk']);
   }
-  if (add > 0) {
+  // Award XP only on first steps log of the day
+  if (add > 0 && firstLogToday) {
     const ux = (await q(`SELECT double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
     const dxp = ux?.double_xp_expires_at && new Date(ux.double_xp_expires_at) > new Date() ? 10 : 5;
     await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [uid(req), dxp]);
@@ -247,6 +251,9 @@ router.get('/hydration', async (req, res) => {
 
 router.post('/hydration/add', async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
+  // Read current count before update so we know if the cap was already reached
+  const before = await q(`SELECT water FROM daily_stats WHERE user_id=$1 AND date=$2`, [uid(req), today]);
+  const prevGlasses = before.rows[0]?.water ?? 0;
   const r = await q(
     `INSERT INTO daily_stats (user_id, date, water) VALUES ($1, $2, 1)
      ON CONFLICT (user_id, date) DO UPDATE SET water = LEAST(daily_stats.water + 1, 8)
@@ -257,11 +264,14 @@ router.post('/hydration/add', async (req, res) => {
   if (glasses >= 8) {
     await markTasksDoneByIcon(uid(req), ['water_drop']);
   }
-  const uxh = (await q(`SELECT double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
-  const dxph = uxh?.double_xp_expires_at && new Date(uxh.double_xp_expires_at) > new Date() ? 10 : 5;
-  await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [uid(req), dxph]);
-  await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), dxph]);
-  await updateUserLevel(uid(req));
+  // Only award XP if the count actually increased (not already at the 8-glass cap)
+  if (prevGlasses < 8) {
+    const uxh = (await q(`SELECT double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
+    const dxph = uxh?.double_xp_expires_at && new Date(uxh.double_xp_expires_at) > new Date() ? 10 : 5;
+    await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [uid(req), dxph]);
+    await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), dxph]);
+    await updateUserLevel(uid(req));
+  }
   res.json({ glasses, done: glasses >= 8 });
 });
 

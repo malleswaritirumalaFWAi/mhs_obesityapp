@@ -43,25 +43,13 @@ class NotificationsScreen extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.tealGrad,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              child: NeuCard(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
                     onTap: () => context.pop(),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Symbols.arrow_back_rounded,
-                          color: Colors.white, size: 18),
-                    ),
+                    child: const Icon(Symbols.arrow_back_rounded,
+                        color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -70,12 +58,12 @@ class NotificationsScreen extends ConsumerWidget {
                       children: [
                         Text('Notifications',
                             style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
                         Text('Stay updated on your progress',
                             style: TextStyle(
-                                color: Colors.white70, fontSize: 12)),
+                                color: AppColors.inkSoft, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -86,12 +74,12 @@ class NotificationsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: AppColors.coralSoft,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Text('Mark all read',
                             style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.coral,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700)),
                       ),

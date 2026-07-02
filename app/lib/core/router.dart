@@ -43,6 +43,7 @@ import '../features/home/weekly_progress_screen.dart';
 import '../features/gamification/gamification_tutorial_screen.dart';
 import '../screens/admin/admin_login_screen.dart';
 import '../screens/admin/admin_dashboard_screen.dart';
+import '../features/settings/info_screens.dart';
 
 class Routes {
   Routes._();
@@ -85,6 +86,9 @@ class Routes {
   static const lessonViewer = '/lesson/:id';
   static const weeklyProgress = '/weekly-progress';
   static const gamificationTutorial = '/how-to-play';
+  static const healthGoals = '/health-goals';
+  static const helpSupport = '/help-support';
+  static const termsConditions = '/terms-conditions';
 
   // Admin routes (separate from user flow)
   static const adminLogin = '/admin';
@@ -228,6 +232,18 @@ final appRouter = GoRouter(
         path: Routes.gamificationTutorial,
         parentNavigatorKey: _rootKey,
         builder: (_, __) => const GamificationTutorialScreen()),
+    GoRoute(
+        path: Routes.healthGoals,
+        parentNavigatorKey: _rootKey,
+        builder: (_, __) => const HealthGoalsScreen()),
+    GoRoute(
+        path: Routes.helpSupport,
+        parentNavigatorKey: _rootKey,
+        builder: (_, __) => const HelpSupportScreen()),
+    GoRoute(
+        path: Routes.termsConditions,
+        parentNavigatorKey: _rootKey,
+        builder: (_, __) => const TermsConditionsScreen()),
 
     // ── Admin routes (separate from user flow) ─────────────────────────
     GoRoute(

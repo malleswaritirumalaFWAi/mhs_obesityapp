@@ -18,7 +18,7 @@ class NeuButton extends StatefulWidget {
     this.loading = false,
   });
 
-  /// Primary CTA — teal-to-indigo gradient pill.
+  /// Primary CTA — coral neumorphic pill.
   factory NeuButton.primary(
     String label, {
     Key? key,
@@ -30,11 +30,7 @@ class NeuButton extends StatefulWidget {
     return NeuButton(
       key: key,
       onPressed: onPressed,
-      gradient: const LinearGradient(
-        colors: [Color(0xFF1B4F72), Color(0xFF6C63FF)],
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-      ),
+      color: AppColors.coral,
       foreground: Colors.white,
       expand: expand,
       filled: true,
@@ -106,13 +102,7 @@ class _NeuButtonState extends State<NeuButton> {
           boxShadow: _down || !enabled
               ? Neu.small()
               : hasGradient
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF6C63FF).withOpacity(_down ? 0.15 : 0.35),
-                        blurRadius: _down ? 6 : 16,
-                        offset: Offset(0, _down ? 2 : 6),
-                      )
-                    ]
+                  ? Neu.raised(depth: 0.6)
                   : Neu.raised(depth: 0.6),
         ),
         child: Opacity(
