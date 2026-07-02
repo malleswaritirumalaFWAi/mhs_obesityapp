@@ -12,6 +12,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -36,8 +37,6 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
-            // R8 shrinks and obfuscates Java/Kotlin layer; Dart layer is obfuscated
-            // by passing --obfuscate --split-debug-info to the flutter build command.
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -50,4 +49,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.2.2")
 }
