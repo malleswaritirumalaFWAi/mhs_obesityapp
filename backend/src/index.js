@@ -296,12 +296,11 @@ async function runMigrations() {
       `ALTER TABLE fasting_sessions ADD COLUMN IF NOT EXISTS xp_awarded INTEGER NOT NULL DEFAULT 0`,
       // Backfill total_xp from xp for users where total_xp was added after they earned XP
       `UPDATE users SET total_xp = xp WHERE total_xp < xp`,
-      // Deduplicate challenge_entries before adding unique constraint (keeps row with highest progress)
-      `DELETE FROM challenge_entries WHERE id NOT IN (
-        SELECT DISTINCT ON (user_id, challenge_id) id
+      // Deduplicate challenge_entries — CTE approach avoids NOT IN pitfalls
+      `WITH ranked AS (
+        SELECT id, ROW_NUMBER() OVER (PARTITION BY user_id, challenge_id ORDER BY progress DESC, id DESC) AS rn
         FROM challenge_entries
-        ORDER BY user_id, challenge_id, progress DESC, id DESC
-      )`,
+      ) DELETE FROM challenge_entries WHERE id IN (SELECT id FROM ranked WHERE rn > 1)`,
       `ALTER TABLE challenge_entries ADD CONSTRAINT IF NOT EXISTS challenge_entries_user_challenge_unique UNIQUE (user_id, challenge_id)`,
     ];
 

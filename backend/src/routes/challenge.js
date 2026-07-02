@@ -311,16 +311,31 @@ router.get('/current', async (req, res) => {
       dayProgress = dayProg;
       const completed = autoProgress >= challenge.target;
 
-      const ins = await q(
-        `INSERT INTO challenge_entries (user_id,challenge_id,progress,completed,completed_at)
-         VALUES ($1,$2,$3,$4,$5)
-         ON CONFLICT (user_id,challenge_id) DO UPDATE
-           SET progress=GREATEST(challenge_entries.progress, EXCLUDED.progress),
-               completed=EXCLUDED.completed,
-               completed_at=COALESCE(challenge_entries.completed_at, EXCLUDED.completed_at)
-         RETURNING *`,
-        [uid(req), challenge.id, autoProgress, completed, completed ? new Date() : null]
+      // Safe upsert: doesn't depend on a UNIQUE constraint existing
+      const existing = await q(
+        `SELECT id, progress, completed, completed_at FROM challenge_entries
+         WHERE user_id=$1 AND challenge_id=$2 ORDER BY id DESC LIMIT 1`,
+        [uid(req), challenge.id]
       );
+      let ins;
+      if (existing.rows[0]) {
+        const prev = existing.rows[0];
+        ins = await q(
+          `UPDATE challenge_entries
+           SET progress=GREATEST($3, progress),
+               completed=$4,
+               completed_at=COALESCE(completed_at, $5)
+           WHERE id=$1 AND user_id=$2
+           RETURNING *`,
+          [prev.id, uid(req), autoProgress, completed, completed ? new Date() : null]
+        );
+      } else {
+        ins = await q(
+          `INSERT INTO challenge_entries (user_id,challenge_id,progress,completed,completed_at)
+           VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+          [uid(req), challenge.id, autoProgress, completed, completed ? new Date() : null]
+        );
+      }
       entry = ins.rows[0] || null;
 
       if (completed && entry?.completed) {
