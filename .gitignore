@@ -54,3 +54,8 @@ Thumbs.db
 *.tmp
 *.swp
 .vercel
+
+# ===== Flutter release obfuscation symbols =====
+# Keep locally to decode crash stack traces — never commit to git
+app/build/debug-info/
+.env.production
