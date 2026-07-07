@@ -59,3 +59,9 @@ Thumbs.db
 # Keep locally to decode crash stack traces — never commit to git
 app/build/debug-info/
 .env.production
+
+# Flutter SDK (local install)
+app/flutter/
+
+# Claude Code internals
+.claude/

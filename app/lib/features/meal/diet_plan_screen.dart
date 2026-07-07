@@ -263,10 +263,13 @@ class _WeekProgressBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Text(
-            'Day $dayInWeek of 7  ·  Program day $programDay/84',
-            style: TextStyle(color: Colors.white.withOpacity(0.5),
-                fontSize: 12, fontWeight: FontWeight.w500),
+          Flexible(
+            child: Text(
+              'Day $dayInWeek of 7  ·  Program day $programDay/84',
+              style: TextStyle(color: Colors.white.withOpacity(0.5),
+                  fontSize: 12, fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           const Spacer(),
           if (!hasPlan)
@@ -629,22 +632,21 @@ class _MealQuestCard extends StatelessWidget {
               onTap: completing ? null : onComplete,
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 13),
                 decoration: BoxDecoration(
-                  color: bg,
+                  color: color,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: color.withOpacity(0.35)),
                 ),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   if (completing)
-                    SizedBox(width: 14, height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: color))
+                    const SizedBox(width: 14, height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   else
-                    Icon(Symbols.check_circle_rounded, color: color, size: 18),
+                    const Icon(Symbols.check_circle_rounded, color: Colors.white, size: 18),
                   const SizedBox(width: 8),
                   Text(
                     completing ? 'Saving...' : 'Complete Quest  +$_xp XP',
-                    style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 13),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
                   ),
                 ]),
               ),

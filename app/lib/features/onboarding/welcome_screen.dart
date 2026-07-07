@@ -155,7 +155,7 @@ class _Benefit extends StatelessWidget {
               // Content
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
                   child: Row(
                     children: [
                       Container(
