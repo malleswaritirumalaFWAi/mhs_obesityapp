@@ -24,8 +24,9 @@ class WeeklyProgressScreen extends ConsumerWidget {
         child: progressAsync.when(
           loading: () => Column(children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
               child: NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -41,7 +42,15 @@ class WeeklyProgressScreen extends ConsumerWidget {
                             fontSize: 20,
                             fontWeight: FontWeight.w900)),
                   ),
-                  const Text('📊', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.bar_chart_rounded, color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
             ),
@@ -56,8 +65,9 @@ class WeeklyProgressScreen extends ConsumerWidget {
           ]),
           error: (_, __) => Column(children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
               child: NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -73,7 +83,15 @@ class WeeklyProgressScreen extends ConsumerWidget {
                             fontSize: 20,
                             fontWeight: FontWeight.w900)),
                   ),
-                  const Text('📊', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.bar_chart_rounded, color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
             ),
@@ -105,9 +123,10 @@ class WeeklyProgressScreen extends ConsumerWidget {
               onRefresh: () async =>
                   ref.invalidate(weeklyProgressProvider),
               child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
               children: [
                 NeuCard(
+                  depth: 0.5,
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                   child: Row(children: [
                     GestureDetector(
@@ -130,7 +149,7 @@ class WeeklyProgressScreen extends ConsumerWidget {
                     ),
                   ]),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 // ── Game Banner ──
                 _GameBanner(
@@ -141,26 +160,26 @@ class WeeklyProgressScreen extends ConsumerWidget {
                   rank: rank,
                   weightChange: weightChange,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
                 // ── Day Activity Dots ──
                 if (dayActivity.isNotEmpty) ...[
                   _DayActivityRow(dayActivity: dayActivity),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                 ],
 
                 // ── Quick numbers row ──
                 Row(children: [
-                  _QuickStat(label: 'Check-ins', value: '$checkinsCount', icon: Symbols.fact_check_rounded, color: AppColors.sage),
+                  _QuickStat(label: 'Check-ins', value: '$checkinsCount', icon: Symbols.fact_check_rounded, color: AppColors.coral),
                   const SizedBox(width: 10),
-                  _QuickStat(label: 'Fasts done', value: '$fastingCount', icon: Symbols.hourglass_empty_rounded, color: AppColors.berry),
+                  _QuickStat(label: 'Fasts done', value: '$fastingCount', icon: Symbols.hourglass_empty_rounded, color: AppColors.coral),
                   const SizedBox(width: 10),
-                  _QuickStat(label: 'Lessons', value: '$lessonsCompleted', icon: Symbols.menu_book_rounded, color: AppColors.gold),
+                  _QuickStat(label: 'Lessons', value: '$lessonsCompleted', icon: Symbols.menu_book_rounded, color: AppColors.coral),
                 ]),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
                 // ── 4 Pillar Cards ──
-                Text("This Week's Stats", style: T.title(context)),
+                Text('THIS WEEK\'S STATS', style: T.section(context)),
                 const SizedBox(height: 12),
                 Row(children: [
                   Expanded(child: _PillarCard(
@@ -168,8 +187,8 @@ class WeeklyProgressScreen extends ConsumerWidget {
                     label: 'Diet',
                     value: '$mealsLogged / $mealsTarget meals',
                     pct: mealsTarget > 0 ? (mealsLogged / mealsTarget).clamp(0.0, 1.0) : 0,
-                    color: AppColors.sage,
-                    bgColor: AppColors.sageSoft,
+                    color: AppColors.coral,
+                    bgColor: AppColors.coralSoft,
                   )),
                   const SizedBox(width: 12),
                   Expanded(child: _PillarCard(
@@ -188,8 +207,8 @@ class WeeklyProgressScreen extends ConsumerWidget {
                     label: 'Mood',
                     value: avgMood != null ? '${avgMood.toStringAsFixed(1)} / 5.0' : 'No data yet',
                     pct: avgMood != null ? (avgMood / 5).clamp(0.0, 1.0) : 0,
-                    color: AppColors.berry,
-                    bgColor: AppColors.berrySoft,
+                    color: AppColors.coral,
+                    bgColor: AppColors.coralSoft,
                   )),
                   const SizedBox(width: 12),
                   Expanded(child: _PillarCard(
@@ -197,25 +216,27 @@ class WeeklyProgressScreen extends ConsumerWidget {
                     label: 'Streak',
                     value: '$streak day streak',
                     pct: (streak / 7).clamp(0.0, 1.0),
-                    color: AppColors.gold,
-                    bgColor: AppColors.goldSoft,
+                    color: AppColors.coral,
+                    bgColor: AppColors.coralSoft,
                   )),
                 ]),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
                 // ── Task completion bar ──
                 if (tasksTotal > 0) ...[
                   NeuCard(
+                    depth: 0.5,
                     padding: const EdgeInsets.all(16),
                     child: Row(children: [
                       Container(
-                        padding: const EdgeInsets.all(9),
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.sageSoft,
-                          borderRadius: BorderRadius.circular(10),
+                          color: AppColors.coralSoft,
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(Symbols.task_alt_rounded,
-                            color: AppColors.sage, size: 18),
+                            color: AppColors.coral, size: 20, fill: 1),
                       ),
                       const SizedBox(width: 14),
                       Expanded(child: Column(
@@ -231,7 +252,7 @@ class WeeklyProgressScreen extends ConsumerWidget {
                                   ? (tasksDone / tasksTotal).clamp(0.0, 1.0)
                                   : 0,
                               backgroundColor: AppColors.line,
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.sage),
+                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.coral),
                               minHeight: 6,
                             ),
                           ),
@@ -240,21 +261,22 @@ class WeeklyProgressScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Text(
                         '${tasksTotal > 0 ? (tasksDone / tasksTotal * 100).round() : 0}%',
-                        style: T.title(context).copyWith(color: AppColors.sage, fontSize: 18),
+                        style: T.title(context).copyWith(color: AppColors.coral, fontSize: 18),
                       ),
                     ]),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                 ],
 
                 // ── Next Week Challenge ──
                 if (nextChallenge.isNotEmpty) ...[
                   _NextWeekChallenge(weekNum: weekNum + 1, challenge: nextChallenge),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                 ],
 
                 // ── Share ──
                 NeuCard(
+                  depth: 0.5,
                   padding: const EdgeInsets.all(16),
                   onTap: () => _showShareSheet(
                     context,
@@ -272,13 +294,14 @@ class WeeklyProgressScreen extends ConsumerWidget {
                   ),
                   child: Row(children: [
                     Container(
-                      padding: const EdgeInsets.all(9),
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         color: AppColors.coralSoft,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Symbols.share_rounded,
-                          color: AppColors.coral, size: 18),
+                          color: AppColors.coral, size: 20, fill: 1),
                     ),
                     const SizedBox(width: 12),
                     Expanded(child: Column(
@@ -325,14 +348,22 @@ class _QuickStat extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(color: AppColors.shadowDark.withOpacity(0.5),
+            BoxShadow(color: AppColors.shadowDark.withValues(alpha: 0.35),
                 blurRadius: 5, offset: const Offset(2, 2)),
             const BoxShadow(color: AppColors.shadowLight,
                 blurRadius: 5, offset: Offset(-2, -2)),
           ],
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: color, size: 18),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 20, fill: 1),
+          ),
           const SizedBox(height: 5),
           Text(value,
               style: TextStyle(
@@ -365,9 +396,9 @@ class _GameBanner extends StatelessWidget {
   final double? weightChange;
 
   Color get _scoreColor => weekScore >= 75
-      ? AppColors.sage
+      ? AppColors.coral
       : weekScore >= 45
-          ? AppColors.gold
+          ? AppColors.coral
           : AppColors.coral;
 
   String get _verdict => stars == 3
@@ -381,17 +412,14 @@ class _GameBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1C1C2E), Color(0xFF2E1B3D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.coralSoft,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1C2E).withOpacity(0.4),
-            blurRadius: 18,
-            offset: const Offset(0, 7),
+            color: AppColors.coral.withValues(alpha: 0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -401,14 +429,14 @@ class _GameBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(0.15),
+              color: AppColors.coral.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+              border: Border.all(color: AppColors.coral.withValues(alpha: 0.4)),
             ),
             child: Text(
               'WEEK $weekNum',
               style: const TextStyle(
-                color: AppColors.gold,
+                color: AppColors.coral,
                 fontWeight: FontWeight.w900,
                 fontSize: 11,
                 letterSpacing: 1.4,
@@ -419,7 +447,7 @@ class _GameBanner extends StatelessWidget {
           Text(
             'Game Report Card',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.45),
+              color: AppColors.inkSoft,
               fontSize: 12,
             ),
           ),
@@ -440,8 +468,8 @@ class _GameBanner extends StatelessWidget {
                 child: Icon(
                   i < stars ? Symbols.star_rounded : Symbols.star_rounded,
                   color: i < stars
-                      ? AppColors.gold
-                      : Colors.white.withOpacity(0.18),
+                      ? AppColors.coral
+                      : AppColors.line,
                   size: 26,
                   fill: i < stars ? 1 : 0,
                 ),
@@ -450,7 +478,7 @@ class _GameBanner extends StatelessWidget {
               Text(
                 _verdict,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.ink,
                   fontWeight: FontWeight.w800,
                   fontSize: 17,
                 ),
@@ -459,12 +487,12 @@ class _GameBanner extends StatelessWidget {
               // XP
               Row(children: [
                 const Icon(Symbols.bolt_rounded,
-                    color: AppColors.gold, size: 15, fill: 1),
+                    color: AppColors.coral, size: 15, fill: 1),
                 const SizedBox(width: 4),
                 Text(
                   '$weekXp XP this week',
                   style: const TextStyle(
-                    color: AppColors.gold,
+                    color: AppColors.coral,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
@@ -474,12 +502,12 @@ class _GameBanner extends StatelessWidget {
                 const SizedBox(height: 5),
                 Row(children: [
                   Icon(Symbols.military_tech_rounded,
-                      color: Colors.white.withOpacity(0.5), size: 14, fill: 1),
+                      color: AppColors.inkSoft, size: 14, fill: 1),
                   const SizedBox(width: 4),
                   Text(
                     'Rank #$rank in group',
-                    style: TextStyle(
-                        color: Colors.white.withOpacity(0.5), fontSize: 12),
+                    style: const TextStyle(
+                        color: AppColors.inkSoft, fontSize: 12),
                   ),
                 ]),
               ],
@@ -490,14 +518,14 @@ class _GameBanner extends StatelessWidget {
                     weightChange! <= 0
                         ? Symbols.trending_down_rounded
                         : Symbols.trending_up_rounded,
-                    color: weightChange! <= 0 ? AppColors.sage : AppColors.coral,
+                    color: weightChange! <= 0 ? AppColors.coral : AppColors.coral,
                     size: 14,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '${weightChange! > 0 ? '+' : ''}${weightChange!.toStringAsFixed(1)} kg weight',
                     style: TextStyle(
-                      color: weightChange! <= 0 ? AppColors.sage : AppColors.coral,
+                      color: weightChange! <= 0 ? AppColors.coral : AppColors.coral,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -531,7 +559,7 @@ class _WeekScoreRing extends StatelessWidget {
             child: CircularProgressIndicator(
               value: score / 100,
               strokeWidth: 9,
-              backgroundColor: Colors.white.withOpacity(0.1),
+              backgroundColor: AppColors.line,
               valueColor: AlwaysStoppedAnimation(color),
               strokeCap: StrokeCap.round,
             ),
@@ -540,15 +568,15 @@ class _WeekScoreRing extends StatelessWidget {
             Text(
               '$score',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.ink,
                 fontSize: 30,
                 fontWeight: FontWeight.w900,
               ),
             ),
             Text(
               '/ 100',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.45),
+              style: const TextStyle(
+                color: AppColors.inkSoft,
                 fontSize: 11,
               ),
             ),
@@ -568,8 +596,9 @@ class _DayActivityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NeuCard(
+      depth: 0.5,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Day by Day', style: T.title(context)),
+        Text('DAY BY DAY', style: T.section(context)),
         const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -589,18 +618,18 @@ class _DayActivityRow extends StatelessWidget {
             if (isFuture) {
               dotFill    = AppColors.line;
               borderColor = null;
-              labelColor = AppColors.inkSoft.withOpacity(0.45);
+              labelColor = AppColors.inkSoft.withValues(alpha: 0.45);
               dotIcon    = null;
               shadows    = null;
             } else if (active) {
-              final c    = isToday ? AppColors.coral : AppColors.sage;
+              final c    = isToday ? AppColors.coral : AppColors.coral;
               dotFill    = c;
               borderColor = null;
-              labelColor = isToday ? AppColors.coral : AppColors.sageDark;
+              labelColor = isToday ? AppColors.coral : AppColors.coral;
               dotIcon    = Icon(Symbols.check_rounded,
                   color: Colors.white, size: 15, fill: 1);
               shadows    = [
-                BoxShadow(color: c.withOpacity(0.35), blurRadius: 7, spreadRadius: 1)
+                BoxShadow(color: c.withValues(alpha: 0.35), blurRadius: 7, spreadRadius: 1)
               ];
             } else {
               // Past day, not active
@@ -610,7 +639,7 @@ class _DayActivityRow extends StatelessWidget {
               dotIcon    = isToday
                   ? null
                   : Icon(Symbols.close_rounded,
-                      color: AppColors.inkSoft.withOpacity(0.45), size: 13);
+                      color: AppColors.inkSoft.withValues(alpha: 0.45), size: 13);
               shadows    = null;
             }
 
@@ -672,7 +701,7 @@ class _PillarCard extends StatelessWidget {
         border: Border(top: BorderSide(color: color, width: 3)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadowDark.withOpacity(0.5),
+            color: AppColors.shadowDark.withValues(alpha: 0.35),
             blurRadius: 6,
             offset: const Offset(2, 2),
           ),
@@ -686,12 +715,13 @@ class _PillarCard extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 15),
+            child: Icon(icon, color: color, size: 20, fill: 1),
           ),
           const SizedBox(width: 7),
           Expanded(child: Text(label,
@@ -732,15 +762,15 @@ String _buildWeekPostText({
   required double? avgMood,
   required int streak,
 }) {
-  final starEmojis = '${'⭐' * stars}${'☆' * (3 - stars)}';
+  final starEmojis = '${'*' * stars}${'.' * (3 - stars)}';
   final taskPct = tasksTotal > 0 ? (tasksDone / tasksTotal * 100).round() : 0;
   final buf = StringBuffer();
-  buf.writeln('$starEmojis Week $weekNum Report · $weekScore/100');
+  buf.writeln('$starEmojis Week $weekNum Report - $weekScore/100');
   buf.writeln('');
-  buf.writeln('✅ $tasksDone/$tasksTotal tasks done ($taskPct%)');
-  buf.writeln('🍽 $mealsLogged meals logged');
-  if (avgMood != null) buf.writeln('😊 Mood ${avgMood.toStringAsFixed(1)} / 5.0');
-  buf.writeln('🔥 $streak day streak  ⚡$weekXp XP');
+  buf.writeln('$tasksDone/$tasksTotal tasks done ($taskPct%)');
+  buf.writeln('$mealsLogged meals logged');
+  if (avgMood != null) buf.writeln('Mood ${avgMood.toStringAsFixed(1)} / 5.0');
+  buf.writeln('$streak day streak  $weekXp XP');
   buf.writeln('');
   buf.write('#FitQuest #WeeklyProgress');
   return buf.toString();
@@ -786,7 +816,7 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
           : widget.postText;
       await ref.read(apiClientProvider).postJson('/posts', {
         'body': body,
-        'emoji': '⭐',
+        'emoji': '*',
         'post_type': 'progress_share',
       });
       setState(() { _posted = true; _posting = false; });
@@ -802,7 +832,7 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, 24 + bottom),
+      padding: EdgeInsets.fromLTRB(24, 0, 24, 24 + bottom),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -822,13 +852,14 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
         // Title
         Row(children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: AppColors.coralSoft,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Symbols.share_rounded,
-                color: AppColors.coral, size: 18),
+                color: AppColors.coral, size: 20, fill: 1),
           ),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -848,14 +879,14 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: const BoxDecoration(
-                  color: AppColors.sageSoft,
+                  color: AppColors.coralSoft,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Symbols.check_rounded,
-                    color: AppColors.sage, size: 28, fill: 1),
+                    color: AppColors.coral, size: 28, fill: 1),
               ),
               const SizedBox(height: 12),
-              Text('Posted!', style: T.title(context).copyWith(color: AppColors.sage, fontSize: 18)),
+              Text('Posted!', style: T.title(context).copyWith(color: AppColors.coral, fontSize: 18)),
               const SizedBox(height: 4),
               Text('Your progress is now in the group feed',
                   style: T.small(context), textAlign: TextAlign.center),
@@ -867,17 +898,14 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1C1C2E), Color(0xFF2E1B3D)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: AppColors.coralSoft,
               borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.coral.withValues(alpha: 0.25)),
             ),
             child: Text(
               widget.postText,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.inkMid,
                 fontSize: 13,
                 height: 1.6,
               ),
@@ -891,7 +919,7 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> {
               color: AppColors.bg,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
-                BoxShadow(color: AppColors.shadowDark.withOpacity(0.5),
+                BoxShadow(color: AppColors.shadowDark.withValues(alpha: 0.35),
                     blurRadius: 4, offset: const Offset(2, 2)),
                 const BoxShadow(color: AppColors.shadowLight,
                     blurRadius: 4, offset: Offset(-2, -2)),
@@ -979,22 +1007,20 @@ class _NextWeekChallenge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1C1C2E), Color(0xFF2E1B3D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.coralSoft,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
       ),
       child: Row(children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            color: AppColors.gold.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(10),
+            color: AppColors.coral.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(Symbols.flag_rounded,
-              color: AppColors.gold, size: 22, fill: 1),
+              color: AppColors.coral, size: 20, fill: 1),
         ),
         const SizedBox(width: 14),
         Expanded(child: Column(
@@ -1002,18 +1028,13 @@ class _NextWeekChallenge extends StatelessWidget {
           children: [
             Text(
               'WEEK $weekNum MISSION',
-              style: const TextStyle(
-                color: AppColors.gold,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-              ),
+              style: T.section(context).copyWith(color: AppColors.coral),
             ),
             const SizedBox(height: 5),
             Text(
               challenge,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.ink,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),

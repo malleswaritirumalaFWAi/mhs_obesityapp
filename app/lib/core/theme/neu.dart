@@ -16,27 +16,27 @@ class Neu {
 
   static List<BoxShadow> raised({double depth = 1}) => [
         BoxShadow(
-          color: AppColors.shadowDark,
-          offset: Offset(10 * depth, 10 * depth),
-          blurRadius: 24 * depth,
+          color: AppColors.shadowDark.withValues(alpha: 0.45),
+          offset: Offset(5 * depth, 5 * depth),
+          blurRadius: 14 * depth,
         ),
         BoxShadow(
-          color: AppColors.shadowLight,
-          offset: Offset(-10 * depth, -10 * depth),
-          blurRadius: 24 * depth,
+          color: AppColors.shadowLight.withValues(alpha: 0.8),
+          offset: Offset(-4 * depth, -4 * depth),
+          blurRadius: 12 * depth,
         ),
       ];
 
-  static List<BoxShadow> small() => const [
+  static List<BoxShadow> small() => [
         BoxShadow(
-          color: AppColors.shadowDark,
-          offset: Offset(6, 6),
-          blurRadius: 14,
+          color: AppColors.shadowDark.withValues(alpha: 0.35),
+          offset: const Offset(3, 3),
+          blurRadius: 8,
         ),
         BoxShadow(
-          color: AppColors.shadowLight,
-          offset: Offset(-6, -6),
-          blurRadius: 14,
+          color: AppColors.shadowLight.withValues(alpha: 0.7),
+          offset: const Offset(-3, -3),
+          blurRadius: 8,
         ),
       ];
 

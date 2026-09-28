@@ -11,75 +11,82 @@ import '../../core/widgets/neu_misc.dart';
 
 class _Slide {
   const _Slide({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.body,
     required this.color,
+    required this.softColor,
     required this.items,
   });
-  final String emoji, title, body;
-  final Color color;
+  final IconData icon;
+  final String title, body;
+  final Color color, softColor;
   final List<String> items;
 }
 
 const _slides = [
   _Slide(
-    emoji: '⚡',
+    icon: Symbols.bolt_rounded,
     title: 'Earn XP',
     body: 'Complete daily tasks to earn Experience Points. The more you do, the faster you level up!',
-    color: AppColors.gold,
+    color: AppColors.coral,
+    softColor: AppColors.coralSoft,
     items: [
-      'Check in daily → +10 XP',
-      'Log a meal → +5 XP',
-      'Complete a lesson → +30-50 XP',
-      'Evening reflection → +10 XP',
-      'Fasting session → +15 XP',
+      'Check in daily -> +10 XP',
+      'Log a meal -> +5 XP',
+      'Complete a lesson -> +30-50 XP',
+      'Evening reflection -> +10 XP',
+      'Fasting session -> +15 XP',
     ],
   ),
   _Slide(
-    emoji: '🔥',
+    icon: Symbols.local_fire_department_rounded,
     title: 'Build Streaks',
     body: 'Log in every day to build your streak. Longer streaks give bonus XP multipliers!',
     color: AppColors.coral,
+    softColor: AppColors.coralSoft,
     items: [
-      '7 days → 1.5× XP bonus',
-      '14 days → 2× XP bonus',
-      '30 days → 2.5× XP bonus',
-      'Every 7 days → free streak freeze',
+      '7 days -> 1.5x XP bonus',
+      '14 days -> 2x XP bonus',
+      '30 days -> 2.5x XP bonus',
+      'Every 7 days -> free streak freeze',
       'Missed a day? Use a freeze to protect it!',
     ],
   ),
   _Slide(
-    emoji: '🏆',
+    icon: Symbols.emoji_events_rounded,
     title: 'Level Up',
     body: 'Your total XP determines your level. Higher levels unlock special badges and perks!',
-    color: AppColors.berry,
+    color: AppColors.coral,
+    softColor: AppColors.coralSoft,
     items: [
-      '🥉 Bronze — 0 XP (starter)',
-      '🥈 Silver — 1,000 XP',
-      '🥇 Gold — 3,000 XP',
-      '💎 Platinum — 6,000 XP',
-      '👑 Diamond — 10,000 XP',
+      'Bronze -- 0 XP (starter)',
+      'Silver -- 1,000 XP',
+      'Gold -- 3,000 XP',
+      'Platinum -- 6,000 XP',
+      'Diamond -- 10,000 XP',
     ],
   ),
   _Slide(
-    emoji: '🏅',
+    icon: Symbols.military_tech_rounded,
     title: 'Earn Badges',
     body: 'Complete milestones to unlock badges. Show them off on your profile!',
-    color: AppColors.sage,
+    color: AppColors.coral,
+    softColor: AppColors.coralSoft,
     items: [
-      'First check-in → Early Bird',
-      '7-day streak → Week Warrior',
-      '10 meals logged → Food Logger',
-      '3 referrals → Star Recruiter',
-      'Complete 12 weeks → FitQuest Champion',
+      'First check-in -> Early Bird',
+      '7-day streak -> Week Warrior',
+      '10 meals logged -> Food Logger',
+      '3 referrals -> Star Recruiter',
+      'Complete 12 weeks -> FitQuest Champion',
     ],
   ),
   _Slide(
-    emoji: '👥',
+    icon: Symbols.group_rounded,
     title: 'Group Leaderboard',
     body: 'Compete with your cohort group. Top 3 weekly performers win special prizes!',
-    color: AppColors.goldDark,
+    color: AppColors.coral,
+    softColor: AppColors.coralSoft,
     items: [
       'Weekly XP resets every Sunday',
       'Top 3 get winner badges',
@@ -116,8 +123,9 @@ class _GamificationTutorialScreenState
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
               child: NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -140,7 +148,7 @@ class _GamificationTutorialScreenState
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       decoration: BoxDecoration(
                         color: i == _page
-                            ? AppColors.coral
+                            ? _slides[_page].color
                             : AppColors.line,
                         borderRadius: BorderRadius.circular(99),
                       ),
@@ -149,7 +157,7 @@ class _GamificationTutorialScreenState
                 ]),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
             Expanded(
               child: PageView.builder(
                 controller: _ctrl,
@@ -159,7 +167,7 @@ class _GamificationTutorialScreenState
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: Row(children: [
                 if (_page > 0) ...[
                   NeuButton(
@@ -203,14 +211,24 @@ class _SlidePage extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           NeuCard(
-            color: slide.color.withValues(alpha: 0.1),
+            depth: 0.5,
+            color: slide.softColor,
             padding: const EdgeInsets.all(28),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(slide.emoji, style: const TextStyle(fontSize: 52)),
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: slide.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(slide.icon, color: slide.color, size: 32, fill: 1),
+                ),
                 const SizedBox(height: 16),
                 Text(slide.title, style: T.h1(context).copyWith(color: slide.color)),
                 const SizedBox(height: 10),
@@ -218,17 +236,24 @@ class _SlidePage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+          Text('DETAILS', style: T.section(context)),
+          const SizedBox(height: 12),
           NeuCard(
+            depth: 0.5,
             padding: const EdgeInsets.all(20),
             child: Column(
               children: slide.items.map((item) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(children: [
                   Container(
-                    width: 8, height: 8,
+                    width: 36, height: 36,
                     decoration: BoxDecoration(
-                      color: slide.color, shape: BoxShape.circle),
+                      color: slide.color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Symbols.check_circle_rounded,
+                        color: slide.color, size: 20, fill: 1),
                   ),
                   const SizedBox(width: 12),
                   Expanded(child: Text(item, style: T.body(context))),

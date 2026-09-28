@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -91,8 +91,8 @@ class _UserCard extends StatelessWidget {
                         _StatPill(
                           icon: Symbols.military_tech_rounded,
                           label: 'Rank #${user.rank}',
-                          color: AppColors.goldSoft,
-                          textColor: AppColors.goldDark,
+                          color: AppColors.coralSoft,
+                          textColor: AppColors.coral,
                         ),
                         const SizedBox(width: 8),
                         _StatPill(
@@ -111,19 +111,19 @@ class _UserCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.sageSoft,
+                  color: AppColors.coralSoft,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
                     const Text('LVL',
                         style: TextStyle(
-                            color: AppColors.sageDark,
+                            color: AppColors.coral,
                             fontSize: 9,
                             fontWeight: FontWeight.w700)),
                     Text('${user.level}',
                         style: const TextStyle(
-                            color: AppColors.sageDark,
+                            color: AppColors.coral,
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
                             height: 1)),
@@ -141,7 +141,7 @@ class _UserCard extends StatelessWidget {
           Row(
             children: [
               const Icon(Symbols.bolt_rounded,
-                  size: 16, color: AppColors.amber),
+                  size: 16, color: AppColors.coral),
               const SizedBox(width: 4),
               Text('${user.xp} XP',
                   style: T.small(context).copyWith(
@@ -164,7 +164,7 @@ class _UserCard extends StatelessWidget {
             label: 'Lessons',
             completed: user.lessonCompleted,
             total: user.lessonTotal,
-            color: AppColors.teal,
+            color: AppColors.coral,
           ),
         ],
       ),

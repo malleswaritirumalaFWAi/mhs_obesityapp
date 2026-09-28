@@ -69,7 +69,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
       await _load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Measurements saved! +10 XP'), backgroundColor: AppColors.sage));
+          const SnackBar(content: Text('Measurements saved! +10 XP'), backgroundColor: AppColors.coral));
       }
     } catch (_) {} finally {
       if (mounted) setState(() => _saving = false);
@@ -81,9 +81,10 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
           children: [
             NeuCard(
+              depth: 0.5,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Row(children: [
                 GestureDetector(
@@ -92,55 +93,61 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
                       color: AppColors.inkMid, size: 22),
                 ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Body Measurements',
-                          style: TextStyle(
-                              color: AppColors.ink,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900)),
-                      Text('Track your physical changes',
+                      Text('BODY MEASUREMENTS',
+                          style: T.section(context).copyWith(color: AppColors.coral)),
+                      const Text('Track your physical changes',
                           style: TextStyle(
                               color: AppColors.inkSoft, fontSize: 12)),
                     ],
                   ),
                 ),
-                const Text('📏', style: TextStyle(fontSize: 26)),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.straighten_rounded, color: AppColors.coral, size: 20, fill: 1),
+                ),
               ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             if (_latest != null)
               NeuCard(
-                color: AppColors.sageSoft,
+                depth: 0.5,
+                color: AppColors.coralSoft,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Last recorded', style: T.label(context).copyWith(color: AppColors.sageDark)),
+                  Text('LAST RECORDED', style: T.section(context).copyWith(color: AppColors.coral)),
                   const SizedBox(height: 12),
                   Wrap(spacing: 16, runSpacing: 8, children: [
                     for (final e in [
-                      ('Waist', '${_latest!['waist'] ?? '--'} cm'),
-                      ('Hips',  '${_latest!['hips']  ?? '--'} cm'),
-                      ('Chest', '${_latest!['chest'] ?? '--'} cm'),
-                      ('Arms',  '${_latest!['arms']  ?? '--'} cm'),
+                      ('Waist', '${_latest!['waist'] ?? '--'} cm', AppColors.coral),
+                      ('Hips',  '${_latest!['hips']  ?? '--'} cm', AppColors.coral),
+                      ('Chest', '${_latest!['chest'] ?? '--'} cm', AppColors.coral),
+                      ('Arms',  '${_latest!['arms']  ?? '--'} cm', AppColors.coral),
                     ])
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(e.$1, style: T.small(context).copyWith(fontSize: 11)),
-                        Text(e.$2, style: T.title(context).copyWith(fontSize: 16)),
+                        Text(e.$2, style: T.title(context).copyWith(fontSize: 16, color: e.$3)),
                       ]),
                   ]),
                 ]),
               ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
-            Text('Log measurements', style: T.title(context)),
+            Text('LOG MEASUREMENTS', style: T.section(context)),
             const SizedBox(height: 12),
-            _Field(ctrl: _waist,  label: 'Waist (cm)',   icon: Symbols.straighten_rounded),
-            _Field(ctrl: _hips,   label: 'Hips (cm)',    icon: Symbols.straighten_rounded),
-            _Field(ctrl: _chest,  label: 'Chest (cm)',   icon: Symbols.straighten_rounded),
-            _Field(ctrl: _arms,   label: 'Arms (cm)',    icon: Symbols.fitness_center_rounded),
-            _Field(ctrl: _weight, label: 'Weight (kg)',  icon: Symbols.scale_rounded),
+            _Field(ctrl: _waist,  label: 'Waist (cm)',   icon: Symbols.straighten_rounded, color: AppColors.coral),
+            _Field(ctrl: _hips,   label: 'Hips (cm)',    icon: Symbols.straighten_rounded, color: AppColors.coral),
+            _Field(ctrl: _chest,  label: 'Chest (cm)',   icon: Symbols.straighten_rounded, color: AppColors.coral),
+            _Field(ctrl: _arms,   label: 'Arms (cm)',    icon: Symbols.fitness_center_rounded, color: AppColors.coral),
+            _Field(ctrl: _weight, label: 'Weight (kg)',  icon: Symbols.scale_rounded, color: AppColors.coral),
             const SizedBox(height: 8),
 
             NeuButton.primary(
@@ -153,15 +160,26 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
 
             if (_history.length > 1) ...[
               const SizedBox(height: 24),
-              Text('History', style: T.title(context)),
+              Text('HISTORY', style: T.section(context)),
               const SizedBox(height: 12),
               ..._history.take(5).map((m) {
                 final dt = DateTime.tryParse(m['created_at'] as String? ?? '');
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: NeuCard(
+                    depth: 0.5,
                     padding: const EdgeInsets.all(14),
                     child: Row(children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.coral.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Symbols.calendar_today_rounded, color: AppColors.coral, size: 20, fill: 1),
+                      ),
+                      const SizedBox(width: 10),
                       Expanded(child: Text(
                         dt != null ? '${dt.day}/${dt.month}/${dt.year}' : '',
                         style: T.title(context).copyWith(fontSize: 14),
@@ -188,22 +206,35 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
 }
 
 class _Field extends StatelessWidget {
-  const _Field({required this.ctrl, required this.label, required this.icon});
+  const _Field({required this.ctrl, required this.label, required this.icon, required this.color});
   final TextEditingController ctrl;
   final String label;
   final IconData icon;
+  final Color color;
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: NeuCard(
+        depth: 0.5,
         padding: EdgeInsets.zero,
         child: TextField(
           controller: ctrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             labelText: label,
-            prefixIcon: Icon(icon, color: AppColors.coral, size: 20),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 20, fill: 1),
+              ),
+            ),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),

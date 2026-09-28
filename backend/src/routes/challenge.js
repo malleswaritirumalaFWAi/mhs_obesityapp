@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
+import { updateUserLevel } from './gamification.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -346,6 +347,7 @@ router.get('/current', async (req, res) => {
         if (!prev.rows[0]) {
           await q(`UPDATE users SET xp=xp+$2, total_xp=COALESCE(total_xp,0)+$2 WHERE id=$1`, [uid(req), challenge.xp_reward]);
           await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), challenge.xp_reward]);
+          await updateUserLevel(uid(req));
           await q(
             `INSERT INTO notifications (user_id,type,title,body,data)
              VALUES ($1,'challenge','Challenge complete! 🎉',$2,$3)`,
@@ -438,6 +440,7 @@ router.post('/:id/progress', async (req, res) => {
     xpEarned = challenge.xp_reward;
     await q(`UPDATE users SET xp=xp+$2, total_xp=COALESCE(total_xp,0)+$2 WHERE id=$1`, [uid(req), xpEarned]);
     await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), xpEarned]);
+    await updateUserLevel(uid(req));
   }
   res.json({ progress: newProgress, completed, xp_earned: xpEarned });
 });

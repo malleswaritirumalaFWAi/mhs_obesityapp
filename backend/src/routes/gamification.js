@@ -81,11 +81,11 @@ router.post('/freeze/use', async (req, res) => {
 });
 
 router.post('/freeze/buy', async (req, res) => {
-  const r = (await q(`SELECT xp, total_xp, streak_freezes FROM users WHERE id=$1`, [uid(req)])).rows[0];
-  if (!r || r.total_xp < 500) return res.status(400).json({ message: 'Insufficient XP (need 500)' });
-  // Deduct from total_xp (lifetime balance); also reduce spendable xp but clamp at 0.
+  const r = (await q(`SELECT xp, streak_freezes FROM users WHERE id=$1`, [uid(req)])).rows[0];
+  if (!r || r.xp < 500) return res.status(400).json({ message: 'Insufficient XP (need 500)' });
+  // Deduct from spendable xp only — total_xp is lifetime earned, never decremented.
   await q(
-    `UPDATE users SET total_xp=total_xp-500, xp=GREATEST(xp-500,0), streak_freezes=streak_freezes+1 WHERE id=$1`,
+    `UPDATE users SET xp=xp-500, streak_freezes=streak_freezes+1 WHERE id=$1`,
     [uid(req)]
   );
   res.json({ ok: true });
@@ -107,8 +107,8 @@ router.post('/points-store/redeem', async (req, res) => {
   const r = (await q(`SELECT xp, streak_freezes, double_xp_expires_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
   if (!r || r.xp < cost) return res.status(400).json({ message: `Need ${cost} XP` });
 
-  // Deduct XP
-  await q(`UPDATE users SET xp=xp-$2, total_xp=GREATEST(total_xp-$2,0) WHERE id=$1`, [uid(req), cost]);
+  // Deduct from spendable xp only — total_xp is lifetime earned, never decremented.
+  await q(`UPDATE users SET xp=xp-$2 WHERE id=$1`, [uid(req), cost]);
 
   let extraData = {};
   if (item_id === 'freeze') {

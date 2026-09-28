@@ -15,57 +15,67 @@ class _Phase {
   const _Phase({
     required this.minHours,
     required this.name,
-    required this.emoji,
+    required this.icon,
     required this.tip,
     required this.color,
+    required this.iconColor,
   });
   final int minHours;
-  final String name, emoji, tip;
+  final String name;
+  final IconData icon;
+  final String tip;
   final Color color;
+  final Color iconColor;
 }
 
 const _phases = [
   _Phase(
     minHours: 0,
     name: 'Fed State',
-    emoji: '🍽️',
+    icon: Symbols.restaurant_rounded,
     tip: 'Digesting. Insulin elevated. Fasting benefits begin after 4h.',
     color: AppColors.inkSoft,
+    iconColor: AppColors.inkMid,
   ),
   _Phase(
     minHours: 4,
     name: 'Early Fasting',
-    emoji: '⚡',
+    icon: Symbols.bolt_rounded,
     tip: 'Blood sugar stabilising. Liver glycogen depleting. Hunger may peak briefly.',
-    color: AppColors.gold,
+    color: AppColors.coral,
+    iconColor: AppColors.coral,
   ),
   _Phase(
     minHours: 8,
     name: 'Fat Burning',
-    emoji: '🔥',
+    icon: Symbols.local_fire_department_rounded,
     tip: 'Body switching to fat for fuel. Ketone production rising. Energy will feel steady.',
     color: AppColors.coral,
+    iconColor: AppColors.coral,
   ),
   _Phase(
     minHours: 12,
     name: 'Ketosis',
-    emoji: '✨',
+    icon: Symbols.auto_awesome_rounded,
     tip: 'Peak fat burning. Autophagy starting — cells clearing debris and repairing.',
-    color: AppColors.berry,
+    color: AppColors.coral,
+    iconColor: AppColors.coral,
   ),
   _Phase(
     minHours: 16,
     name: 'Deep Ketosis',
-    emoji: '💪',
+    icon: Symbols.fitness_center_rounded,
     tip: 'Maximum fat oxidation. Growth hormone surging. Autophagy at full speed.',
-    color: AppColors.sage,
+    color: AppColors.coral,
+    iconColor: AppColors.coral,
   ),
   _Phase(
     minHours: 18,
     name: 'Extended Fast',
-    emoji: '🌟',
+    icon: Symbols.stars_rounded,
     tip: 'Elite level. Metabolic reset, cellular repair and inflammation reduction in full effect.',
-    color: AppColors.teal,
+    color: AppColors.coral,
+    iconColor: AppColors.coral,
   ),
 ];
 
@@ -119,10 +129,11 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
           children: [
             // ── Header ──────────────────────────────────────────────────────
             NeuCard(
+              depth: 0.5,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Row(children: [
                 GestureDetector(
@@ -142,10 +153,19 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                         style: TextStyle(color: AppColors.inkSoft, fontSize: 12)),
                   ]),
                 ),
-                const Text('⏰', style: TextStyle(fontSize: 26)),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.timer_rounded,
+                      color: AppColors.coral, size: 20, fill: 1),
+                ),
               ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // ── Stats row ───────────────────────────────────────────────────
             if (!f.loading) ...[
@@ -154,7 +174,7 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                   label: 'Completed',
                   value: '${f.stats.totalCompleted}',
                   icon: Symbols.check_circle_rounded,
-                  iconColor: AppColors.sage,
+                  iconColor: AppColors.coral,
                 ),
                 const SizedBox(width: 10),
                 _StatCard(
@@ -168,10 +188,10 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                   label: 'This Week',
                   value: '${f.stats.thisWeek}',
                   icon: Symbols.calendar_today_rounded,
-                  iconColor: AppColors.berry,
+                  iconColor: AppColors.coral,
                 ),
               ]),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
 
             // ── Timer ring ──────────────────────────────────────────────────
@@ -201,16 +221,16 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                         const SizedBox(height: 6),
                         NeuPill(
                           color: f.completed
-                              ? AppColors.sageSoft
-                              : AppColors.goldSoft,
+                              ? AppColors.coralSoft
+                              : AppColors.coralSoft,
                           child: Text(
                             f.completed
-                                ? '✅ Goal reached!'
+                                ? 'Goal reached!'
                                 : '${(f.progress * 100).toInt()}%',
                             style: TextStyle(
                               color: f.completed
-                                  ? AppColors.sageDark
-                                  : AppColors.goldDark,
+                                  ? AppColors.coral
+                                  : AppColors.coral,
                               fontWeight: FontWeight.w800,
                               fontSize: 12,
                             ),
@@ -227,15 +247,24 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             // ── Break-fast end time (active only) ───────────────────────────
             if (f.active) ...[
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(children: [
-                  const Icon(Symbols.restaurant_rounded,
-                      color: AppColors.coral, size: 20),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.restaurant_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -257,17 +286,28 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                   ),
                 ]),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
 
               // ── Current metabolic phase ──────────────────────────────────
+              Text('CURRENT PHASE', style: T.section(context)),
+              const SizedBox(height: 12),
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.all(14),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   Row(children: [
-                    Text(phase.emoji,
-                        style: const TextStyle(fontSize: 20)),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: phase.iconColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(phase.icon,
+                          color: phase.iconColor, size: 20, fill: 1),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -305,12 +345,12 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                   ),
                 ]),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
 
             // ── Window picker (not active) ───────────────────────────────────
             if (!f.active) ...[
-              Text('Choose your fasting window', style: T.title(context)),
+              Text('FASTING WINDOW', style: T.section(context)),
               const SizedBox(height: 6),
               Text(
                 'Longer fasts earn more XP. 16h is recommended for beginners.',
@@ -356,6 +396,7 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
               if (_customMode) ...[
                 const SizedBox(height: 16),
                 NeuCard(
+                  depth: 0.5,
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,7 +441,7 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
 
             // ── Start / Stop button ─────────────────────────────────────────
@@ -416,14 +457,14 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
               _BigButton(
                 label: 'Stop Fast',
                 icon: Symbols.stop_circle_rounded,
-                color: AppColors.berry,
+                color: AppColors.coral,
                 onTap: () => _confirmStop(context),
               ),
             const SizedBox(height: 28),
 
             // ── History ─────────────────────────────────────────────────────
             if (f.history.isNotEmpty) ...[
-              Text('History', style: T.title(context)),
+              Text('HISTORY', style: T.section(context)),
               const SizedBox(height: 12),
               ...f.history.take(10).map((s) => _HistoryCard(session: s)),
             ],
@@ -439,7 +480,7 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
     final nextPhase = _phases[idx + 1];
     final hoursToNext = nextPhase.minHours - f.elapsed.inHours;
     if (hoursToNext <= 0) return 'Entering ${nextPhase.name} soon';
-    return '${hoursToNext}h until ${nextPhase.emoji} ${nextPhase.name}';
+    return '${hoursToNext}h until ${nextPhase.name}';
   }
 
   int _xpForHours(int h) {
@@ -461,7 +502,7 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                 color: AppColors.ink, fontWeight: FontWeight.w800)),
         content: Text(
           'You have fasted for ${h}h ${m}m out of ${f.targetHours}h target. '
-          '${f.completed ? "You've hit your goal! 🎉" : "This will be saved to your history."}',
+          '${f.completed ? "You\'ve hit your goal!" : "This will be saved to your history."}',
           style: const TextStyle(color: AppColors.inkMid),
         ),
         actions: [
@@ -469,7 +510,7 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Keep going',
                 style: TextStyle(
-                    color: AppColors.sage, fontWeight: FontWeight.w700)),
+                    color: AppColors.coral, fontWeight: FontWeight.w700)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -496,9 +537,9 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(completed
-          ? '🎉 Fast completed! +$xp XP earned'
+          ? 'Fast completed! +$xp XP earned'
           : 'Fast stopped early. No XP awarded.'),
-      backgroundColor: completed ? AppColors.sage : AppColors.inkMid,
+      backgroundColor: completed ? AppColors.coral : AppColors.inkMid,
       duration: const Duration(seconds: 10),
       action: completed
           ? null
@@ -513,7 +554,7 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                         ? 'Fast resumed!'
                         : 'Could not resume — too much time has passed.'),
                     backgroundColor:
-                        ok ? AppColors.sage : AppColors.coral,
+                        ok ? AppColors.coral : AppColors.coral,
                     duration: const Duration(seconds: 3),
                   ));
                 }
@@ -549,6 +590,7 @@ class _WindowChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: NeuCard(
+        depth: 0.5,
         color: selected ? AppColors.coralSoft : null,
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -563,11 +605,8 @@ class _WindowChip extends StatelessWidget {
             ),
             if (recommended) ...[
               const SizedBox(width: 3),
-              const Text('★',
-                  style: TextStyle(
-                      color: AppColors.sage,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900)),
+              const Icon(Symbols.star_rounded,
+                  color: AppColors.coral, size: 12, fill: 1),
             ],
           ]),
           const SizedBox(height: 2),
@@ -602,7 +641,7 @@ class _PhaseBar extends StatelessWidget {
             height: 5,
             margin: EdgeInsets.only(right: i < _phases.length - 1 ? 3 : 0),
             decoration: BoxDecoration(
-              color: filled ? AppColors.coral : AppColors.line,
+              color: filled ? _phases[i].iconColor : AppColors.line,
               borderRadius: BorderRadius.circular(99),
             ),
           ),
@@ -629,9 +668,18 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: NeuCard(
+        depth: 0.5,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         child: Column(children: [
-          Icon(icon, color: iconColor, size: 20, fill: 1),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 20, fill: 1),
+          ),
           const SizedBox(height: 4),
           Text(value,
               style: const TextStyle(
@@ -673,15 +721,26 @@ class _HistoryCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: NeuCard(
+        depth: 0.5,
         padding: const EdgeInsets.all(14),
         child: Row(children: [
-          Icon(
-            completed
-                ? Symbols.check_circle_rounded
-                : Symbols.cancel_rounded,
-            color: completed ? AppColors.sage : AppColors.inkSoft,
-            fill: 1,
-            size: 22,
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: completed
+                  ? AppColors.coralSoft
+                  : AppColors.coralSoft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              completed
+                  ? Symbols.check_circle_rounded
+                  : Symbols.cancel_rounded,
+              color: completed ? AppColors.coral : AppColors.inkSoft,
+              fill: 1,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -703,17 +762,17 @@ class _HistoryCard extends StatelessWidget {
           ),
           if (completed && xpAwarded > 0)
             NeuPill(
-              color: AppColors.sageSoft,
+              color: AppColors.coralSoft,
               child: Text('+$xpAwarded XP',
                   style: const TextStyle(
-                      color: AppColors.sageDark,
+                      color: AppColors.coral,
                       fontWeight: FontWeight.w700,
                       fontSize: 11)),
             )
           else if (!completed)
-            const NeuPill(
+            NeuPill(
               color: AppColors.coralSoft,
-              child: Text('Incomplete',
+              child: const Text('Incomplete',
                   style: TextStyle(
                       color: AppColors.coral,
                       fontWeight: FontWeight.w700,
@@ -802,7 +861,7 @@ class _RingPainter extends CustomPainter {
         2 * pi * progress,
         false,
         Paint()
-          ..color = progress >= 1 ? AppColors.sage : AppColors.coral
+          ..color = progress >= 1 ? AppColors.coral : AppColors.coral
           ..strokeWidth = 16
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round,

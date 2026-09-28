@@ -46,8 +46,9 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
               child: NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -56,37 +57,79 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
                         color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.groups_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Cohort Chat',
+                        const Text('Cohort Chat',
                             style: TextStyle(
                                 color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
-                        Text('Chat with your batch members',
-                            style: TextStyle(
-                                color: AppColors.inkSoft, fontSize: 12)),
+                        Text('CHAT WITH YOUR BATCH MEMBERS',
+                            style: T.section(context)),
                       ],
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => ref.read(groupChatProvider.notifier).load(),
-                    child: const Icon(Symbols.refresh_rounded,
-                        color: AppColors.inkMid, size: 22),
+                    onTap: state.loading ? null : () => ref.read(groupChatProvider.notifier).load(),
+                    child: state.loading && state.messages.isNotEmpty
+                      ? const SizedBox(
+                          width: 20, height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.inkMid),
+                        )
+                      : Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.coralSoft,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Symbols.refresh_rounded,
+                              color: AppColors.coral, size: 20, fill: 1),
+                        ),
                   ),
                 ]),
               ),
             ),
+            const SizedBox(height: 24),
             Expanded(
               child: state.loading && state.messages.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : state.messages.isEmpty
-                  ? Center(child: Text('No messages yet. Say hi! 👋', style: T.body(context)))
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: AppColors.coralSoft,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: const Icon(Symbols.waving_hand_rounded,
+                                size: 28, color: AppColors.coral, fill: 1),
+                          ),
+                          const SizedBox(height: 16),
+                          Text('No messages yet. Say hi!', style: T.body(context)),
+                        ],
+                      ),
+                    )
                   : ListView.builder(
                       controller: _scroll,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                       itemCount: state.messages.length,
                       itemBuilder: (_, i) => _Bubble(msg: state.messages[i]),
                     ),
@@ -118,14 +161,14 @@ class _Bubble extends StatelessWidget {
             Container(
               width: 32, height: 32,
               decoration: BoxDecoration(
-                color: isCoach ? AppColors.coral : AppColors.berrySoft,
+                color: isCoach ? AppColors.coral : AppColors.coralSoft,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Text(
                 msg.authorName.isNotEmpty ? msg.authorName[0].toUpperCase() : '?',
                 style: TextStyle(
-                  color: isCoach ? Colors.white : AppColors.berry,
+                  color: isCoach ? Colors.white : AppColors.coral,
                   fontWeight: FontWeight.w700, fontSize: 13,
                 ),
               ),
@@ -139,10 +182,21 @@ class _Bubble extends StatelessWidget {
                 if (!isMe)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2, left: 4),
-                    child: Text(
-                      isCoach ? '👨‍⚕️ ${msg.authorName}' : msg.authorName,
-                      style: T.small(context).copyWith(fontSize: 11,
-                        color: isCoach ? AppColors.coral : AppColors.inkSoft),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isCoach)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Icon(Symbols.verified_rounded,
+                                size: 14, color: AppColors.coral, fill: 1),
+                          ),
+                        Text(
+                          msg.authorName,
+                          style: T.small(context).copyWith(fontSize: 11,
+                            color: isCoach ? AppColors.coral : AppColors.inkSoft),
+                        ),
+                      ],
                     ),
                   ),
                 Container(
@@ -183,7 +237,7 @@ class _InputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 16),
+      padding: const EdgeInsets.fromLTRB(24, 8, 8, 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.line)),

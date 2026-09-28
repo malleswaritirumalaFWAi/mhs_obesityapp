@@ -10,8 +10,21 @@ import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
 
-const _moods = ['😔', '😐', '🙂', '😊', '🤩'];
+const _moodIcons = [
+  Symbols.sentiment_very_dissatisfied_rounded,
+  Symbols.sentiment_neutral_rounded,
+  Symbols.sentiment_satisfied_rounded,
+  Symbols.sentiment_very_satisfied_rounded,
+  Symbols.mood_rounded,
+];
 const _moodLabels = ['Rough day', 'Okay', 'Good', 'Great', 'Amazing!'];
+const _moodColors = [
+  Color(0xFFE57373),
+  Color(0xFFFFB74D),
+  AppColors.coral,
+  AppColors.coral,
+  AppColors.coral,
+];
 
 class ReflectionScreen extends ConsumerStatefulWidget {
   const ReflectionScreen({super.key, this.type = 'evening'});
@@ -59,11 +72,12 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -93,8 +107,20 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                       ],
                     ),
                   ),
-                  Text(isEvening ? '🌙' : '📊',
-                      style: const TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: isEvening
+                          ? AppColors.coral.withValues(alpha: 0.12)
+                          : AppColors.coral.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isEvening ? Symbols.dark_mode_rounded : Symbols.bar_chart_rounded,
+                      color: isEvening ? AppColors.coral : AppColors.coral,
+                      size: 20, fill: 1,
+                    ),
+                  ),
                 ]),
               ),
               const SizedBox(height: 24),
@@ -102,31 +128,51 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
               if (_xpEarned != null) ...[
                 Center(
                   child: NeuCard(
-                    color: AppColors.sageSoft,
+                    depth: 0.5,
+                    color: AppColors.coralSoft,
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      const Text('✨', style: TextStyle(fontSize: 48)),
-                      const SizedBox(height: 8),
-                      Text('+$_xpEarned XP earned!', style: T.h2(context).copyWith(color: AppColors.sageDark)),
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.coral.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Symbols.star_rounded,
+                            color: AppColors.coral, size: 20, fill: 1),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('+$_xpEarned XP earned!', style: T.h2(context).copyWith(color: AppColors.coral)),
                       Text('Reflection saved', style: T.small(context)),
                     ]),
                   ),
                 ),
               ] else ...[
+                Text(
+                  isEvening ? 'HOW WAS YOUR DAY?' : 'HOW WAS YOUR WEEK?',
+                  style: T.section(context),
+                ),
+                const SizedBox(height: 14),
                 Text(isEvening ? 'How was your day?' : 'How was your week?',
                   style: T.h2(context).copyWith(fontSize: 20)),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 // Mood picker
+                Text('YOUR MOOD', style: T.section(context)),
+                const SizedBox(height: 12),
                 Row(children: List.generate(5, (i) => Expanded(
                   child: GestureDetector(
                     onTap: () => setState(() => _mood = i),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: NeuCard(
+                        depth: 0.5,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        color: _mood == i ? AppColors.goldSoft : null,
+                        color: _mood == i ? _moodColors[i].withValues(alpha: 0.12) : null,
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Text(_moods[i], style: const TextStyle(fontSize: 28)),
+                          Icon(_moodIcons[i],
+                              size: 28,
+                              color: _mood == i ? _moodColors[i] : AppColors.inkSoft,
+                              fill: 1),
                           const SizedBox(height: 4),
                           Text(_moodLabels[i], style: T.small(context).copyWith(fontSize: 10),
                             textAlign: TextAlign.center),
@@ -135,12 +181,15 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                     ),
                   ),
                 ))),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
-                Text(isEvening ? 'Anything to note?' : 'Your reflection this week',
-                  style: T.title(context)),
+                Text(
+                  isEvening ? 'ANYTHING TO NOTE?' : 'YOUR REFLECTION THIS WEEK',
+                  style: T.section(context),
+                ),
                 const SizedBox(height: 8),
                 NeuCard(
+                  depth: 0.5,
                   padding: EdgeInsets.zero,
                   child: TextField(
                     controller: _textCtrl,
@@ -158,10 +207,20 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                 const SizedBox(height: 8),
 
                 Row(children: [
-                  const Icon(Symbols.stars_rounded, color: AppColors.gold, size: 16),
-                  const SizedBox(width: 6),
-                  Text('+10 XP for reflecting • bonus XP for perfect day!',
-                    style: T.small(context).copyWith(fontSize: 11, color: AppColors.goldDark)),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coral.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.stars_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('+10 XP for reflecting · bonus XP for perfect day!',
+                      style: T.small(context).copyWith(fontSize: 11, color: AppColors.coral)),
+                  ),
                 ]),
                 const Spacer(),
 

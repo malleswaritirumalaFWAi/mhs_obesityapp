@@ -25,13 +25,13 @@ const _questions = <_Q>[
     (icon: Symbols.woman_rounded, title: 'Female', sub: ''),
     (icon: Symbols.transgender_rounded, title: 'Other', sub: ''),
   ]),
-  _Q('Your activity level?', 'Be honest — we adjust the plan.', [
+  _Q('Your activity level?', 'Be honest -- we adjust the plan.', [
     (icon: Symbols.chair_rounded, title: 'Mostly sitting', sub: 'Desk job, little movement'),
     (icon: Symbols.directions_walk_rounded, title: 'Lightly active', sub: 'Some walking daily'),
     (icon: Symbols.fitness_center_rounded, title: 'Very active', sub: 'Workout 4+ days/week'),
   ]),
   _Q("What's your main goal?", "We'll personalize the plan around it.", [
-    (icon: Symbols.monitor_weight_rounded, title: 'Lose weight', sub: '8–15 kg in 12 weeks'),
+    (icon: Symbols.monitor_weight_rounded, title: 'Lose weight', sub: '8-15 kg in 12 weeks'),
     (icon: Symbols.fitness_center_rounded, title: 'Build muscle', sub: 'Strength + lean gains'),
     (icon: Symbols.favorite_rounded, title: 'Better health markers', sub: 'Blood sugar, BP, sleep'),
     (icon: Symbols.bolt_rounded, title: 'More energy', sub: 'Feel sharper through the day'),
@@ -48,6 +48,10 @@ const _questions = <_Q>[
     (icon: Symbols.sentiment_stressed_rounded, title: 'Stress eating', sub: ''),
   ]),
 ];
+
+// Per-step accent colors for variety
+const _stepColors = [AppColors.coral, AppColors.coral, AppColors.coral, AppColors.coral, AppColors.coral];
+const _stepSoftColors = [AppColors.coralSoft, AppColors.coralSoft, AppColors.coralSoft, AppColors.coralSoft, AppColors.coralSoft];
 
 class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen({super.key});
@@ -133,16 +137,20 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     }
   }
 
+  Color get _accent => _step < _stepColors.length ? _stepColors[_step] : AppColors.coral;
+  Color get _accentSoft => _step < _stepSoftColors.length ? _stepSoftColors[_step] : AppColors.coralSoft;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 14, 22, 22),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 22),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(children: [
                   GestureDetector(
@@ -161,12 +169,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.coralSoft,
+                      color: _accentSoft,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text('${_step + 1} of $_totalSteps',
-                        style: const TextStyle(
-                            color: AppColors.coral,
+                        style: TextStyle(
+                            color: _accent,
                             fontWeight: FontWeight.w700,
                             fontSize: 13)),
                   ),
@@ -179,11 +187,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                   value: (_step + 1) / _totalSteps,
                   minHeight: 8,
                   backgroundColor: AppColors.line,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.coral),
+                  valueColor: AlwaysStoppedAnimation(_accent),
                 ),
               ),
-              const SizedBox(height: 28),
-              Text('ABOUT YOU', style: T.label(context).copyWith(color: AppColors.coral)),
+              const SizedBox(height: 24),
+              Text('ABOUT YOU', style: T.section(context).copyWith(color: _accent)),
               const SizedBox(height: 10),
               Expanded(
                 child: _step < _questions.length
@@ -210,11 +218,80 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   Widget _buildMCQ() {
     final q = _questions[_step];
     final selected = _answers[_step];
+
+    // ── Gender step: three big stacked selection boxes ──
+    if (_step == 0) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(q.label, style: T.h1(context).copyWith(fontSize: 26)),
+        const SizedBox(height: 8),
+        Text(q.subtitle, style: T.body(context)),
+        const SizedBox(height: 24),
+        for (var i = 0; i < q.options.length; i++) ...[
+          if (i > 0) const SizedBox(height: 14),
+          GestureDetector(
+            onTap: () => setState(() => _answers[_step] = i),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 20),
+              decoration: BoxDecoration(
+                color: selected == i ? _accentSoft : AppColors.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected == i ? _accent : AppColors.line,
+                  width: selected == i ? 2 : 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: selected == i
+                        ? _accent.withValues(alpha: 0.12)
+                        : Colors.black.withValues(alpha: 0.05),
+                    blurRadius: selected == i ? 16 : 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(children: [
+                Container(
+                  width: 64, height: 64,
+                  decoration: BoxDecoration(
+                    color: selected == i ? _accent : AppColors.bg,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(q.options[i].icon,
+                      size: 52,
+                      color: selected == i ? Colors.white : AppColors.inkMid,
+                      fill: 1),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Text(q.options[i].title,
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: selected == i ? _accent : AppColors.ink)),
+                ),
+                Icon(
+                  selected == i
+                      ? Symbols.check_circle_rounded
+                      : Symbols.radio_button_unchecked_rounded,
+                  color: selected == i ? _accent : AppColors.line,
+                  fill: selected == i ? 1 : 0,
+                  size: 28,
+                ),
+              ]),
+            ),
+          ),
+        ],
+      ]);
+    }
+
+    // ── All other MCQ steps: standard list rows ──
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(q.label, style: T.h1(context).copyWith(fontSize: 26)),
       const SizedBox(height: 8),
       Text(q.subtitle, style: T.body(context)),
-      const SizedBox(height: 22),
+      const SizedBox(height: 24),
       Expanded(
         child: ListView.separated(
           itemCount: q.options.length,
@@ -223,12 +300,21 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             final o = q.options[i];
             final on = selected == i;
             return NeuCard(
+              depth: 0.5,
               onTap: () => setState(() => _answers[_step] = i),
               padding: const EdgeInsets.all(16),
-              color: on ? AppColors.coralSoft : null,
+              color: on ? _accentSoft : null,
               child: Row(children: [
-                Icon(o.icon,
-                    color: on ? AppColors.coral : AppColors.inkMid, fill: on ? 1 : 0),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: (on ? _accent : AppColors.inkMid).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(o.icon,
+                      color: on ? _accent : AppColors.inkMid, fill: on ? 1 : 0, size: 20),
+                ),
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(o.title, style: T.title(context).copyWith(fontSize: 15)),
@@ -236,7 +322,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 ])),
                 Icon(
                   on ? Symbols.check_circle_rounded : Symbols.radio_button_unchecked_rounded,
-                  color: on ? AppColors.coral : AppColors.line,
+                  color: on ? _accent : AppColors.line,
                   fill: on ? 1 : 0,
                 ),
               ]),
@@ -262,7 +348,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         Text('Your body stats', style: T.h1(context).copyWith(fontSize: 26)),
         const SizedBox(height: 8),
         Text('Helps us calculate your calorie needs and BMI.', style: T.body(context)),
-        const SizedBox(height: 22),
+        const SizedBox(height: 24),
         _Field(
           controller: _heightCtrl,
           label: 'Height (cm)',
@@ -287,12 +373,21 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           onChanged: (_) => setState(() {}),
         ),
         if (bmi != null) ...[
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           NeuCard(
+            depth: 0.5,
             color: AppColors.coralSoft,
             padding: const EdgeInsets.all(16),
             child: Row(children: [
-              const Icon(Symbols.monitor_weight_rounded, color: AppColors.coral),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.coral.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Symbols.monitor_weight_rounded, color: AppColors.coral, size: 20, fill: 1),
+              ),
               const SizedBox(width: 12),
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Your BMI: ${bmi.toStringAsFixed(1)}',
@@ -311,9 +406,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Medical history', style: T.h1(context).copyWith(fontSize: 26)),
         const SizedBox(height: 8),
-        Text('Optional — helps your coach give safe recommendations.', style: T.body(context)),
-        const SizedBox(height: 22),
-        Text('Medical conditions', style: T.title(context).copyWith(fontSize: 14)),
+        Text('Optional -- helps your coach give safe recommendations.', style: T.body(context)),
+        const SizedBox(height: 24),
+        Text('MEDICAL CONDITIONS', style: T.section(context)),
         const SizedBox(height: 8),
         TextField(
           controller: _conditionsCtrl,
@@ -325,8 +420,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             contentPadding: const EdgeInsets.all(14),
           ),
         ),
-        const SizedBox(height: 16),
-        Text('Current medications', style: T.title(context).copyWith(fontSize: 14)),
+        const SizedBox(height: 24),
+        Text('CURRENT MEDICATIONS', style: T.section(context)),
         const SizedBox(height: 8),
         TextField(
           controller: _medsCtrl,
@@ -351,15 +446,17 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         Text('Almost there!', style: T.h1(context).copyWith(fontSize: 26)),
         const SizedBox(height: 8),
         Text('Review our terms before we build your plan.', style: T.body(context)),
-        const SizedBox(height: 22),
+        const SizedBox(height: 24),
 
         NeuCard(
-          color: _medDisclaimer ? AppColors.sageSoft : null,
+          depth: 0.5,
+          onTap: () => setState(() => _medDisclaimer = !_medDisclaimer),
+          color: _medDisclaimer ? AppColors.coralSoft : null,
           padding: const EdgeInsets.all(16),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Checkbox(
               value: _medDisclaimer,
-              activeColor: AppColors.sage,
+              activeColor: AppColors.coral,
               onChanged: (v) => setState(() => _medDisclaimer = v ?? false),
             ),
             const SizedBox(width: 8),
@@ -374,12 +471,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         const SizedBox(height: 12),
 
         NeuCard(
-          color: _dpdpConsent ? AppColors.sageSoft : null,
+          depth: 0.5,
+          onTap: () => setState(() => _dpdpConsent = !_dpdpConsent),
+          color: _dpdpConsent ? AppColors.coralSoft : null,
           padding: const EdgeInsets.all(16),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Checkbox(
               value: _dpdpConsent,
-              activeColor: AppColors.sage,
+              activeColor: AppColors.coral,
               onChanged: (v) => setState(() => _dpdpConsent = v ?? false),
             ),
             const SizedBox(width: 8),

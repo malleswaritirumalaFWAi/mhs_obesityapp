@@ -18,14 +18,23 @@ class WelcomeScreen extends StatelessWidget {
         children: [
           // ── Hero section ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(28, 64, 28, 16),
+            padding: const EdgeInsets.fromLTRB(24, 64, 24, 16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text('🏆', style: TextStyle(fontSize: 48)),
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(Symbols.emoji_events_rounded, color: AppColors.coral, size: 36, fill: 1),
+                ),
                 const SizedBox(height: 20),
                 const Text(
                   'Lose Weight\nLike Playing\na Game',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.w900,
@@ -36,7 +45,8 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Real coach · Real science · Real results',
+                  'Real coach  -  Real science  -  Real results',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -50,35 +60,35 @@ class WelcomeScreen extends StatelessWidget {
           // ── Benefits + CTAs ──
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(22, 28, 22, 28),
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('WHY FITQUEST',
-                      style: T.label(context)
-                          .copyWith(color: AppColors.coral, letterSpacing: 1.2)),
-                  const SizedBox(height: 16),
+                      style: T.section(context)
+                          .copyWith(color: AppColors.coral)),
+                  const SizedBox(height: 24),
                   const _Benefit(
-                    emoji: '🩺',
-                    color: AppColors.orange,
-                    soft: AppColors.orangeSoft,
+                    icon: Symbols.stethoscope_rounded,
+                    color: AppColors.coral,
+                    soft: AppColors.coralSoft,
                     title: 'Personal coach on WhatsApp',
                     sub: 'Certified dietitian, replies in 24h',
                   ),
                   const SizedBox(height: 14),
                   const _Benefit(
-                    emoji: '👥',
-                    color: AppColors.teal,
-                    soft: Color(0xFFE8F4F8),
+                    icon: Symbols.group_rounded,
+                    color: AppColors.coral,
+                    soft: AppColors.coralSoft,
                     title: 'Group of 50 just like you',
                     sub: 'Same goal, same start, daily motivation',
                   ),
                   const SizedBox(height: 14),
                   const _Benefit(
-                    emoji: '🏆',
-                    color: Color(0xFFA36F1A),
-                    soft: AppColors.goldSoft,
-                    title: 'Win up to ₹50,000 cash',
+                    icon: Symbols.emoji_events_rounded,
+                    color: AppColors.coral,
+                    soft: AppColors.coralSoft,
+                    title: 'Win up to Rs.50,000 cash',
                     sub: 'Top performers earn rewards each batch',
                   ),
                   const SizedBox(height: 32),
@@ -118,13 +128,13 @@ class WelcomeScreen extends StatelessWidget {
 
 class _Benefit extends StatelessWidget {
   const _Benefit({
-    required this.emoji,
+    required this.icon,
     required this.color,
     required this.soft,
     required this.title,
     required this.sub,
   });
-  final String emoji;
+  final IconData icon;
   final Color color;
   final Color soft;
   final String title;
@@ -138,8 +148,8 @@ class _Benefit extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
@@ -159,11 +169,13 @@ class _Benefit extends StatelessWidget {
                   child: Row(
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(color: soft, shape: BoxShape.circle),
-                        child: Center(
-                            child: Text(emoji, style: const TextStyle(fontSize: 22))),
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: soft,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(icon, color: color, size: 20, fill: 1),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -173,7 +185,7 @@ class _Benefit extends StatelessWidget {
                           children: [
                             Text(title,
                                 style: T.title(context).copyWith(
-                                    fontSize: 15, color: const Color(0xFF1A1A2E))),
+                                    fontSize: 15, color: AppColors.ink)),
                             const SizedBox(height: 2),
                             Text(sub, style: T.small(context)),
                           ],

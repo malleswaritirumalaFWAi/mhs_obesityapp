@@ -7,24 +7,19 @@ import '../../core/api/api_client.dart';
 import '../../core/providers/tasks_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/neu.dart';
 import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
 
 const _moods = [
-  (emoji: '😞', label: 'Low',   color: Color(0xFFE57373)),
-  (emoji: '😕', label: 'Meh',   color: Color(0xFFFFB74D)),
-  (emoji: '🙂', label: 'Okay',  color: Color(0xFFFFD54F)),
-  (emoji: '😀', label: 'Good',  color: Color(0xFF81C784)),
-  (emoji: '🤩', label: 'Great', color: Color(0xFF4DB6AC)),
+  (icon: Symbols.sentiment_very_dissatisfied_rounded, label: 'Low',   color: Color(0xFFE57373)),
+  (icon: Symbols.sentiment_dissatisfied_rounded,      label: 'Meh',   color: Color(0xFFFFB74D)),
+  (icon: Symbols.sentiment_neutral_rounded,           label: 'Okay',  color: Color(0xFFFFD54F)),
+  (icon: Symbols.sentiment_satisfied_rounded,          label: 'Good',  color: Color(0xFF81C784)),
+  (icon: Symbols.sentiment_very_satisfied_rounded,     label: 'Great', color: Color(0xFF4DB6AC)),
 ];
 
-// Evening-themed gradient — indigo → berry
-const _eveningGrad = LinearGradient(
-  colors: [Color(0xFF4A148C), AppColors.berry],
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-);
 
 class _WeighEntry {
   _WeighEntry({
@@ -155,7 +150,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               child: const Text('Update',
-                  style: TextStyle(color: AppColors.berry, fontWeight: FontWeight.w800)),
+                  style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -196,7 +191,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(xpAwarded > 0 ? 'Evening weigh-in saved · +$xpAwarded XP' : 'Evening weigh-in updated'),
-        backgroundColor: AppColors.sage,
+        backgroundColor: AppColors.coral,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -232,7 +227,10 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header
+        // Section label
+        Text('WEIGH-IN HISTORY', style: T.section(context)),
+        const SizedBox(height: 12),
+        // Section header card
         Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           decoration: BoxDecoration(
@@ -244,11 +242,18 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
             ],
           ),
           child: Row(children: [
-            const Icon(Symbols.monitor_weight_rounded,
-                color: AppColors.berry, size: 18, fill: 1),
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.coral.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Symbols.monitor_weight_rounded,
+                  color: AppColors.coral, size: 20, fill: 1),
+            ),
             const SizedBox(width: 10),
             const Expanded(
-              child: Text('Weigh-in history',
+              child: Text('Recent entries',
                   style: TextStyle(
                       color: AppColors.ink,
                       fontWeight: FontWeight.w800,
@@ -257,12 +262,12 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.berrySoft,
+                color: AppColors.coralSoft,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text('${_history.length} total',
                   style: const TextStyle(
-                      color: AppColors.berryDark,
+                      color: AppColors.coral,
                       fontWeight: FontWeight.w700,
                       fontSize: 11)),
             ),
@@ -323,12 +328,13 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Header ──
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -352,27 +358,43 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                       ],
                     ),
                   ),
-                  const Text('⚖️', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coral.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.scale_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // ── Progress summary banner ──
               if (loss != null) ...[
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                   decoration: BoxDecoration(
-                    color: loss >= 0 ? AppColors.sageSoft : AppColors.coralSoft,
+                    color: loss >= 0 ? AppColors.coralSoft : AppColors.coralSoft,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: loss >= 0 ? AppColors.sage : AppColors.coral,
+                      color: loss >= 0 ? AppColors.coral : AppColors.coral,
                       width: 1.5,
                     ),
                   ),
                   child: Row(children: [
-                    Text(
-                      loss >= 0 ? '🎉' : '📈',
-                      style: const TextStyle(fontSize: 28),
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: (loss >= 0 ? AppColors.coral : AppColors.coral).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        loss >= 0 ? Symbols.celebration_rounded : Symbols.trending_up_rounded,
+                        color: loss >= 0 ? AppColors.coral : AppColors.coral,
+                        size: 20, fill: 1,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -384,7 +406,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                                 ? '${loss.toStringAsFixed(1)} kg lost so far'
                                 : '${loss.abs().toStringAsFixed(1)} kg gained',
                             style: TextStyle(
-                                color: loss >= 0 ? AppColors.sageDark : AppColors.coral,
+                                color: loss >= 0 ? AppColors.coral : AppColors.coral,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 15),
                           ),
@@ -401,7 +423,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                     ),
                   ]),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
               ],
 
               // ── Already saved today ──
@@ -409,13 +431,13 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                   decoration: BoxDecoration(
-                    color: AppColors.goldSoft,
+                    color: AppColors.coralSoft,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.gold, width: 1.5),
+                    border: Border.all(color: AppColors.coral, width: 1.5),
                   ),
                   child: Row(children: [
                     const Icon(Symbols.check_circle_rounded,
-                        color: AppColors.goldDark, fill: 1, size: 24),
+                        color: AppColors.coral, fill: 1, size: 24),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -423,7 +445,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                         children: [
                           const Text("Tonight's weigh-in saved",
                               style: TextStyle(
-                                  color: AppColors.goldDark,
+                                  color: AppColors.coral,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 15)),
                           Text(
@@ -445,11 +467,11 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                 const SizedBox(height: 8),
                 Text('You can update today\'s entry below',
                     style: T.small(context).copyWith(color: AppColors.inkSoft)),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
               ],
 
               // ── Mood picker ──
-              Text('How do you feel tonight?', style: T.title(context)),
+              Text('HOW DO YOU FEEL TONIGHT?', style: T.section(context)),
               const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -463,7 +485,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                         height: 56,
                         decoration: BoxDecoration(
                           color: _mood == i
-                              ? _moods[i].color.withOpacity(0.15)
+                              ? _moods[i].color.withValues(alpha: 0.15)
                               : AppColors.surface,
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -476,8 +498,10 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(_moods[i].emoji,
-                                style: const TextStyle(fontSize: 22)),
+                            Icon(_moods[i].icon,
+                                size: 24,
+                                color: _mood == i ? _moods[i].color : AppColors.inkSoft,
+                                fill: 1),
                             if (_mood == i)
                               Text(_moods[i].label,
                                   style: TextStyle(
@@ -490,34 +514,23 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // ── Weight input ──
-              Text('Current weight', style: T.title(context)),
+              Text('CURRENT WEIGHT', style: T.section(context)),
               const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.line),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2))
-                  ],
-                ),
+              NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(children: [
                   Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
-                      color: AppColors.berrySoft,
-                      shape: BoxShape.circle,
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coral.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Symbols.scale_rounded,
-                        color: AppColors.berry, size: 20, fill: 1),
+                        color: AppColors.coral, size: 20, fill: 1),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -547,27 +560,34 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
               ] else if (progressText.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Row(children: [
-                  const Icon(Symbols.trending_down_rounded,
-                      size: 16, color: AppColors.sage),
-                  const SizedBox(width: 6),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coral.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.trending_down_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(progressText,
                         style: T.small(context)
-                            .copyWith(color: AppColors.sageDark)),
+                            .copyWith(color: AppColors.coral)),
                   ),
                 ]),
               ],
               const SizedBox(height: 24),
 
               // ── Notes ──
-              Text('Notes (optional)', style: T.title(context)),
+              Text('NOTES (OPTIONAL)', style: T.section(context)),
               const SizedBox(height: 12),
               NeuTextField(
                 controller: _notesCtrl,
-                hint: 'Feeling lighter, skipped dinner…',
+                hint: 'Feeling lighter, skipped dinner...',
                 maxLines: 3,
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // ── Save ──
               NeuButton.primary(
@@ -579,10 +599,10 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
 
               // ── History ──
               if (_loadingHistory) ...[
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 const Center(child: CircularProgressIndicator()),
               ] else if (_history.isNotEmpty) ...[
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 _buildHistory(),
               ],
             ],
@@ -609,18 +629,18 @@ class _WeighDayHeader extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: isToday
-              ? AppColors.berrySoft
+              ? AppColors.coralSoft
               : isYesterday
-                  ? AppColors.sageSoft
+                  ? AppColors.coralSoft
                   : AppColors.bg,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(dateLabel,
             style: TextStyle(
                 color: isToday
-                    ? AppColors.berryDark
+                    ? AppColors.coral
                     : isYesterday
-                        ? AppColors.sageDark
+                        ? AppColors.coral
                         : AppColors.inkSoft,
                 fontWeight: FontWeight.w800,
                 fontSize: 12)),
@@ -646,7 +666,7 @@ class _WeighCard extends StatelessWidget {
     final mood = entry.eveningMood != null
         ? _moods[entry.eveningMood!.clamp(0, 4)]
         : null;
-    final accentColor = mood?.color ?? AppColors.berry;
+    final accentColor = mood?.color ?? AppColors.coral;
 
     final diff = prev != null ? entry.weight - prev!.weight : 0.0;
     final diffText = prev != null
@@ -655,12 +675,12 @@ class _WeighCard extends StatelessWidget {
             : diff.toStringAsFixed(1))
         : '';
     final diffColor = diff < 0
-        ? AppColors.sageDark
+        ? AppColors.coral
         : diff > 0
             ? AppColors.coral
             : AppColors.inkSoft;
     final diffBg = diff < 0
-        ? AppColors.sageSoft
+        ? AppColors.coralSoft
         : diff > 0
             ? AppColors.coralSoft
             : AppColors.surface;
@@ -675,7 +695,7 @@ class _WeighCard extends StatelessWidget {
             border: Border.all(color: AppColors.line),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 6,
                   offset: const Offset(0, 2))
             ],
@@ -687,14 +707,14 @@ class _WeighCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.12),
+                color: accentColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: accentColor.withOpacity(0.45), width: 2),
+                    color: accentColor.withValues(alpha: 0.45), width: 2),
               ),
               alignment: Alignment.center,
               child: mood != null
-                  ? Text(mood.emoji, style: const TextStyle(fontSize: 22))
+                  ? Icon(mood.icon, size: 24, color: mood.color, fill: 1)
                   : Icon(Symbols.scale_rounded,
                       color: accentColor, fill: 1, size: 22),
             ),
@@ -729,18 +749,18 @@ class _WeighCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.berrySoft,
+                        color: AppColors.coralSoft,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         const Icon(Symbols.scale_rounded,
-                            size: 13, color: AppColors.berry),
+                            size: 13, color: AppColors.coral),
                         const SizedBox(width: 4),
                         Text('${entry.weight.toStringAsFixed(1)} kg',
                             style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.berry)),
+                                color: AppColors.coral)),
                       ]),
                     ),
                     if (diffText.isNotEmpty) ...[

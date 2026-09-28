@@ -17,9 +17,9 @@ const _categoryIcons = <String, IconData>{
 };
 const _categoryColors = <String, Color>{
   'cardio':   AppColors.coral,
-  'strength': AppColors.gold,
-  'yoga':     AppColors.berry,
-  'stretch':  AppColors.sage,
+  'strength': AppColors.coral,
+  'yoga':     AppColors.coral,
+  'stretch':  AppColors.coral,
 };
 
 class ExerciseLibraryScreen extends ConsumerStatefulWidget {
@@ -53,10 +53,12 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     return Scaffold(
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
               child: NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -80,14 +82,27 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       ],
                     ),
                   ),
-                  const Text('💪', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.fitness_center_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text('CATEGORY', style: T.section(context)),
+            ),
+            const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(children: [
                 for (final cat in ['all', 'cardio', 'strength', 'yoga', 'stretch'])
                   Padding(
@@ -107,12 +122,17 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                   ),
               ]),
             ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text('EXERCISES', style: T.section(context)),
+            ),
             const SizedBox(height: 12),
             Expanded(
               child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     itemCount: _exercises.length,
                     itemBuilder: (_, i) => _ExerciseCard(exercise: _exercises[i]),
                   ),
@@ -145,18 +165,19 @@ class _ExerciseCardState extends State<_ExerciseCard> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: NeuCard(
+        depth: 0.5,
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           GestureDetector(
             onTap: () => setState(() => _expanded = !_expanded),
             child: Row(children: [
               Container(
-                width: 44, height: 44,
+                width: 36, height: 36,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, fill: 1),
+                child: Icon(icon, color: color, size: 20, fill: 1),
               ),
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -173,6 +194,8 @@ class _ExerciseCardState extends State<_ExerciseCard> {
           ),
           if (_expanded && instructions.isNotEmpty) ...[
             const SizedBox(height: 14),
+            Text('INSTRUCTIONS', style: T.section(context)),
+            const SizedBox(height: 10),
             ...instructions.asMap().entries.map((e) => Padding(
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

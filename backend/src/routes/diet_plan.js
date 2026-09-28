@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
 import Anthropic from '@anthropic-ai/sdk';
+import { updateUserLevel } from './gamification.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -292,6 +293,7 @@ router.post('/complete', async (req, res) => {
     );
     await q(`UPDATE users SET xp=xp+$1, total_xp=total_xp+$1 WHERE id=$2`, [MEAL_XP, uid(req)]);
     await q(`UPDATE group_members SET weekly_xp=weekly_xp+$1 WHERE user_id=$2`, [MEAL_XP, uid(req)]).catch(() => {});
+    await updateUserLevel(uid(req));
 
     res.json({ completed: true, xp: MEAL_XP });
   } catch (e) {

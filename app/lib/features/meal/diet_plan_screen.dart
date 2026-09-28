@@ -60,7 +60,7 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Diet plan refreshed!'),
-            backgroundColor: AppColors.sage,
+            backgroundColor: AppColors.coral,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -109,9 +109,10 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
         child: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               children: [
                 NeuCard(
+                  depth: 0.5,
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                   child: Row(children: [
                     GestureDetector(
@@ -120,22 +121,30 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
                           color: AppColors.inkMid, size: 22),
                     ),
                     const SizedBox(width: 14),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Diet Plan',
+                          const Text('Diet Plan',
                               style: TextStyle(
                                   color: AppColors.ink,
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900)),
-                          Text('Your personalized meal guide',
+                          const Text('Your personalized meal guide',
                               style: TextStyle(
                                   color: AppColors.inkSoft, fontSize: 12)),
                         ],
                       ),
                     ),
-                    const Text('🥗', style: TextStyle(fontSize: 26)),
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.coral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Symbols.menu_book_rounded,
+                          color: AppColors.coral, size: 20, fill: 1),
+                    ),
                     const SizedBox(width: 10),
                     Tooltip(
                       message: 'Regenerate diet plan',
@@ -151,7 +160,7 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
                     ),
                   ]),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 // ── Week / Day progress banner ──
                 _WeekProgressBanner(
@@ -165,19 +174,28 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
                   generating: _generating,
                   onGenerate: _generate,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 // ── Today's nutrition summary ──
                 if (tn != null) ...[
                   _NutritionCard(tn: tn),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                 ],
 
                 // ── Meal quest cards ──
                 if (_plan == null)
                   NeuCard(
+                    depth: 0.5,
                     child: Column(children: [
-                      const Icon(Symbols.menu_book_rounded, size: 48, color: AppColors.inkSoft),
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.coral.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Symbols.menu_book_rounded,
+                            size: 20, color: AppColors.coral, fill: 1),
+                      ),
                       const SizedBox(height: 12),
                       Text('No diet plan yet', style: T.body(context)),
                       const SizedBox(height: 6),
@@ -186,7 +204,7 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
                     ]),
                   )
                 else if (_todayMeals == null)
-                  NeuCard(child: Center(child: Padding(
+                  NeuCard(depth: 0.5, child: Center(child: Padding(
                     padding: const EdgeInsets.all(8),
                     child: Text('No meals found for today', style: T.small(context)),
                   )))
@@ -233,15 +251,12 @@ class _WeekProgressBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1C1C2E), Color(0xFF2E1B3D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.coralSoft,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.coral.withValues(alpha: 0.25)),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF1C1C2E).withOpacity(0.4),
-              blurRadius: 18, offset: const Offset(0, 7)),
+          BoxShadow(color: AppColors.coral.withValues(alpha: 0.12),
+              blurRadius: 12, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -252,13 +267,13 @@ class _WeekProgressBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.gold.withOpacity(0.15),
+              color: AppColors.coral.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.gold.withOpacity(0.45)),
+              border: Border.all(color: AppColors.coral.withValues(alpha: 0.4)),
             ),
             child: Text(
               'WEEK $weekNum',
-              style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w900,
+              style: const TextStyle(color: AppColors.coral, fontWeight: FontWeight.w900,
                   fontSize: 11, letterSpacing: 1.4),
             ),
           ),
@@ -266,7 +281,7 @@ class _WeekProgressBanner extends StatelessWidget {
           Flexible(
             child: Text(
               'Day $dayInWeek of 7  ·  Program day $programDay/84',
-              style: TextStyle(color: Colors.white.withOpacity(0.5),
+              style: const TextStyle(color: AppColors.inkSoft,
                   fontSize: 12, fontWeight: FontWeight.w500),
               overflow: TextOverflow.ellipsis,
             ),
@@ -278,8 +293,7 @@ class _WeekProgressBanner extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [AppColors.coral, Color(0xFFFF4D3B)]),
+                  color: AppColors.coral,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: generating
@@ -293,15 +307,15 @@ class _WeekProgressBanner extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: AppColors.sage.withOpacity(0.15),
+                color: AppColors.coral.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.sage.withOpacity(0.4)),
+                border: Border.all(color: AppColors.coral.withValues(alpha: 0.35)),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Symbols.star_rounded, color: AppColors.sage, size: 14, fill: 1),
+                const Icon(Symbols.star_rounded, color: AppColors.coral, size: 14, fill: 1),
                 const SizedBox(width: 4),
                 Text('+$totalXpEarned XP',
-                    style: const TextStyle(color: AppColors.sage, fontWeight: FontWeight.w800, fontSize: 12)),
+                    style: const TextStyle(color: AppColors.coral, fontWeight: FontWeight.w800, fontSize: 12)),
               ]),
             ),
         ]),
@@ -321,8 +335,8 @@ class _WeekProgressBanner extends StatelessWidget {
               width: 9, height: 9,
               decoration: BoxDecoration(
                 color: i < completedCount
-                    ? AppColors.sage
-                    : Colors.white.withOpacity(0.18),
+                    ? AppColors.coral
+                    : AppColors.line,
                 shape: BoxShape.circle,
               ),
             )),
@@ -331,7 +345,7 @@ class _WeekProgressBanner extends StatelessWidget {
               completedCount == totalMeals
                   ? 'All meals done!'
                   : '$completedCount / $totalMeals meals completed',
-              style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 12),
+              style: const TextStyle(color: AppColors.inkSoft, fontSize: 12),
             ),
           ]),
       ]),
@@ -358,7 +372,7 @@ class _DayProgressRow extends StatelessWidget {
             child: Container(
               height: 2,
               decoration: BoxDecoration(
-                color: isCompleted ? AppColors.sage : Colors.white.withOpacity(0.14),
+                color: isCompleted ? AppColors.coral : AppColors.line,
                 borderRadius: BorderRadius.circular(1),
               ),
             ),
@@ -384,12 +398,12 @@ class _DayDot extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const LinearGradient(
-            colors: [AppColors.coral, Color(0xFFFF4D3B)],
+            colors: [AppColors.coral, Color(0xFF6BAF8F)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
-            BoxShadow(color: AppColors.coral.withOpacity(0.55),
+            BoxShadow(color: AppColors.coral.withValues(alpha: 0.55),
                 blurRadius: 10, spreadRadius: 2),
           ],
         ),
@@ -405,7 +419,7 @@ class _DayDot extends StatelessWidget {
         width: 28, height: 28,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.sage,
+          color: AppColors.coral,
         ),
         child: const Center(
           child: Icon(Symbols.check_rounded, color: Colors.white, size: 14, fill: 1),
@@ -417,12 +431,12 @@ class _DayDot extends StatelessWidget {
       width: 28, height: 28,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.07),
-        border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.5),
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.line, width: 1.5),
       ),
       child: Center(
         child: Text('$day',
-            style: TextStyle(color: Colors.white.withOpacity(0.38),
+            style: const TextStyle(color: AppColors.inkSoft,
                 fontWeight: FontWeight.w700, fontSize: 12)),
       ),
     );
@@ -442,12 +456,20 @@ class _NutritionCard extends StatelessWidget {
     final fraction = (cal / goal).clamp(0.0, 1.0);
 
     return NeuCard(
+      depth: 0.5,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Icon(Symbols.local_fire_department_rounded,
-              color: AppColors.coral, size: 20, fill: 1),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.coral.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Symbols.local_fire_department_rounded,
+                color: AppColors.coral, size: 20, fill: 1),
+          ),
           const SizedBox(width: 8),
-          Text("Today's nutrition", style: T.title(context)),
+          Text("TODAY'S NUTRITION", style: T.section(context)),
         ]),
         const SizedBox(height: 14),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -462,8 +484,8 @@ class _NutritionCard extends StatelessWidget {
             value: fraction,
             backgroundColor: AppColors.line,
             valueColor: AlwaysStoppedAnimation<Color>(
-              fraction < 0.5 ? AppColors.sage
-                  : fraction < 0.9 ? AppColors.gold
+              fraction < 0.5 ? AppColors.coral
+                  : fraction < 0.9 ? AppColors.coral
                   : AppColors.coral,
             ),
             minHeight: 6,
@@ -471,9 +493,9 @@ class _NutritionCard extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         Row(children: [
-          Expanded(child: _Macro('Carbs',    '${tn['carbs']   ?? 0}g', AppColors.gold)),
-          Expanded(child: _Macro('Protein',  '${tn['protein'] ?? 0}g', AppColors.sage)),
-          Expanded(child: _Macro('Fat',      '${tn['fat']     ?? 0}g', AppColors.berry)),
+          Expanded(child: _Macro('Carbs',    '${tn['carbs']   ?? 0}g', AppColors.coral)),
+          Expanded(child: _Macro('Protein',  '${tn['protein'] ?? 0}g', AppColors.coral)),
+          Expanded(child: _Macro('Fat',      '${tn['fat']     ?? 0}g', AppColors.coral)),
         ]),
       ]),
     );
@@ -508,15 +530,15 @@ class _MealQuestCard extends StatelessWidget {
   final VoidCallback onComplete;
 
   static const _mealColor = <String, Color>{
-    'breakfast': AppColors.gold,
-    'lunch':     AppColors.sage,
-    'snack':     AppColors.berry,
+    'breakfast': AppColors.coral,
+    'lunch':     AppColors.coral,
+    'snack':     AppColors.coral,
     'dinner':    AppColors.coral,
   };
   static const _mealBg = <String, Color>{
-    'breakfast': AppColors.goldSoft,
-    'lunch':     AppColors.sageSoft,
-    'snack':     AppColors.berrySoft,
+    'breakfast': AppColors.coralSoft,
+    'lunch':     AppColors.coralSoft,
+    'snack':     AppColors.coralSoft,
     'dinner':    AppColors.coralSoft,
   };
   static const _mealIcon = <String, IconData>{
@@ -542,7 +564,7 @@ class _MealQuestCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border(left: BorderSide(color: color, width: 4)),
         boxShadow: [
-          BoxShadow(color: AppColors.shadowDark.withOpacity(0.5),
+          BoxShadow(color: AppColors.shadowDark.withValues(alpha: 0.5),
               blurRadius: 8, offset: const Offset(3, 3)),
           const BoxShadow(color: AppColors.shadowLight,
               blurRadius: 8, offset: Offset(-3, -3)),
@@ -555,9 +577,12 @@ class _MealQuestCard extends StatelessWidget {
           // ── Header ──
           Row(children: [
             Container(
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: color, size: 18),
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 20, fill: 1),
             ),
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -616,16 +641,16 @@ class _MealQuestCard extends StatelessWidget {
             Row(children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(color: AppColors.sageSoft, shape: BoxShape.circle),
-                child: const Icon(Symbols.check_rounded, color: AppColors.sage, size: 16, fill: 1),
+                decoration: BoxDecoration(color: AppColors.coralSoft, shape: BoxShape.circle),
+                child: const Icon(Symbols.check_rounded, color: AppColors.coral, size: 16, fill: 1),
               ),
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('Quest Complete!',
-                    style: TextStyle(color: AppColors.sage, fontWeight: FontWeight.w800, fontSize: 13)),
-                Text('+$_xp XP earned', style: T.small(context).copyWith(color: AppColors.sage)),
+                    style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w800, fontSize: 13)),
+                Text('+$_xp XP earned', style: T.small(context).copyWith(color: AppColors.coral)),
               ])),
-              const Icon(Symbols.military_tech_rounded, color: AppColors.gold, size: 26, fill: 1),
+              const Icon(Symbols.military_tech_rounded, color: AppColors.coral, size: 26, fill: 1),
             ])
           else
             GestureDetector(

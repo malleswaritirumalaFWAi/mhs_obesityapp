@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
+import { updateUserLevel } from './gamification.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -24,6 +25,7 @@ router.post('/', async (req, res) => {
   );
   await q(`UPDATE users SET xp=xp+10, total_xp=total_xp+10 WHERE id=$1`, [uid(req)]);
   await q(`UPDATE group_members SET weekly_xp=weekly_xp+10 WHERE user_id=$1`, [uid(req)]);
+  await updateUserLevel(uid(req));
   res.json({ measurement: r.rows[0], xp_earned: 10 });
 });
 

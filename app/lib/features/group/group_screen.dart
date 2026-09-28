@@ -214,7 +214,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
           TextField(
             controller: emojiCtrl,
             decoration: const InputDecoration(
-                hintText: 'Emoji (optional, e.g. 🎉)',
+                hintText: 'Emoji (optional)',
                 border: OutlineInputBorder()),
           ),
         ]),
@@ -320,21 +320,19 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
           children: [
             NeuCard(
+              depth: 0.5,
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
               child: Row(children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Batch #47 · 50 members',
-                          style: TextStyle(
-                              color: AppColors.inkSoft,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 2),
+                      Text('BATCH #47 · 50 MEMBERS',
+                          style: T.section(context)),
+                      const SizedBox(height: 4),
                       const Text('My Group',
                           style: TextStyle(
                               color: AppColors.ink,
@@ -349,16 +347,16 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.sageSoft,
+                      color: AppColors.coralSoft,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(Symbols.chat_rounded,
-                          color: AppColors.sageDark, size: 16),
+                          color: AppColors.coral, size: 16, fill: 1),
                       const SizedBox(width: 6),
                       const Text('Group Chat',
                           style: TextStyle(
-                              color: AppColors.sageDark,
+                              color: AppColors.coral,
                               fontWeight: FontWeight.w700,
                               fontSize: 12)),
                     ]),
@@ -366,7 +364,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                 ),
               ]),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             _Tabs(
               index: _tab,
               labels: const ['Weekly', 'Royal', 'Posts', 'Coach'],
@@ -377,7 +375,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                 }
               },
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 24),
             if (_loading && _tab != 2)
               const Center(child: CircularProgressIndicator())
             else if (_tab == 2)
@@ -407,9 +405,17 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Symbols.wifi_off_rounded,
-                size: 48, color: AppColors.inkSoft),
-            const SizedBox(height: 12),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.coralSoft,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(Symbols.wifi_off_rounded,
+                  size: 28, color: AppColors.coral, fill: 1),
+            ),
+            const SizedBox(height: 16),
             Text('Could not load posts', style: T.title(context)),
             const SizedBox(height: 4),
             Text('Check your connection and retry',
@@ -435,9 +441,17 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Symbols.forum_rounded,
-                size: 48, color: AppColors.inkSoft),
-            const SizedBox(height: 12),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.coralSoft,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(Symbols.forum_rounded,
+                  size: 28, color: AppColors.coral, fill: 1),
+            ),
+            const SizedBox(height: 16),
             Text('No posts yet', style: T.title(context)),
             const SizedBox(height: 4),
             Text('Tap + to share something with your group',
@@ -470,19 +484,29 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
 
     return Column(children: [
       Row(children: [
-        const Text('🏆 ', style: TextStyle(fontSize: 18)),
-        Text('Top 3 this week', style: T.title(context)),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.coralSoft,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Symbols.trophy_rounded,
+              color: AppColors.coral, size: 20, fill: 1),
+        ),
+        const SizedBox(width: 10),
+        Text('TOP 3 THIS WEEK', style: T.section(context)),
         const Spacer(),
         const NeuPill(
-          color: AppColors.goldSoft,
-          child: Text('Win ₹500',
+          color: AppColors.coralSoft,
+          child: Text('Win 500',
               style: TextStyle(
-                  color: AppColors.goldDark,
+                  color: AppColors.coral,
                   fontWeight: FontWeight.w800,
                   fontSize: 12)),
         ),
       ]),
-      const SizedBox(height: 16),
+      const SizedBox(height: 24),
       if (podiumOrder.length >= 3)
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -509,7 +533,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
           ],
         ),
       const SizedBox(height: 24),
-      Text('All members', style: T.title(context)),
+      Text('ALL MEMBERS', style: T.section(context)),
       const SizedBox(height: 12),
       for (final m in rest)
         _MemberRow(
@@ -526,20 +550,30 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
   Widget _royalBoard(BuildContext context) {
     return Column(children: [
       Row(children: [
-        const Text('👑 ', style: TextStyle(fontSize: 18)),
-        Text('Royal Challenge', style: T.title(context)),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.coralSoft,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Symbols.star_rounded,
+              color: AppColors.coral, size: 20, fill: 1),
+        ),
+        const SizedBox(width: 10),
+        Text('ROYAL CHALLENGE', style: T.section(context)),
         const Spacer(),
         NeuPill(
-          color: AppColors.goldSoft,
+          color: AppColors.coralSoft,
           child: Text('All-time XP',
               style: T.small(context).copyWith(
-                  color: AppColors.goldDark, fontWeight: FontWeight.w700)),
+                  color: AppColors.coral, fontWeight: FontWeight.w700)),
         ),
       ]),
       const SizedBox(height: 8),
       Text('Compete with all FitQuest members for the top spot',
           style: T.small(context)),
-      const SizedBox(height: 16),
+      const SizedBox(height: 24),
       for (final m in _royalLeaderboard)
         _MemberRow(
           rank: _asInt(m['rank']),
@@ -555,25 +589,26 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
 
   Widget _coachUpdates(BuildContext context) => Column(children: [
         NeuCard(
+          depth: 0.5,
           child: Row(children: [
             Container(
               width: 44,
               height: 44,
-              decoration: const BoxDecoration(
-                  color: AppColors.berrySoft, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                  color: AppColors.coralSoft, shape: BoxShape.circle),
               alignment: Alignment.center,
-              child: Text('P',
-                  style: T.title(context).copyWith(color: AppColors.berry)),
+              child: const Icon(Symbols.support_agent_rounded,
+                  color: AppColors.coral, size: 22, fill: 1),
             ),
             const SizedBox(width: 12),
             Expanded(
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  Text('Coach Priya · 1h ago', style: T.small(context)),
+                  Text('AI Coach Priya · 1h ago', style: T.small(context)),
                   const SizedBox(height: 4),
                   Text(
-                      'Reminder: weigh-in every morning before water. Consistency wins 💪',
+                      'Reminder: weigh-in every morning before water. Consistency wins!',
                       style: T.body(context)),
                 ])),
           ]),
@@ -602,6 +637,7 @@ class _PostCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: NeuCard(
+        depth: 0.5,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -612,12 +648,13 @@ class _PostCard extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                     color: post.coachPick
-                        ? AppColors.goldSoft
-                        : AppColors.sageSoft,
+                        ? AppColors.coralSoft
+                        : AppColors.coralSoft,
                     shape: BoxShape.circle),
                 alignment: Alignment.center,
                 child: Text(post.author.isNotEmpty ? post.author[0] : '?',
-                    style: T.title(context).copyWith(fontSize: 16)),
+                    style: T.title(context).copyWith(fontSize: 16,
+                        color: post.coachPick ? AppColors.coral : AppColors.coral)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -626,11 +663,19 @@ class _PostCard extends StatelessWidget {
                   children: [
                     Text(post.author,
                         style: T.title(context).copyWith(fontSize: 15)),
-                    Text(
-                      post.coachPick
-                          ? '⭐ Coach pick · ${post.timeAgo}'
-                          : post.timeAgo,
-                      style: T.small(context).copyWith(fontSize: 12),
+                    Row(
+                      children: [
+                        if (post.coachPick) ...[
+                          Icon(Symbols.star_rounded,
+                              size: 14, color: AppColors.coral, fill: 1),
+                          const SizedBox(width: 4),
+                          Text('Coach pick · ',
+                              style: T.small(context).copyWith(
+                                  fontSize: 12, color: AppColors.coral)),
+                        ],
+                        Text(post.timeAgo,
+                            style: T.small(context).copyWith(fontSize: 12)),
+                      ],
                     ),
                   ],
                 ),
@@ -703,7 +748,7 @@ class _PostCard extends StatelessWidget {
               const SizedBox(width: 18),
               Row(children: [
                 const Icon(Symbols.local_fire_department_rounded,
-                    size: 20, color: AppColors.gold),
+                    size: 20, color: AppColors.coral, fill: 1),
                 const SizedBox(width: 6),
                 Text('${post.fires}',
                     style: T.small(context)
@@ -813,7 +858,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         color: AppColors.bg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, 16 + bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -828,7 +873,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             ),
           ),
           const SizedBox(height: 14),
-          Text('Comments', style: T.title(context)),
+          Text('COMMENTS', style: T.section(context)),
           const SizedBox(height: 12),
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 300),
@@ -898,10 +943,10 @@ class _CommentTile extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: const BoxDecoration(
-                color: AppColors.sageSoft, shape: BoxShape.circle),
+                color: AppColors.coralSoft, shape: BoxShape.circle),
             alignment: Alignment.center,
             child: Text(c.author.isNotEmpty ? c.author[0] : '?',
-                style: T.small(context).copyWith(fontWeight: FontWeight.w700)),
+                style: T.small(context).copyWith(fontWeight: FontWeight.w700, color: AppColors.coral)),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -989,7 +1034,18 @@ class _Podium extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      if (crown) const Text('👑', style: TextStyle(fontSize: 22)),
+      if (crown)
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.coralSoft,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Symbols.kid_star_rounded,
+              color: AppColors.coral, size: 20, fill: 1),
+        ),
+      const SizedBox(height: 4),
       Container(
         width: 52,
         height: 52,
@@ -1064,6 +1120,7 @@ class _MemberRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: NeuCard(
+        depth: 0.5,
         color: isYou ? AppColors.coralSoft : null,
         padding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1095,10 +1152,21 @@ class _MemberRow extends StatelessWidget {
                 if (showLevel != null)
                   Text(showLevel!,
                       style: T.small(context).copyWith(
-                          fontSize: 11, color: AppColors.gold))
+                          fontSize: 11, color: AppColors.coral))
                 else
-                  Text(isYou ? 'Keep going! 🔥' : 'Member',
-                      style: T.small(context).copyWith(fontSize: 12)),
+                  Row(
+                    children: [
+                      if (isYou) ...[
+                        Icon(Symbols.local_fire_department_rounded,
+                            size: 14, color: AppColors.coral, fill: 1),
+                        const SizedBox(width: 4),
+                        Text('Keep going!',
+                            style: T.small(context).copyWith(fontSize: 12)),
+                      ] else
+                        Text('Member',
+                            style: T.small(context).copyWith(fontSize: 12)),
+                    ],
+                  ),
               ])),
           Text('$xp XP',
               style: T.title(context).copyWith(

@@ -60,6 +60,7 @@ class HomeScreen extends ConsumerWidget {
 
     final done = tasksState.done;
     final total = tasksState.total;
+    final progress = total > 0 ? done / total : 0.0;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -68,291 +69,259 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // ── Neumorphic hero header ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Column(
-                children: [
-                  // Top bar
-                  Row(children: [
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(
-                        'Hi, ${name.isNotEmpty ? name : 'there'} 👋',
-                        style: const TextStyle(
-                            color: AppColors.ink,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800),
-                      ),
-                      Text(
-                        'Day ${tasksState.day} / 84',
-                        style: const TextStyle(
-                            color: AppColors.inkMid,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500),
-                      ),
-                    ]),
-                    const Spacer(),
-                    // Notification bell
-                    GestureDetector(
-                      onTap: () => context.push(Routes.notifications),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            width: 42, height: 42,
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              shape: BoxShape.circle,
-                              boxShadow: Neu.small(),
-                            ),
-                            child: const Icon(Symbols.notifications_rounded,
-                                color: AppColors.inkMid, size: 22),
-                          ),
-                          if (unreadCount > 0)
-                            Positioned(
-                              top: -2, right: -2,
-                              child: Container(
-                                width: 16, height: 16,
-                                decoration: const BoxDecoration(
-                                    color: AppColors.coral, shape: BoxShape.circle),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  unreadCount > 9 ? '9+' : '$unreadCount',
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 9,
-                                      fontWeight: FontWeight.w900),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 20),
-                  // Hero progress card
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: Neu.card(radius: 24),
-                    child: Row(children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Today's Progress",
-                              style: TextStyle(
-                                  color: AppColors.inkSoft,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              total == 0
-                                  ? 'Loading…'
-                                  : done == total
-                                      ? 'All done! 🎉'
-                                      : '$done of $total tasks done',
-                              style: const TextStyle(
-                                  color: AppColors.ink,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900),
-                            ),
-                            const SizedBox(height: 10),
-                            if (done == total && total > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: AppColors.coralSoft,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text('🔥 On a roll!',
-                                    style: TextStyle(
-                                        color: AppColors.coral,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12)),
-                              )
-                            else
-                              const Text(
-                                'Keep going, you\'re doing great!',
-                                style: TextStyle(
-                                    color: AppColors.inkSoft,
-                                    fontSize: 12),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Big progress ring
-                      SizedBox(
-                        width: 90, height: 90,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 90, height: 90,
-                              child: CircularProgressIndicator(
-                                value: total > 0 ? done / total : 0,
-                                strokeWidth: 8,
-                                backgroundColor: AppColors.line,
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                    AppColors.coral),
-                                strokeCap: StrokeCap.round,
-                              ),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '$done/$total',
-                                  style: const TextStyle(
-                                      color: AppColors.ink,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900),
-                                ),
-                                const Text('DONE',
-                                    style: TextStyle(
-                                        color: AppColors.inkSoft,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ]),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // ── Quick action tiles ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Quick Actions', style: T.title(context)),
-                const SizedBox(height: 12),
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
+              child: Column(children: [
+                // ── Top bar ──
                 Row(children: [
                   Expanded(
-                    child: _QuickAction(
-                      emoji: '☀️',
-                      label: 'Check-in',
-                      color: AppColors.coral,
-                      soft: AppColors.coralSoft,
-                      onTap: () async {
-                        await context.push(Routes.checkin);
-                        ref.read(tasksProvider.notifier).fetch();
-                      },
-                    ),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(
+                        'Hi, ${name.isNotEmpty ? name : 'there'}',
+                        style: T.h2(context),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Day ${tasksState.day} of 84',
+                        style: T.small(context),
+                      ),
+                    ]),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickAction(
-                      emoji: '🍽️',
-                      label: 'Log Meal',
-                      color: AppColors.sage,
-                      soft: AppColors.sageSoft,
-                      onTap: () async {
-                        await context.push(Routes.meal);
-                        ref.read(tasksProvider.notifier).fetch();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickAction(
-                      emoji: '⚖️',
-                      label: 'Weigh-in',
-                      color: AppColors.teal,
-                      soft: const Color(0xFFE8F4F8),
-                      onTap: () async {
-                        await context.push(Routes.weighin);
-                        ref.read(tasksProvider.notifier).fetch();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickAction(
-                      emoji: '🥗',
-                      label: 'Diet Plan',
-                      color: AppColors.goldDark,
-                      soft: AppColors.goldSoft,
-                      onTap: () => context.push(Routes.dietPlan),
+                  GestureDetector(
+                    onTap: () => context.push(Routes.notifications),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            shape: BoxShape.circle,
+                            boxShadow: Neu.small(),
+                          ),
+                          child: const Icon(Symbols.notifications_rounded,
+                              color: AppColors.inkMid, size: 22),
+                        ),
+                        if (unreadCount > 0)
+                          Positioned(
+                            top: -2, right: -2,
+                            child: Container(
+                              width: 18, height: 18,
+                              decoration: const BoxDecoration(
+                                  color: AppColors.coral, shape: BoxShape.circle),
+                              alignment: Alignment.center,
+                              child: Text(
+                                unreadCount > 9 ? '9+' : '$unreadCount',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 9,
+                                    fontWeight: FontWeight.w900),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ]),
+                const SizedBox(height: 22),
+
+                // ── Hero progress card ──
+                Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.coral, Color(0xFFFF9A8B)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.coral.withValues(alpha: 0.3),
+                        offset: const Offset(0, 8),
+                        blurRadius: 24,
+                      ),
+                    ],
+                  ),
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "TODAY'S PROGRESS",
+                            style: T.section(context).copyWith(
+                                color: Colors.white.withValues(alpha: 0.8)),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            total == 0
+                                ? 'Loading...'
+                                : done == total
+                                    ? 'All done!'
+                                    : '$done of $total tasks',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                height: 1.1),
+                          ),
+                          const SizedBox(height: 10),
+                          // Thin progress bar
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 6,
+                              backgroundColor: Colors.white.withValues(alpha: 0.25),
+                              valueColor: const AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            done == total && total > 0
+                                ? 'Amazing work today!'
+                                : 'Keep going, you\'re doing great!',
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                    // Progress ring
+                    SizedBox(
+                      width: 80, height: 80,
+                      child: Stack(alignment: Alignment.center, children: [
+                        SizedBox(
+                          width: 80, height: 80,
+                          child: CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 7,
+                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                            valueColor: const AlwaysStoppedAnimation(Colors.white),
+                            strokeCap: StrokeCap.round,
+                          ),
+                        ),
+                        Column(mainAxisSize: MainAxisSize.min, children: [
+                          Text(
+                            '${(progress * 100).round()}%',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900),
+                          ),
+                        ]),
+                      ]),
+                    ),
+                  ]),
+                ),
               ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // ── Stats row ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(children: [
-                Expanded(
-                  child: _Stat(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('DAILY STATS', style: T.section(context)),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(child: _StatTile(
                     icon: Symbols.directions_walk_rounded,
-                    color: AppColors.coral,
-                    label: 'Steps',
                     value: stats.stepsLabel,
-                    sub: stats.stepsSub,
+                    label: 'Steps',
+                    accent: AppColors.coral,
                     onTap: () => _showStepsDialog(context, ref, stats.steps),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _Stat(
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: _StatTile(
                     icon: Symbols.water_drop_rounded,
-                    color: AppColors.teal,
-                    label: 'Water',
                     value: stats.waterLabel,
-                    sub: stats.waterSub,
+                    label: 'Water',
+                    accent: AppColors.coral,
                     onTap: () => _showWaterSheet(context, ref, stats.water),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _Stat(
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: _StatTile(
                     icon: Symbols.bedtime_rounded,
-                    color: AppColors.berry,
-                    label: 'Sleep',
                     value: stats.sleepLabel,
-                    sub: stats.sleepSub,
+                    label: 'Sleep',
+                    accent: AppColors.coral,
                     onTap: () => _showSleepDialog(context, ref, stats.sleep),
-                  ),
-                ),
+                  )),
+                ]),
               ]),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
 
-            // ── Today's plan ──
+            // ── Quick actions ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('QUICK ACTIONS', style: T.section(context)),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(child: _QuickAction(
+                    icon: Symbols.wb_sunny_rounded,
+                    label: 'Check-in',
+                    accent: AppColors.coral,
+                    onTap: () async {
+                      await context.push(Routes.checkin);
+                      ref.read(tasksProvider.notifier).fetch();
+                    },
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: _QuickAction(
+                    icon: Symbols.restaurant_rounded,
+                    label: 'Log Meal',
+                    accent: AppColors.coral,
+                    onTap: () async {
+                      await context.push(Routes.meal);
+                      ref.read(tasksProvider.notifier).fetch();
+                    },
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: _QuickAction(
+                    icon: Symbols.menu_book_rounded,
+                    label: 'Diet Plan',
+                    accent: AppColors.coral,
+                    onTap: () => context.push(Routes.dietPlan),
+                  )),
+                ]),
+              ]),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Today's tasks ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(children: [
-                Text("Today's Plan", style: T.title(context)),
+                Text('DO THIS NOW', style: T.section(context)),
                 const Spacer(),
                 GestureDetector(
                   onTap: () => context.go(Routes.today),
-                  child: Text('See all →',
+                  child: Text('See all',
                       style: T.small(context).copyWith(
-                          color: AppColors.coral,
-                          fontWeight: FontWeight.w700)),
+                          color: AppColors.coral, fontWeight: FontWeight.w700)),
                 ),
               ]),
             ),
             const SizedBox(height: 12),
-
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: tasksState.loading
                   ? const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
                       child: Center(child: CircularProgressIndicator()),
                     )
-                  : Column(
-                      children: tasksState.tasks.map((task) => _Task(
+                  : NeuCard(
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                      child: Column(
+                        children: List.generate(tasksState.tasks.length, (i) {
+                          final task = tasksState.tasks[i];
+                          return _TaskRow(
                             icon: _iconFor(task.icon),
                             title: task.title,
                             sub: task.subtitle,
@@ -360,6 +329,7 @@ class HomeScreen extends ConsumerWidget {
                             action: task.done
                                 ? null
                                 : (_routeFor(task.icon) != null ? 'Start' : 'Done'),
+                            showDivider: i < tasksState.tasks.length - 1,
                             onTap: _routeFor(task.icon) != null
                                 ? () async {
                                     await context.push(_routeFor(task.icon)!,
@@ -376,35 +346,39 @@ class HomeScreen extends ConsumerWidget {
                                         ref.read(tasksProvider.notifier).fetch();
                                       }
                                     : null),
-                          )).toList(),
+                          );
+                        }),
+                      ),
                     ),
             ),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // ── Rank + Weekly progress ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(children: [
                 Expanded(
                   child: NeuCard(
                     onTap: () => context.go(Routes.group),
                     padding: const EdgeInsets.all(18),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('🏆', style: TextStyle(fontSize: 28)),
-                      const SizedBox(height: 8),
-                      const Text('Your Rank',
-                          style: TextStyle(
-                              color: AppColors.inkSoft, fontSize: 12,
-                              fontWeight: FontWeight.w500)),
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.coralSoft,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Symbols.emoji_events_rounded,
+                            color: AppColors.coral, size: 22, fill: 1),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('YOUR RANK', style: T.section(context)),
+                      const SizedBox(height: 4),
                       const Text('#12',
                           style: TextStyle(
                               color: AppColors.coral, fontSize: 28,
                               fontWeight: FontWeight.w900)),
-                      const Text('Top 5% this week',
-                          style: TextStyle(
-                              color: AppColors.inkSoft, fontSize: 11,
-                              fontWeight: FontWeight.w500)),
                     ]),
                   ),
                 ),
@@ -414,20 +388,23 @@ class HomeScreen extends ConsumerWidget {
                     onTap: () => context.push(Routes.weeklyProgress),
                     padding: const EdgeInsets.all(18),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('📈', style: TextStyle(fontSize: 28)),
-                      const SizedBox(height: 8),
-                      const Text('This Week',
-                          style: TextStyle(
-                              color: AppColors.inkSoft, fontSize: 12,
-                              fontWeight: FontWeight.w500)),
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.coralSoft,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Symbols.trending_up_rounded,
+                            color: AppColors.coral, size: 22),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('THIS WEEK', style: T.section(context)),
+                      const SizedBox(height: 4),
                       const Text('Progress',
                           style: TextStyle(
                               color: AppColors.ink, fontSize: 20,
                               fontWeight: FontWeight.w900)),
-                      const Text('Tap to see summary',
-                          style: TextStyle(
-                              color: AppColors.inkSoft, fontSize: 11,
-                              fontWeight: FontWeight.w500)),
                     ]),
                   ),
                 ),
@@ -437,36 +414,46 @@ class HomeScreen extends ConsumerWidget {
 
             // ── Coach card ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: NeuCard(
                 onTap: () => context.go(Routes.chat),
                 child: Row(children: [
                   Container(
-                    width: 48, height: 48,
-                    decoration: const BoxDecoration(
-                        color: AppColors.coralSoft, shape: BoxShape.circle),
+                    width: 46, height: 46,
+                    decoration: BoxDecoration(
+                        gradient: AppColors.orangeGrad,
+                        borderRadius: BorderRadius.circular(14)),
                     alignment: Alignment.center,
-                    child: const Text('M',
+                    child: const Text('P',
                         style: TextStyle(
-                            color: AppColors.coral,
+                            color: Colors.white,
                             fontWeight: FontWeight.w900,
                             fontSize: 18)),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('Coach Mira',
+                      const Text('AI Coach Priya',
                           style: TextStyle(
                               fontWeight: FontWeight.w700, fontSize: 15,
                               color: AppColors.ink)),
+                      const SizedBox(height: 2),
                       Text(
-                        'You crushed steps today. Try a 10-min stretch before bed 🌙',
+                        'Tap to chat with your coach',
                         style: T.small(context),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
                       ),
                     ]),
                   ),
-                  const Icon(Symbols.arrow_forward_rounded,
-                      color: AppColors.coral),
+                  Container(
+                    width: 32, height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Symbols.arrow_forward_rounded,
+                        color: AppColors.coral, size: 18),
+                  ),
                 ]),
               ),
             ),
@@ -474,47 +461,35 @@ class HomeScreen extends ConsumerWidget {
 
             // ── Health tip of the day ──
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: _HealthTipCard(),
             ),
             const SizedBox(height: 16),
 
             // ── Quick links row ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(children: [
-                Expanded(
-                  child: _LinkCard(
-                    emoji: '⏱️',
-                    label: 'Fasting',
-                    sub: 'Start window',
-                    color: AppColors.berry,
-                    soft: AppColors.berrySoft,
-                    onTap: () => context.push(Routes.fasting),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _LinkCard(
-                    emoji: '🎯',
-                    label: 'Challenge',
-                    sub: 'This week',
-                    color: AppColors.gold,
-                    soft: AppColors.goldSoft,
-                    onTap: () => context.push(Routes.challenge),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _LinkCard(
-                    emoji: '📚',
-                    label: 'Learn',
-                    sub: 'Lessons',
-                    color: AppColors.teal,
-                    soft: const Color(0xFFE8F4F8),
-                    onTap: () => context.push(Routes.learning),
-                  ),
-                ),
+                Expanded(child: _LinkTile(
+                  icon: Symbols.timer_rounded,
+                  label: 'Fasting',
+                  accent: AppColors.coral,
+                  onTap: () => context.push(Routes.fasting),
+                )),
+                const SizedBox(width: 10),
+                Expanded(child: _LinkTile(
+                  icon: Symbols.flag_rounded,
+                  label: 'Challenge',
+                  accent: AppColors.coral,
+                  onTap: () => context.push(Routes.challenge),
+                )),
+                const SizedBox(width: 10),
+                Expanded(child: _LinkTile(
+                  icon: Symbols.menu_book_rounded,
+                  label: 'Learn',
+                  accent: AppColors.coral,
+                  onTap: () => context.push(Routes.learning),
+                )),
               ]),
             ),
             const SizedBox(height: 100),
@@ -532,6 +507,7 @@ class HomeScreen extends ConsumerWidget {
     final result = await showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Log steps'),
         content: TextField(
           controller: controller,
@@ -579,6 +555,7 @@ class HomeScreen extends ConsumerWidget {
     final result = await showDialog<double>(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Log sleep'),
         content: TextField(
           controller: controller,
@@ -609,7 +586,7 @@ class HomeScreen extends ConsumerWidget {
 
 // ── Health tip of the day ──
 class _HealthTipCard extends ConsumerWidget {
-  const _HealthTipCard({super.key});
+  const _HealthTipCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -622,26 +599,29 @@ class _HealthTipCard extends ConsumerWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.sageSoft,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8, offset: const Offset(0, 3)),
-            ],
+            color: AppColors.coralSoft,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.coral.withValues(alpha: 0.2)),
           ),
-          child: Row(children: [
-            const Text('💡', style: TextStyle(fontSize: 24)),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.coral.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Symbols.lightbulb_rounded,
+                  color: AppColors.coral, size: 20, fill: 1),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Tip of the day · ${tip['category']}',
-                    style: T.small(context).copyWith(
-                        color: AppColors.sageDark, fontSize: 11)),
+                Text('TIP OF THE DAY',
+                    style: T.section(context).copyWith(color: AppColors.coral)),
                 const SizedBox(height: 4),
                 Text(tip['tip'] ?? '',
-                    style: T.body(context)
-                        .copyWith(color: AppColors.sageDark)),
+                    style: T.body(context).copyWith(fontSize: 13)),
               ]),
             ),
           ]),
@@ -677,8 +657,7 @@ class _WaterSheetState extends ConsumerState<_WaterSheet> {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text('Water intake', style: T.title(context)),
         const SizedBox(height: 6),
-        Text('Tap glasses to update · target 8/day',
-            style: T.small(context)),
+        Text('Tap glasses to update', style: T.small(context)),
         const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -692,7 +671,7 @@ class _WaterSheetState extends ConsumerState<_WaterSheet> {
                   Symbols.water_drop_rounded,
                   size: 34,
                   fill: filled ? 1 : 0,
-                  color: filled ? AppColors.sage : AppColors.inkSoft,
+                  color: filled ? AppColors.coral : AppColors.inkSoft,
                 ),
               ),
             );
@@ -701,7 +680,7 @@ class _WaterSheetState extends ConsumerState<_WaterSheet> {
         const SizedBox(height: 8),
         Text('$_glasses of 8 glasses',
             style: T.body(context)
-                .copyWith(fontWeight: FontWeight.w700, color: AppColors.sage)),
+                .copyWith(fontWeight: FontWeight.w700, color: AppColors.coral)),
         const SizedBox(height: 20),
         SizedBox(
           width: double.infinity,
@@ -727,110 +706,19 @@ class _WaterSheetState extends ConsumerState<_WaterSheet> {
   }
 }
 
-// ── Stat card ──
-class _Stat extends StatelessWidget {
-  const _Stat({
+// ── Stat tile (Steps / Water / Sleep) ──
+class _StatTile extends StatelessWidget {
+  const _StatTile({
     required this.icon,
-    required this.color,
-    required this.label,
     required this.value,
-    required this.sub,
+    required this.label,
+    required this.accent,
     this.onTap,
   });
   final IconData icon;
-  final Color color;
-  final String label;
-  final String value;
-  final String sub;
+  final String value, label;
+  final Color accent;
   final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: Neu.card(radius: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 34, height: 34,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20, fill: 1),
-            ),
-            const SizedBox(height: 10),
-            Text(label, style: T.small(context).copyWith(fontSize: 11)),
-            Text(value, style: T.title(context).copyWith(fontSize: 18)),
-            Text(sub, style: T.small(context).copyWith(fontSize: 10, color: color)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Quick action tile ──
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.emoji,
-    required this.label,
-    required this.color,
-    required this.soft,
-    required this.onTap,
-  });
-  final String emoji;
-  final String label;
-  final Color color;
-  final Color soft;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: Neu.card(radius: 16),
-        child: Column(children: [
-          Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(color: soft, shape: BoxShape.circle),
-            child: Center(
-                child: Text(emoji, style: const TextStyle(fontSize: 22))),
-          ),
-          const SizedBox(height: 8),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: color)),
-        ]),
-      ),
-    );
-  }
-}
-
-// ── Small link card ──
-class _LinkCard extends StatelessWidget {
-  const _LinkCard({
-    required this.emoji,
-    required this.label,
-    required this.sub,
-    required this.color,
-    required this.soft,
-    required this.onTap,
-  });
-  final String emoji;
-  final String label;
-  final String sub;
-  final Color color;
-  final Color soft;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -838,99 +726,195 @@ class _LinkCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
-        decoration: Neu.card(radius: 18),
+        decoration: Neu.card(radius: 20, depth: 0.5),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(emoji, style: const TextStyle(fontSize: 24)),
-          const SizedBox(height: 8),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: accent, size: 20, fill: 1),
+          ),
+          const SizedBox(height: 10),
+          Text(value,
+              style: TextStyle(
+                  color: AppColors.ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900)),
+          const SizedBox(height: 2),
           Text(label, style: T.small(context).copyWith(fontSize: 11)),
-          Text(sub,
-              style: T.title(context)
-                  .copyWith(fontSize: 13, color: color)),
         ]),
       ),
     );
   }
 }
 
-// ── Task card ──
-class _Task extends StatelessWidget {
-  const _Task({
+// ── Quick action button ──
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.accent,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: Neu.card(radius: 18, depth: 0.5),
+        child: Column(children: [
+          Container(
+            width: 46, height: 46,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: accent, size: 24, fill: 1),
+          ),
+          const SizedBox(height: 8),
+          Text(label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: accent)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Link tile (Fasting / Challenge / Learn) ──
+class _LinkTile extends StatelessWidget {
+  const _LinkTile({
+    required this.icon,
+    required this.label,
+    required this.accent,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        decoration: Neu.card(radius: 18, depth: 0.5),
+        child: Column(children: [
+          Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: accent, size: 22, fill: 1),
+          ),
+          const SizedBox(height: 8),
+          Text(label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.inkMid)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Task row (inside shared card) ──
+class _TaskRow extends StatelessWidget {
+  const _TaskRow({
     required this.icon,
     required this.title,
     required this.sub,
     this.done = false,
     this.action,
+    this.showDivider = true,
     this.onTap,
     this.onAction,
   });
   final IconData icon;
-  final String title;
-  final String sub;
-  final bool done;
+  final String title, sub;
+  final bool done, showDivider;
   final String? action;
-  final VoidCallback? onTap;
-  final VoidCallback? onAction;
+  final VoidCallback? onTap, onAction;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: GestureDetector(
+    return Column(children: [
+      GestureDetector(
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: Neu.card(radius: 18),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: done
-                      ? AppColors.sageSoft
-                      : AppColors.coralSoft,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon,
-                    color: done ? AppColors.sageDark : AppColors.coral,
-                    fill: 1),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: done
+                    ? AppColors.coralSoft
+                    : AppColors.coralSoft,
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: T.title(context).copyWith(fontSize: 15,
-                            color: const Color(0xFF1A1A2E))),
-                    Text(sub, style: T.small(context)),
-                  ],
-                ),
+              child: Icon(icon,
+                  color: done ? AppColors.coral : AppColors.coral,
+                  size: 20, fill: 1),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: done ? AppColors.inkSoft : AppColors.ink,
+                          decoration: done ? TextDecoration.lineThrough : null)),
+                  Text(sub, style: T.small(context).copyWith(fontSize: 12)),
+                ],
               ),
-              if (done)
-                const Icon(Symbols.check_circle_rounded,
-                    color: AppColors.sage, fill: 1)
-              else if (action != null)
-                GestureDetector(
-                  onTap: onAction,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.coral,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(action!,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13)),
+            ),
+            if (done)
+              const Icon(Symbols.check_circle_rounded,
+                  color: AppColors.coral, fill: 1, size: 22)
+            else if (action != null)
+              GestureDetector(
+                onTap: onAction,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.coral,
+                    borderRadius: BorderRadius.circular(20),
                   ),
+                  child: Text(action!,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12)),
                 ),
-            ],
-          ),
+              ),
+          ]),
         ),
       ),
-    );
+      if (showDivider)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Divider(height: 1, color: AppColors.line.withValues(alpha: 0.6)),
+        ),
+    ]);
   }
 }

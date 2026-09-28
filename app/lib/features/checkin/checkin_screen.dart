@@ -16,11 +16,11 @@ import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
 
 const _moods = [
-  (emoji: '😞', label: 'Low',   color: Color(0xFFE57373)),
-  (emoji: '😕', label: 'Meh',   color: Color(0xFFFFB74D)),
-  (emoji: '🙂', label: 'Okay',  color: Color(0xFFFFD54F)),
-  (emoji: '😀', label: 'Good',  color: Color(0xFF81C784)),
-  (emoji: '🤩', label: 'Great', color: Color(0xFF4DB6AC)),
+  (icon: Symbols.sentiment_very_dissatisfied_rounded, label: 'Low',   color: Color(0xFFE57373)),
+  (icon: Symbols.sentiment_dissatisfied_rounded,      label: 'Meh',   color: Color(0xFFFFB74D)),
+  (icon: Symbols.sentiment_neutral_rounded,           label: 'Okay',  color: Color(0xFFFFD54F)),
+  (icon: Symbols.sentiment_satisfied_rounded,          label: 'Good',  color: Color(0xFF81C784)),
+  (icon: Symbols.sentiment_very_satisfied_rounded,     label: 'Great', color: Color(0xFF4DB6AC)),
 ];
 
 class _CheckinEntry {
@@ -158,7 +158,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
           title: const Text('Already checked in today',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           content: const Text(
-              'You have already submitted your morning check-in for today. Do you want to update it with the new details?'),
+              'You have already submitted your check-in for today. Do you want to update it with the new details?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
@@ -232,20 +232,30 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header
+        // Section label
+        Text('CHECK-IN HISTORY', style: T.section(context)),
+        const SizedBox(height: 12),
+        // Section header card
         Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           decoration: BoxDecoration(
             color: AppColors.coralSoft,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.coral.withOpacity(0.3)),
+            border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
           ),
           child: Row(children: [
-            const Icon(Symbols.history_rounded,
-                color: AppColors.coral, size: 18, fill: 1),
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.coral.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Symbols.history_rounded,
+                  color: AppColors.coral, size: 20, fill: 1),
+            ),
             const SizedBox(width: 10),
             const Expanded(
-              child: Text('Check-in history',
+              child: Text('Recent entries',
                   style: TextStyle(
                       color: AppColors.coral,
                       fontWeight: FontWeight.w800,
@@ -325,11 +335,12 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -342,7 +353,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Morning check-in',
+                        Text('Daily Check-in',
                             style: TextStyle(
                                 color: AppColors.ink,
                                 fontSize: 18,
@@ -353,18 +364,34 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                       ],
                     ),
                   ),
-                  const Text('🌅', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coral.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.wb_twilight_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // ── Today's status card (if already checked in) ──
               if (todayEntry != null) ...[
                 NeuCard(
-                  color: AppColors.sageSoft,
+                  depth: 0.5,
+                  color: AppColors.coralSoft,
                   child: Row(children: [
-                    Text(_moods[todayEntry.mood.clamp(0, 4)].emoji,
-                        style: const TextStyle(fontSize: 28)),
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.coral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(_moods[todayEntry.mood.clamp(0, 4)].icon,
+                          color: AppColors.coral, size: 20, fill: 1),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -372,7 +399,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                         children: [
                           Text("Today's check-in saved",
                               style: T.title(context)
-                                  .copyWith(color: AppColors.sageDark)),
+                                  .copyWith(color: AppColors.coral)),
                           Text(
                             [
                               _moods[todayEntry.mood.clamp(0, 4)].label,
@@ -385,7 +412,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                       ),
                     ),
                     const Icon(Symbols.check_circle_rounded,
-                        color: AppColors.sage, fill: 1),
+                        color: AppColors.coral, fill: 1),
                   ]),
                 ),
                 const SizedBox(height: 14),
@@ -396,7 +423,7 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
               ],
 
               // ── Mood picker ──
-              Text('How do you feel today?', style: T.title(context)),
+              Text('HOW DO YOU FEEL?', style: T.section(context)),
               const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -410,12 +437,12 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                         height: 56,
                         decoration: BoxDecoration(
                           color: _mood == i
-                              ? AppColors.coralSoft
+                              ? _moods[i].color.withValues(alpha: 0.15)
                               : AppColors.surface,
                           shape: BoxShape.circle,
                           border: Border.all(
                               color: _mood == i
-                                  ? AppColors.coral
+                                  ? _moods[i].color
                                   : AppColors.line,
                               width: _mood == i ? 2 : 1),
                         ),
@@ -423,30 +450,41 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(_moods[i].emoji,
-                                style: const TextStyle(fontSize: 22)),
+                            Icon(_moods[i].icon,
+                                size: 24,
+                                color: _mood == i ? _moods[i].color : AppColors.inkSoft,
+                                fill: 1),
                             if (_mood == i)
                               Text(_moods[i].label,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.coral)),
+                                      color: _moods[i].color)),
                           ],
                         ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // ── Weight ──
-              Text('Morning weight', style: T.title(context)),
+              Text('CURRENT WEIGHT', style: T.section(context)),
               const SizedBox(height: 12),
               NeuCard(
+                depth: 0.5,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(children: [
-                  const Icon(Symbols.scale_rounded, color: AppColors.coral),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coral.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.scale_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
@@ -474,17 +512,17 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
                 const SizedBox(height: 6),
                 Text(progressText, style: T.small(context)),
               ],
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // ── Coach notes ──
-              Text('Notes for your coach', style: T.title(context)),
+              Text('NOTES FOR YOUR COACH', style: T.section(context)),
               const SizedBox(height: 12),
               NeuTextField(
                 controller: _notes,
-                hint: 'Slept well, felt energetic…',
+                hint: 'Slept well, felt energetic...',
                 maxLines: 3,
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // ── Save button ──
               NeuButton.primary(
@@ -496,10 +534,10 @@ class _CheckinScreenState extends ConsumerState<CheckinScreen> {
 
               // ── Recent history ──
               if (_loadingHistory) ...[
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 const Center(child: CircularProgressIndicator()),
               ] else if (_history.isNotEmpty) ...[
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 _buildHistory(context),
               ],
             ],
@@ -526,7 +564,7 @@ class _CheckinDayHeader extends StatelessWidget {
           color: isToday
               ? AppColors.coralSoft
               : isYesterday
-                  ? AppColors.sageSoft
+                  ? AppColors.coralSoft
                   : AppColors.bg,
           borderRadius: BorderRadius.circular(20),
         ),
@@ -535,7 +573,7 @@ class _CheckinDayHeader extends StatelessWidget {
                 color: isToday
                     ? AppColors.coral
                     : isYesterday
-                        ? AppColors.sageDark
+                        ? AppColors.coral
                         : AppColors.inkSoft,
                 fontWeight: FontWeight.w800,
                 fontSize: 12)),
@@ -573,14 +611,13 @@ class _HistoryCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: mood.color.withOpacity(0.15),
+                color: mood.color.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: mood.color.withOpacity(0.5), width: 2),
+                    color: mood.color.withValues(alpha: 0.5), width: 2),
               ),
               alignment: Alignment.center,
-              child: Text(mood.emoji,
-                  style: const TextStyle(fontSize: 22)),
+              child: Icon(mood.icon, size: 24, color: mood.color, fill: 1),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -604,18 +641,18 @@ class _HistoryCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.sageSoft,
+                        color: AppColors.coralSoft,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         const Icon(Symbols.scale_rounded,
-                            size: 13, color: AppColors.sageDark),
+                            size: 13, color: AppColors.coral),
                         const SizedBox(width: 4),
                         Text('${entry.weight!.toStringAsFixed(1)} kg',
                             style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.sageDark)),
+                                color: AppColors.coral)),
                       ]),
                     ),
                   if (entry.notes != null &&

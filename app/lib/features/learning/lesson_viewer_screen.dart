@@ -42,8 +42,9 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
         body: SafeArea(
           child: Column(children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
               child: NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -76,10 +77,12 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
+                  const SizedBox(height: 14),
                   NeuCard(
+                    depth: 0.5,
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                     child: Row(children: [
                       GestureDetector(
@@ -98,16 +101,16 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
                         ),
                       ),
                       NeuPill(
-                        color: AppColors.goldSoft,
+                        color: AppColors.coralSoft,
                         child: Text('+${lesson.xpReward} XP',
                             style: const TextStyle(
-                                color: AppColors.goldDark,
+                                color: AppColors.coral,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 12)),
                       ),
                     ]),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   // Progress bar
                   ClipRRect(
                     borderRadius: BorderRadius.circular(999),
@@ -115,16 +118,16 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
                       value: totalPages > 1 ? (_page + 1) / totalPages : 1.0,
                       minHeight: 6,
                       backgroundColor: AppColors.bg,
-                      valueColor: const AlwaysStoppedAnimation(AppColors.berry),
+                      valueColor: const AlwaysStoppedAnimation(AppColors.coral),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text('${_page + 1} / $totalPages',
-                      style: T.small(context).copyWith(fontSize: 11)),
+                  Text('SLIDE ${_page + 1} OF $totalPages',
+                      style: T.section(context)),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
             Expanded(
               child: PageView.builder(
                 controller: _pageCtrl,
@@ -139,7 +142,7 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
               child: _page < totalPages - 1
                   ? NeuButton.primary(
                       'Next',
@@ -223,12 +226,13 @@ class _TitleSlide extends StatelessWidget {
     final color = lesson.lessonType == 'video'
         ? AppColors.coral
         : lesson.lessonType == 'quiz'
-            ? AppColors.gold
-            : AppColors.berry;
+            ? AppColors.coral
+            : AppColors.coral;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: NeuCard(
+        depth: 0.5,
         padding: const EdgeInsets.all(28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,17 +245,19 @@ class _TitleSlide extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16)),
               child: Icon(icon, color: color, fill: 1, size: 28),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
+            Text('LESSON', style: T.section(context)),
+            const SizedBox(height: 8),
             Text(lesson.title, style: T.h2(context)),
             const SizedBox(height: 10),
             Text('Week ${lesson.weekNumber}',
                 style: T.body(context).copyWith(color: AppColors.inkSoft)),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             NeuPill(
-              color: AppColors.sageSoft,
+              color: AppColors.coralSoft,
               child: Text('Complete to earn +${lesson.xpReward} XP',
                   style: const TextStyle(
-                      color: AppColors.sageDark,
+                      color: AppColors.coral,
                       fontWeight: FontWeight.w700,
                       fontSize: 12)),
             ),
@@ -271,10 +277,13 @@ class _ContentSlide extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: NeuCard(
+        depth: 0.5,
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text('CONTENT', style: T.section(context)),
+            const SizedBox(height: 14),
             for (final p in paragraphs) ...[
               Text(p, style: T.body(context)),
               if (paragraphs.last != p) const SizedBox(height: 16),
@@ -309,20 +318,32 @@ class _QuizSlide extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           NeuCard(
-            color: AppColors.goldSoft,
+            depth: 0.5,
+            color: AppColors.coralSoft,
             padding: const EdgeInsets.all(20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                const Text('🧠', style: TextStyle(fontSize: 20)),
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.psychology_rounded,
+                      color: AppColors.coral, size: 20, fill: 1),
+                ),
                 const SizedBox(width: 10),
-                Text('Quick quiz', style: T.title(context).copyWith(color: AppColors.goldDark)),
+                Text('QUICK QUIZ', style: T.section(context).copyWith(color: AppColors.coral)),
               ]),
               const SizedBox(height: 14),
               Text(question, style: T.h2(context)),
             ]),
           ),
+          const SizedBox(height: 24),
+          Text('OPTIONS', style: T.section(context)),
           const SizedBox(height: 12),
           for (var i = 0; i < options.length; i++)
             Padding(
@@ -330,14 +351,15 @@ class _QuizSlide extends StatelessWidget {
               child: GestureDetector(
                 onTap: () => onAnswer(i),
                 child: NeuCard(
+                  depth: 0.5,
                   color: submitted
                       ? i == correct
-                          ? AppColors.sageSoft
+                          ? AppColors.coralSoft
                           : i == selectedAnswer
                               ? AppColors.coralSoft
                               : null
                       : selectedAnswer == i
-                          ? AppColors.berrySoft
+                          ? AppColors.coralSoft
                           : null,
                   padding: const EdgeInsets.all(16),
                   child: Row(children: [
@@ -345,13 +367,13 @@ class _QuizSlide extends StatelessWidget {
                         child: Text(options[i].toString(), style: T.body(context))),
                     if (submitted && i == correct)
                       const Icon(Symbols.check_circle_rounded,
-                          color: AppColors.sage, fill: 1)
+                          color: AppColors.coral, fill: 1)
                     else if (submitted && i == selectedAnswer && i != correct)
                       const Icon(Symbols.cancel_rounded,
                           color: AppColors.coral, fill: 1)
                     else if (selectedAnswer == i)
                       const Icon(Symbols.radio_button_checked_rounded,
-                          color: AppColors.berry),
+                          color: AppColors.coral),
                   ]),
                 ),
               ),
@@ -363,11 +385,26 @@ class _QuizSlide extends StatelessWidget {
           if (submitted) ...[
             const SizedBox(height: 8),
             NeuCard(
-              color: selectedAnswer == correct ? AppColors.sageSoft : AppColors.coralSoft,
+              depth: 0.5,
+              color: selectedAnswer == correct ? AppColors.coralSoft : AppColors.coralSoft,
               padding: const EdgeInsets.all(14),
               child: Row(children: [
-                Text(selectedAnswer == correct ? '🎉' : '💡',
-                    style: const TextStyle(fontSize: 20)),
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: selectedAnswer == correct
+                        ? AppColors.coral.withValues(alpha: 0.12)
+                        : AppColors.coral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    selectedAnswer == correct
+                        ? Symbols.celebration_rounded
+                        : Symbols.lightbulb_rounded,
+                    color: selectedAnswer == correct ? AppColors.coral : AppColors.coral,
+                    size: 20, fill: 1,
+                  ),
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(

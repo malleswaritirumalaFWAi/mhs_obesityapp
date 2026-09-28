@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
+import { updateUserLevel } from './gamification.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -14,6 +15,7 @@ async function groupId(userId) {
 router.get('/group/chat', async (req, res) => {
   const { limit = 50, before } = req.query;
   const gid = await groupId(uid(req));
+  const userId = uid(req);
   const rows = (await q(
     `SELECT m.id, m.text, m.type, m.pinned, m.created_at,
             u.name AS author_name, u.id AS author_id,
@@ -23,7 +25,7 @@ router.get('/group/chat', async (req, res) => {
      ORDER BY m.created_at DESC LIMIT $2`,
     before ? [gid, Number(limit), before] : [gid, Number(limit)]
   )).rows.reverse();
-  res.json({ messages: rows });
+  res.json({ messages: rows.map(r => ({ ...r, is_mine: r.author_id === userId })) });
 });
 
 router.post('/group/chat', async (req, res) => {
@@ -47,6 +49,7 @@ router.post('/group/chat', async (req, res) => {
   if (firstToday) {
     await q(`UPDATE users SET xp=xp+5, total_xp=total_xp+5 WHERE id=$1`, [uid(req)]);
     await q(`UPDATE group_members SET weekly_xp=weekly_xp+5 WHERE user_id=$1`, [uid(req)]);
+    await updateUserLevel(uid(req));
   }
   const msgCount = (await q(
     `SELECT COUNT(*) AS c FROM group_chat_messages WHERE user_id=$1`, [uid(req)]

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
+import { updateUserLevel } from './gamification.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -80,6 +81,7 @@ router.post('/stop', async (req, res) => {
 
   if (completed) {
     await awardXp(uid(req), xpAwarded);
+    await updateUserLevel(uid(req));
 
     // Award fasting_pro badge after 5 completed sessions
     const count = (await q(

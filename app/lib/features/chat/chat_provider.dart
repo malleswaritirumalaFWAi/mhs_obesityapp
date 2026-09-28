@@ -63,7 +63,7 @@ class ChatNotifier extends AsyncNotifier<List<ChatMessage>> {
   }
 
   static List<ChatMessage> _demoMessages() => const [
-        ChatMessage(text: "Hi! I'm Coach Priya. Welcome to FitQuest 🎉 How are you feeling today?", fromCoach: true),
+        ChatMessage(text: "Hi! I'm AI Coach Priya. Welcome to FitQuest 🎉 How are you feeling today?", fromCoach: true),
       ];
 }
 

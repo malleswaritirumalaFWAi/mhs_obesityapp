@@ -103,7 +103,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _sending = true;
       _messages.add(_Msg(text: text, fromCoach: false, createdAt: now));
       _messages.add(
-          _Msg(text: '…', fromCoach: true, createdAt: now, sending: true));
+          _Msg(text: '...', fromCoach: true, createdAt: now, sending: true));
     });
     _scrollDown();
     try {
@@ -157,51 +157,42 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 color: AppColors.bg,
                 boxShadow: Neu.small(),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 18),
               child: Row(children: [
                 Container(
                   width: 48,
                   height: 48,
                   decoration: const BoxDecoration(
-                    color: AppColors.sageSoft,
+                    color: AppColors.coralSoft,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
-                  child: const Text('P',
-                      style: TextStyle(
-                          color: AppColors.sageDark,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 20)),
+                  child: const Icon(Symbols.support_agent_rounded,
+                      color: AppColors.coral, size: 24, fill: 1),
                 ),
                 const SizedBox(width: 12),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Coach Priya',
+                  const Text('AI Coach Priya',
                       style: TextStyle(
                           color: AppColors.ink,
                           fontWeight: FontWeight.w800,
                           fontSize: 16)),
                   Row(children: [
-                    const CircleAvatar(
-                        radius: 4,
-                        backgroundColor: AppColors.sage),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.coral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Symbols.circle_rounded,
+                          color: AppColors.coral, size: 10, fill: 1),
+                    ),
                     const SizedBox(width: 6),
-                    const Text('Online',
-                        style: TextStyle(
-                            color: AppColors.inkMid, fontSize: 13)),
+                    Text('ONLINE', style: T.section(context)),
                   ]),
                 ]),
                 const Spacer(),
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    shape: BoxShape.circle,
-                    boxShadow: Neu.small(),
-                  ),
-                  child: const Icon(Symbols.call_rounded,
-                      color: AppColors.inkMid, size: 20),
-                ),
               ]),
             ),
 
@@ -214,11 +205,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
-                                  Symbols.chat_bubble_outline_rounded,
-                                  size: 48,
-                                  color: AppColors.inkSoft),
-                              const SizedBox(height: 12),
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  color: AppColors.coralSoft,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: const Icon(Symbols.chat_bubble_rounded,
+                                    size: 28, color: AppColors.coral, fill: 1),
+                              ),
+                              const SizedBox(height: 16),
                               Text('No messages yet',
                                   style: T.small(context)),
                               Text('Say hi to your coach!',
@@ -229,7 +226,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       : ListView.builder(
                           controller: _scroll,
                           padding:
-                              const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                              const EdgeInsets.fromLTRB(24, 12, 24, 12),
                           itemCount: _messages.length,
                           itemBuilder: (_, i) {
                             final msg = _messages[i];
@@ -264,9 +261,8 @@ class _DateDivider extends StatelessWidget {
           const Expanded(child: Divider(color: AppColors.line)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(label,
-                style: T.small(context)
-                    .copyWith(fontSize: 11, color: AppColors.inkSoft)),
+            child: Text(label.toUpperCase(),
+                style: T.section(context)),
           ),
           const Expanded(child: Divider(color: AppColors.line)),
         ]),
@@ -352,12 +348,12 @@ class _InputBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-          16, 10, 16, 10 + MediaQuery.of(context).viewInsets.bottom),
+          24, 10, 24, 10 + MediaQuery.of(context).viewInsets.bottom),
       color: AppColors.bg,
       child: Row(children: [
         Expanded(
           child: NeuTextField(
-              controller: controller, hint: 'Message your coach…'),
+              controller: controller, hint: 'Message your coach...'),
         ),
         const SizedBox(width: 10),
         GestureDetector(

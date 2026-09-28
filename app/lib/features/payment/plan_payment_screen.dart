@@ -15,11 +15,27 @@ import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
 
 const _included = [
-  'Personal coach on WhatsApp · 12 weeks',
+  'Personal coach on WhatsApp - 12 weeks',
   'Custom meal plan (veg / non-veg)',
   'Daily check-ins + AI meal photos',
   'Group of 50 + leaderboard',
   'Money-back guarantee',
+];
+
+const _includedIcons = [
+  Symbols.support_agent_rounded,
+  Symbols.restaurant_rounded,
+  Symbols.fact_check_rounded,
+  Symbols.group_rounded,
+  Symbols.verified_rounded,
+];
+
+const _includedColors = [
+  AppColors.coral,
+  AppColors.coral,
+  AppColors.coral,
+  AppColors.coral,
+  AppColors.coral,
 ];
 
 class PlanPaymentScreen extends ConsumerStatefulWidget {
@@ -86,17 +102,25 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(22, 22, 22, 32),
+        padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Symbols.account_balance_wallet_rounded,
-              size: 40, color: AppColors.coral, fill: 1),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.coralSoft,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Symbols.account_balance_wallet_rounded,
+                size: 28, color: AppColors.coral, fill: 1),
+          ),
           const SizedBox(height: 14),
           Text('Demo checkout', style: T.title(context)),
           const SizedBox(height: 6),
-          Text('No payment keys configured. Simulate a successful ₹4,999 payment?',
+          Text('No payment keys configured. Simulate a successful Rs.4,999 payment?',
               textAlign: TextAlign.center, style: T.small(context)),
           const SizedBox(height: 20),
-          NeuButton.primary('Pay ₹4,999 (test)',
+          NeuButton.primary('Pay Rs.4,999 (test)',
               onPressed: () => Navigator.pop(context, true)),
         ]),
       ),
@@ -124,7 +148,7 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
   Future<void> _grantAccess() async {
     try {
       await ref.read(apiClientProvider).postJson('/profile/onboarded', null);
-    } catch (_) {/* best-effort — session state updated locally too */}
+    } catch (_) {/* best-effort -- session state updated locally too */}
     ref.read(sessionProvider.notifier).completeOnboarding();
     if (mounted) context.go(Routes.home);
   }
@@ -137,11 +161,12 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 14, 22, 22),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -150,51 +175,57 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
                         color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Choose Your Plan',
-                            style: TextStyle(
-                                color: AppColors.ink,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900)),
-                        Text('Last step to unlock FitQuest',
+                        Text('CHOOSE YOUR PLAN',
+                            style: T.section(context).copyWith(color: AppColors.coral)),
+                        const Text('Last step to unlock FitQuest',
                             style: TextStyle(
                                 color: AppColors.inkSoft, fontSize: 12)),
                       ],
                     ),
                   ),
-                  const Text('🏆', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.emoji_events_rounded, color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 24),
               Text('Your plan', style: T.h1(context)),
               const SizedBox(height: 8),
-              Text('12 weeks. All in. Everything you need to lose 8–15 kg with confidence.',
+              Text('12 weeks. All in. Everything you need to lose 8-15 kg with confidence.',
                   style: T.body(context)),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Expanded(
                 child: SingleChildScrollView(
                   child: NeuCard(
+                    depth: 0.5,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(children: [
-                          const NeuPill(
-                            color: AppColors.goldSoft,
-                            child: Text('Most popular',
+                          NeuPill(
+                            color: AppColors.coralSoft,
+                            child: const Text('Most popular',
                                 style: TextStyle(
-                                    color: AppColors.goldDark,
+                                    color: AppColors.coral,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 12)),
                           ),
                           const Spacer(),
-                          const NeuPill(
-                            color: AppColors.sageSoft,
-                            child: Text('Save ₹2,000',
+                          NeuPill(
+                            color: AppColors.coralSoft,
+                            child: const Text('Save Rs.2,000',
                                 style: TextStyle(
-                                    color: AppColors.sageDark,
+                                    color: AppColors.coral,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 12)),
                           ),
@@ -203,28 +234,37 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
                         Text('FitQuest Premium', style: T.title(context)),
                         const SizedBox(height: 8),
                         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                          Text('₹4,999', style: T.h1(context)),
+                          Text('Rs.4,999', style: T.h1(context)),
                           const SizedBox(width: 8),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 6),
-                            child: Text('₹6,999',
+                            child: Text('Rs.6,999',
                                 style: T.small(context).copyWith(
                                     decoration: TextDecoration.lineThrough)),
                           ),
                         ]),
-                        Text('One-time · No subscription', style: T.small(context)),
+                        Text('One-time - No subscription', style: T.small(context)),
                         const Divider(height: 32, color: AppColors.line),
-                        Text("WHAT'S INCLUDED", style: T.label(context)),
+                        Text("WHAT'S INCLUDED", style: T.section(context)),
                         const SizedBox(height: 12),
-                        ..._included.map((e) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Row(children: [
-                                const Icon(Symbols.check_circle_rounded,
-                                    color: AppColors.sage, fill: 1, size: 22),
-                                const SizedBox(width: 12),
-                                Expanded(child: Text(e, style: T.body(context))),
-                              ]),
-                            )),
+                        for (var i = 0; i < _included.length; i++)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: _includedColors[i].withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(_includedIcons[i],
+                                    color: _includedColors[i], size: 20, fill: 1),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(child: Text(_included[i], style: T.body(context))),
+                            ]),
+                          ),
                       ],
                     ),
                   ),
@@ -232,7 +272,7 @@ class _PlanPaymentScreenState extends ConsumerState<PlanPaymentScreen> {
               ),
               const SizedBox(height: 14),
               NeuButton.primary(
-                'Pay ₹4,999 securely',
+                'Pay Rs.4,999 securely',
                 loading: _busy,
                 trailing: const Icon(Symbols.lock_rounded, size: 18),
                 onPressed: _pay,

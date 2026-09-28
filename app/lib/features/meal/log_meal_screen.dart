@@ -21,20 +21,42 @@ import '../../core/widgets/neu_misc.dart';
 // ── Meal type data ─────────────────────────────────────────────────────────────
 
 const _mealTypes = [
-  (emoji: '🍳', label: 'Breakfast'),
-  (emoji: '🥗', label: 'Lunch'),
-  (emoji: '🍪', label: 'Snacks'),
-  (emoji: '🍲', label: 'Dinner'),
+  (icon: Symbols.wb_sunny_rounded, color: AppColors.coral, label: 'Breakfast'),
+  (icon: Symbols.lunch_dining_rounded, color: AppColors.coral, label: 'Lunch'),
+  (icon: Symbols.local_cafe_rounded, color: AppColors.coral, label: 'Snacks'),
+  (icon: Symbols.bedtime_rounded, color: AppColors.coral, label: 'Dinner'),
 ];
 
-String _emojiFor(String mealType) {
+IconData _iconFor(String mealType) {
   switch (mealType.toLowerCase()) {
-    case 'breakfast': return '🍳';
-    case 'lunch':     return '🥗';
+    case 'breakfast': return Symbols.wb_sunny_rounded;
+    case 'lunch':     return Symbols.lunch_dining_rounded;
     case 'snacks':
-    case 'snack':     return '🍪';
-    case 'dinner':    return '🍲';
-    default:          return '🍽️';
+    case 'snack':     return Symbols.local_cafe_rounded;
+    case 'dinner':    return Symbols.bedtime_rounded;
+    default:          return Symbols.restaurant_rounded;
+  }
+}
+
+Color _colorFor(String mealType) {
+  switch (mealType.toLowerCase()) {
+    case 'breakfast': return AppColors.coral;
+    case 'lunch':     return AppColors.coral;
+    case 'snacks':
+    case 'snack':     return AppColors.coral;
+    case 'dinner':    return AppColors.coral;
+    default:          return AppColors.coral;
+  }
+}
+
+Color _colorSoftFor(String mealType) {
+  switch (mealType.toLowerCase()) {
+    case 'breakfast': return AppColors.coralSoft;
+    case 'lunch':     return AppColors.coralSoft;
+    case 'snacks':
+    case 'snack':     return AppColors.coralSoft;
+    case 'dinner':    return AppColors.coralSoft;
+    default:          return AppColors.coralSoft;
   }
 }
 
@@ -119,6 +141,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
   // Photo / analysis
   Uint8List? _photoBytes;
+  int _photoVersion = 0; // bumped on each pick to bust Image.memory cache
   MealAnalysis? _result;
   bool _analyzing = false;
   String? _analysisError;
@@ -193,6 +216,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
     setState(() {
       _photoBytes = bytes;
+      _photoVersion++;
       _analyzing = true;
       _result = null;
       _analysisError = null;
@@ -210,11 +234,28 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       if (!mounted) return;
 
       if (res['_mock'] == true) {
-        // Dev mode — no API key configured, show mock data with a note.
+        final reason = res['_reason'] as String? ?? '';
+        final String msg;
+        switch (reason) {
+          case 'no_api_key':
+            msg = 'Demo mode: no AI key set. Showing sample data.';
+            break;
+          case 'no_image':
+            msg = 'No image received by server. Please retake the photo.';
+            break;
+          case 'rate_limit':
+            msg = 'AI rate limit reached. Showing sample estimate — edit before saving.';
+            break;
+          case 'auth_error':
+            msg = 'AI service authentication failed (token may have expired). Showing sample estimate.';
+            break;
+          default:
+            msg = 'AI analysis failed. Showing sample estimate — you can edit before saving.';
+        }
         setState(() {
           _result = MealAnalysis.fromJson(res);
           _analyzing = false;
-          _analysisError = 'Demo mode: no AI key set. Showing sample data.';
+          _analysisError = msg;
         });
       } else {
         // Real Claude response — show it with no error.
@@ -454,11 +495,12 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -467,25 +509,33 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                         color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Log meal',
+                        const Text('Log meal',
                             style: TextStyle(
                                 color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
-                        Text('Snap a photo to analyze nutrition',
+                        const Text('Snap a photo to analyze nutrition',
                             style: TextStyle(
                                 color: AppColors.inkSoft, fontSize: 12)),
                       ],
                     ),
                   ),
-                  const Text('🍽️', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coral.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.restaurant_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // ── Today's meal progress ──────────────────────────────────────
               if (!mealStats.loading) ...[
@@ -493,12 +543,12 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                   decoration: BoxDecoration(
                     color: mealStats.isComplete
-                        ? AppColors.sageSoft
+                        ? AppColors.coralSoft
                         : AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: mealStats.isComplete
-                          ? AppColors.sage.withOpacity(0.4)
+                          ? AppColors.coral.withValues(alpha: 0.4)
                           : AppColors.line,
                     ),
                   ),
@@ -513,7 +563,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                           size: 15,
                           fill: 1,
                           color: mealStats.isComplete
-                              ? AppColors.sageDark
+                              ? AppColors.coral
                               : AppColors.inkSoft,
                         ),
                         const SizedBox(width: 7),
@@ -525,7 +575,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: mealStats.isComplete
-                                ? AppColors.sageDark
+                                ? AppColors.coral
                                 : AppColors.inkMid,
                           ),
                         ),
@@ -533,25 +583,29 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                       const SizedBox(height: 10),
                       Row(children: [
                         _TodayMealBadge(
-                          emoji: '🍳',
+                          icon: Symbols.wb_sunny_rounded,
+                          color: AppColors.coral,
                           label: 'Breakfast',
                           done: mealStats.has('Breakfast'),
                         ),
                         const SizedBox(width: 8),
                         _TodayMealBadge(
-                          emoji: '🥗',
+                          icon: Symbols.lunch_dining_rounded,
+                          color: AppColors.coral,
                           label: 'Lunch',
                           done: mealStats.has('Lunch'),
                         ),
                         const SizedBox(width: 8),
                         _TodayMealBadge(
-                          emoji: '🍲',
+                          icon: Symbols.bedtime_rounded,
+                          color: AppColors.coral,
                           label: 'Dinner',
                           done: mealStats.has('Dinner'),
                         ),
                         const SizedBox(width: 8),
                         _TodayMealBadge(
-                          emoji: '🍪',
+                          icon: Symbols.local_cafe_rounded,
+                          color: AppColors.coral,
                           label: 'Snack',
                           done: mealStats.has('Snacks'),
                           optional: true,
@@ -566,7 +620,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                           backgroundColor: AppColors.line,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             mealStats.isComplete
-                                ? AppColors.sage
+                                ? AppColors.coral
                                 : AppColors.coral,
                           ),
                         ),
@@ -574,12 +628,12 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
               ] else
                 const SizedBox(height: 4),
 
               // ── Meal type selector (always free) ──
-              Text('Meal type', style: T.title(context)),
+              Text('MEAL TYPE', style: T.section(context)),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -593,20 +647,36 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                             duration: const Duration(milliseconds: 120),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: _mealType == i ? AppColors.coralSoft : AppColors.surface,
+                              color: _mealType == i
+                                  ? _mealTypes[i].color.withValues(alpha: 0.12)
+                                  : AppColors.surface,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                  color: _mealType == i ? AppColors.coral : AppColors.line),
+                                  color: _mealType == i
+                                      ? _mealTypes[i].color
+                                      : AppColors.line),
                             ),
                             child: Column(children: [
-                              Text(_mealTypes[i].emoji,
-                                  style: const TextStyle(fontSize: 20)),
+                              Container(
+                                width: 36, height: 36,
+                                decoration: BoxDecoration(
+                                  color: _mealType == i
+                                      ? _mealTypes[i].color.withValues(alpha: 0.15)
+                                      : AppColors.line.withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(_mealTypes[i].icon,
+                                    color: _mealType == i
+                                        ? _mealTypes[i].color
+                                        : AppColors.inkSoft,
+                                    size: 20, fill: 1),
+                              ),
                               const SizedBox(height: 4),
                               Text(_mealTypes[i].label,
                                   style: T.small(context).copyWith(
                                       fontSize: 11,
                                       color: _mealType == i
-                                          ? AppColors.coral
+                                          ? _mealTypes[i].color
                                           : AppColors.inkMid,
                                       fontWeight: _mealType == i
                                           ? FontWeight.w700
@@ -621,11 +691,12 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
               const SizedBox(height: 24),
 
               // ── Photo / preview ──
-              Text('Snap your meal', style: T.title(context)),
+              Text('SNAP YOUR MEAL', style: T.section(context)),
               const SizedBox(height: 10),
               AspectRatio(
                 aspectRatio: 16 / 10,
                 child: NeuCard(
+                  depth: 0.5,
                   padding: EdgeInsets.zero,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
@@ -634,7 +705,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                             onCamera: () => _pick(ImageSource.camera),
                             onGallery: () => _pick(ImageSource.gallery))
                         : Stack(fit: StackFit.expand, children: [
-                            Image.memory(_photoBytes!, fit: BoxFit.cover),
+                            Image.memory(_photoBytes!, key: ValueKey(_photoVersion), fit: BoxFit.cover),
                             if (_analyzing)
                               Container(
                                 color: Colors.black.withValues(alpha: 0.35),
@@ -644,7 +715,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                                     children: [
                                       CircularProgressIndicator(color: Colors.white),
                                       SizedBox(height: 12),
-                                      Text('AI analyzing…',
+                                      Text('AI analyzing...',
                                           style: TextStyle(color: Colors.white,
                                               fontWeight: FontWeight.w700)),
                                     ],
@@ -677,16 +748,24 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: AppColors.coralSoft,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.shade300),
+                    border: Border.all(color: AppColors.coral.withValues(alpha: 0.5)),
                   ),
                   child: Row(children: [
-                    Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange.shade700),
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.coral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Symbols.warning_rounded,
+                          size: 20, color: AppColors.coral, fill: 1),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(_analysisError!,
-                          style: TextStyle(fontSize: 12, color: Colors.orange.shade800)),
+                          style: const TextStyle(fontSize: 12, color: AppColors.inkMid)),
                     ),
                     // Show retry + manual entry when analysis failed (no result)
                     if (_result == null && _photoBytes != null) ...[
@@ -732,7 +811,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
               // ── Analysis result ──
               if (_result != null) ...[
-                const SizedBox(height: 18),
+                const SizedBox(height: 24),
                 _resultBody(context),
                 const SizedBox(height: 16),
                 Row(children: [
@@ -756,7 +835,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
               ],
 
               // ── Meal history ──
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               _buildHistory(context),
             ],
           ),
@@ -771,7 +850,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          Text('Detected items', style: T.title(context)),
+          Text('DETECTED ITEMS', style: T.section(context)),
           const Spacer(),
           Text('Edit', style: T.small(context).copyWith(color: AppColors.coral)),
         ]),
@@ -781,16 +860,16 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
           children: [
             for (var i = 0; i < r.items.length; i++)
               NeuPill(
-                color: AppColors.sageSoft,
+                color: AppColors.coralSoft,
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Text(r.items[i],
                       style: const TextStyle(
-                          color: AppColors.sageDark, fontWeight: FontWeight.w700)),
+                          color: AppColors.coral, fontWeight: FontWeight.w700)),
                   const SizedBox(width: 6),
                   GestureDetector(
                     onTap: () => _removeItem(i),
                     child: const Icon(Symbols.close_rounded,
-                        size: 16, color: AppColors.sageDark),
+                        size: 16, color: AppColors.coral),
                   ),
                 ]),
               ),
@@ -804,18 +883,19 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 24),
         NeuCard(
+          depth: 0.5,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                Text('Estimated calories', style: T.small(context)),
+                Text('ESTIMATED CALORIES', style: T.section(context)),
                 const Spacer(),
-                const NeuPill(
-                  color: AppColors.sageSoft,
-                  child: Text('WITHIN TARGET',
-                      style: TextStyle(color: AppColors.sageDark,
+                NeuPill(
+                  color: AppColors.coralSoft,
+                  child: const Text('WITHIN TARGET',
+                      style: TextStyle(color: AppColors.coral,
                           fontWeight: FontWeight.w800, fontSize: 11)),
                 ),
               ]),
@@ -847,7 +927,15 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
           ),
           child: Center(
             child: Column(children: [
-              const Icon(Symbols.no_meals_rounded, size: 36, color: AppColors.inkSoft),
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.coral.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Symbols.no_meals_rounded,
+                    size: 20, color: AppColors.coral, fill: 1),
+              ),
               const SizedBox(height: 8),
               Text('No meals logged yet', style: T.small(context)),
               Text('Snap your first meal above', style: T.small(context)),
@@ -913,12 +1001,14 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
 class _TodayMealBadge extends StatelessWidget {
   const _TodayMealBadge({
-    required this.emoji,
+    required this.icon,
+    required this.color,
     required this.label,
     required this.done,
     this.optional = false,
   });
-  final String emoji;
+  final IconData icon;
+  final Color color;
   final String label;
   final bool done;
   final bool optional;
@@ -930,21 +1020,32 @@ class _TodayMealBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: done
-              ? AppColors.sageSoft
+              ? color.withValues(alpha: 0.12)
               : optional
                   ? AppColors.bg
-                  : AppColors.coralSoft.withOpacity(0.35),
+                  : color.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: done
-                ? AppColors.sage.withOpacity(0.5)
+                ? color.withValues(alpha: 0.5)
                 : optional
                     ? AppColors.line
-                    : AppColors.coral.withOpacity(0.25),
+                    : color.withValues(alpha: 0.25),
           ),
         ),
         child: Column(children: [
-          Text(emoji, style: const TextStyle(fontSize: 18)),
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: done
+                  ? color.withValues(alpha: 0.15)
+                  : AppColors.line.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon,
+                color: done ? color : AppColors.inkSoft,
+                size: 18, fill: 1),
+          ),
           const SizedBox(height: 3),
           Text(
             label,
@@ -952,19 +1053,19 @@ class _TodayMealBadge extends StatelessWidget {
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: done
-                  ? AppColors.sageDark
+                  ? color
                   : optional
                       ? AppColors.inkSoft
                       : AppColors.inkMid,
             ),
           ),
           if (optional && !done)
-            Text('optional',
-                style: const TextStyle(
+            const Text('optional',
+                style: TextStyle(
                     fontSize: 9, color: AppColors.inkSoft)),
           if (done)
-            const Icon(Icons.check_circle_rounded,
-                size: 12, color: AppColors.sageDark),
+            Icon(Symbols.check_circle_rounded,
+                size: 12, color: color, fill: 1),
         ]),
       ),
     );
@@ -984,7 +1085,15 @@ class _PickPrompt extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Symbols.add_a_photo_rounded, size: 44, color: AppColors.inkSoft),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.coral.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Symbols.add_a_photo_rounded,
+                size: 20, color: AppColors.coral, fill: 1),
+          ),
           const SizedBox(height: 12),
           Text('Snap your meal', style: T.title(context)),
           Text('AI estimates calories & macros', style: T.small(context)),
@@ -1024,26 +1133,22 @@ class _HistorySectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return NeuCard(
+      depth: 0.5,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: AppColors.shadowDark, blurRadius: 6, offset: Offset(2, 2)),
-          BoxShadow(color: AppColors.shadowLight, blurRadius: 6, offset: Offset(-2, -2)),
-        ],
-      ),
       child: Row(children: [
-        const Icon(Symbols.restaurant_rounded,
-            color: AppColors.coral, size: 18, fill: 1),
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.coral.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Symbols.restaurant_rounded,
+              color: AppColors.coral, size: 20, fill: 1),
+        ),
         const SizedBox(width: 10),
-        const Expanded(
-          child: Text('Meal history',
-              style: TextStyle(
-                  color: AppColors.ink,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15)),
+        Expanded(
+          child: Text('MEAL HISTORY', style: T.section(context)),
         ),
         if (count > 0)
           Container(
@@ -1077,12 +1182,11 @@ class _DayHeader extends StatelessWidget {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          gradient: isToday
-              ? AppColors.orangeGrad
+          color: isToday
+              ? AppColors.coral
               : isYesterday
-                  ? AppColors.tealGrad
-                  : null,
-          color: (!isToday && !isYesterday) ? AppColors.bg : null,
+                  ? AppColors.coral
+                  : AppColors.bg,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(dateLabel,
@@ -1105,48 +1209,38 @@ class _MealHistoryCard extends StatelessWidget {
   const _MealHistoryCard({required this.entry});
   final _MealEntry entry;
 
-  static LinearGradient _gradientFor(String mealType) {
-    switch (mealType.toLowerCase()) {
-      case 'lunch':
-      case 'snacks':
-      case 'snack':
-        return AppColors.tealGrad;
-      default:
-        return AppColors.orangeGrad;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final gradient = _gradientFor(entry.mealType);
+    final accent = _colorFor(entry.mealType);
+    final accentSoft = _colorSoftFor(entry.mealType);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Stack(children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.line),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 6,
                   offset: const Offset(0, 2))
             ],
           ),
           padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Gradient emoji circle
+            // Icon circle
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                gradient: gradient,
+                color: accentSoft,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: Text(_emojiFor(entry.mealType),
-                  style: const TextStyle(fontSize: 22)),
+              child: Icon(_iconFor(entry.mealType),
+                  color: accent, size: 22, fill: 1),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1175,24 +1269,24 @@ class _MealHistoryCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(children: [
                       _Chip(
-                          color: AppColors.coralSoft,
+                          color: accentSoft,
                           text: '${entry.calories} kcal',
+                          textColor: accent),
+                      const SizedBox(width: 6),
+                      _Chip(
+                          color: AppColors.coralSoft,
+                          text: 'C ${entry.carbs}%',
                           textColor: AppColors.coral),
                       const SizedBox(width: 6),
                       _Chip(
-                          color: AppColors.goldSoft,
-                          text: 'C ${entry.carbs}%',
-                          textColor: AppColors.goldDark),
-                      const SizedBox(width: 6),
-                      _Chip(
-                          color: AppColors.sageSoft,
+                          color: AppColors.coralSoft,
                           text: 'P ${entry.protein}%',
-                          textColor: AppColors.sageDark),
+                          textColor: AppColors.coral),
                       const SizedBox(width: 6),
                       _Chip(
-                          color: AppColors.berrySoft,
+                          color: AppColors.coralSoft,
                           text: 'F ${entry.fat}%',
-                          textColor: AppColors.berry),
+                          textColor: AppColors.coral),
                     ]),
                   ]),
             ),
@@ -1204,7 +1298,11 @@ class _MealHistoryCard extends StatelessWidget {
           child: Container(
             width: 5,
             decoration: BoxDecoration(
-              gradient: gradient,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [accent, accentSoft],
+              ),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 bottomLeft: Radius.circular(16),
@@ -1244,16 +1342,16 @@ class _MacroBar extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(999),
           child: Row(children: [
-            Expanded(flex: carbs.clamp(1, 100),   child: Container(height: 12, color: AppColors.gold)),
-            Expanded(flex: protein.clamp(1, 100), child: Container(height: 12, color: AppColors.sage)),
-            Expanded(flex: fat.clamp(1, 100),     child: Container(height: 12, color: AppColors.berry)),
+            Expanded(flex: carbs.clamp(1, 100),   child: Container(height: 12, color: AppColors.coral)),
+            Expanded(flex: protein.clamp(1, 100), child: Container(height: 12, color: AppColors.coral)),
+            Expanded(flex: fat.clamp(1, 100),     child: Container(height: 12, color: AppColors.coral)),
           ]),
         ),
         const SizedBox(height: 10),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          _legend(context, AppColors.gold,  'Carbs $carbs%'),
-          _legend(context, AppColors.sage,  'Protein $protein%'),
-          _legend(context, AppColors.berry, 'Fat $fat%'),
+          _legend(context, AppColors.coral,  'Carbs $carbs%'),
+          _legend(context, AppColors.coral,  'Protein $protein%'),
+          _legend(context, AppColors.coral, 'Fat $fat%'),
         ]),
       ],
     );

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
@@ -14,7 +14,7 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.bg,
       colorScheme: base.colorScheme.copyWith(
         primary: AppColors.coral,
-        secondary: AppColors.sage,
+        secondary: AppColors.coral,
         surface: AppColors.surface,
         onSurface: AppColors.ink,
       ),
@@ -50,4 +50,8 @@ class T {
       fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.inkSoft, letterSpacing: 0.8);
   static TextStyle small(BuildContext c) => GoogleFonts.plusJakartaSans(
       fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.inkSoft);
+  /// Uppercase section header like "TODAY'S GOAL", "THIS WEEK"
+  static TextStyle section(BuildContext c) => GoogleFonts.plusJakartaSans(
+      fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.inkSoft,
+      letterSpacing: 1.2);
 }

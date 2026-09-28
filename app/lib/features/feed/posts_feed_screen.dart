@@ -169,7 +169,7 @@ class _PostsFeedScreenState extends ConsumerState<PostsFeedScreen> {
           TextField(
             controller: emojiCtrl,
             decoration: const InputDecoration(
-                hintText: 'Emoji (optional, e.g. \u{1F389})',
+                hintText: 'Emoji (optional)',
                 border: OutlineInputBorder()),
           ),
         ]),
@@ -301,8 +301,9 @@ class _PostsFeedScreenState extends ConsumerState<PostsFeedScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
               child: NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -311,25 +312,34 @@ class _PostsFeedScreenState extends ConsumerState<PostsFeedScreen> {
                         color: AppColors.inkMid, size: 22),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Group Feed',
+                        const Text('Group Feed',
                             style: TextStyle(
                                 color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
-                        Text('Share with your community',
-                            style: TextStyle(
-                                color: AppColors.inkSoft, fontSize: 12)),
+                        Text('SHARE WITH YOUR COMMUNITY',
+                            style: T.section(context)),
                       ],
                     ),
                   ),
-                  const Text('💬', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.forum_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
             ),
+            const SizedBox(height: 24),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -338,9 +348,17 @@ class _PostsFeedScreenState extends ConsumerState<PostsFeedScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Symbols.forum_rounded,
-                                  size: 48, color: AppColors.inkSoft),
-                              const SizedBox(height: 12),
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  color: AppColors.coralSoft,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: const Icon(Symbols.forum_rounded,
+                                    size: 28, color: AppColors.coral, fill: 1),
+                              ),
+                              const SizedBox(height: 16),
                               Text('No posts yet', style: T.small(context)),
                               Text('Be the first to share!', style: T.small(context)),
                             ],
@@ -350,7 +368,7 @@ class _PostsFeedScreenState extends ConsumerState<PostsFeedScreen> {
                           onRefresh: _loadPosts,
                           color: AppColors.coral,
                           child: ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+                            padding: const EdgeInsets.fromLTRB(24, 8, 24, 80),
                             itemCount: _posts.length,
                             itemBuilder: (_, i) => _PostCard(
                               post: _posts[i],
@@ -393,6 +411,7 @@ class _PostCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: NeuCard(
+        depth: 0.5,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -402,11 +421,12 @@ class _PostCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                    color: post.coachPick ? AppColors.goldSoft : AppColors.sageSoft,
+                    color: post.coachPick ? AppColors.coralSoft : AppColors.coralSoft,
                     shape: BoxShape.circle),
                 alignment: Alignment.center,
                 child: Text(post.author[0],
-                    style: T.title(context).copyWith(fontSize: 16)),
+                    style: T.title(context).copyWith(fontSize: 16,
+                        color: post.coachPick ? AppColors.coral : AppColors.coral)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -415,11 +435,19 @@ class _PostCard extends StatelessWidget {
                   children: [
                     Text(post.author,
                         style: T.title(context).copyWith(fontSize: 15)),
-                    Text(
-                      post.coachPick
-                          ? '\u2B50 Coach pick \u00B7 ${post.timeAgo}'
-                          : post.timeAgo,
-                      style: T.small(context).copyWith(fontSize: 12),
+                    Row(
+                      children: [
+                        if (post.coachPick) ...[
+                          Icon(Symbols.star_rounded,
+                              size: 14, color: AppColors.coral, fill: 1),
+                          const SizedBox(width: 4),
+                          Text('Coach pick · ',
+                              style: T.small(context).copyWith(
+                                  fontSize: 12, color: AppColors.coral)),
+                        ],
+                        Text(post.timeAgo,
+                            style: T.small(context).copyWith(fontSize: 12)),
+                      ],
                     ),
                   ],
                 ),
@@ -475,14 +503,14 @@ class _PostCard extends StatelessWidget {
               _Reaction(
                 icon: Symbols.chat_bubble_outline_rounded,
                 count: post.comments,
-                color: AppColors.inkSoft,
+                color: AppColors.coral,
                 onTap: onComment,
               ),
               const SizedBox(width: 18),
               _Reaction(
                 icon: Symbols.local_fire_department_rounded,
                 count: post.fires,
-                color: AppColors.gold,
+                color: AppColors.coral,
               ),
               const Spacer(),
               const Icon(Symbols.share_rounded,
@@ -603,7 +631,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         color: AppColors.bg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, 16 + bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -619,7 +647,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             ),
           ),
           const SizedBox(height: 14),
-          Text('Comments', style: T.title(context)),
+          Text('COMMENTS', style: T.section(context)),
           const SizedBox(height: 12),
           // Comments list (max 300 height)
           ConstrainedBox(
@@ -691,10 +719,10 @@ class _CommentTile extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: const BoxDecoration(
-                color: AppColors.sageSoft, shape: BoxShape.circle),
+                color: AppColors.coralSoft, shape: BoxShape.circle),
             alignment: Alignment.center,
             child: Text(c.author[0],
-                style: T.small(context).copyWith(fontWeight: FontWeight.w700)),
+                style: T.small(context).copyWith(fontWeight: FontWeight.w700, color: AppColors.coral)),
           ),
           const SizedBox(width: 10),
           Expanded(

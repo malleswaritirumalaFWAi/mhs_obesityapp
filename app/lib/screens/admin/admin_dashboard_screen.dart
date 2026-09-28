@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -171,7 +171,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   icon: Symbols.group_rounded,
                   label: 'Total Users',
                   value: '${_users.length}',
-                  color: AppColors.teal,
+                  color: AppColors.coral,
                 ),
                 _Divider(),
                 _SummaryTile(
@@ -185,7 +185,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   icon: Symbols.menu_book_rounded,
                   label: 'Lessons',
                   value: '${kLessonModules.length}',
-                  color: AppColors.berry,
+                  color: AppColors.coral,
                 ),
               ],
             ),

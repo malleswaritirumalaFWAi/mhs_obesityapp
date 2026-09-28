@@ -1,36 +1,129 @@
 import { Router } from 'express';
 import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
+import { updateUserLevel } from './gamification.js';
 import { markTasksDoneByIcon } from '../tasks.js';
 
+const NUTRITION_PROMPT =
+  'You are a nutrition assistant. Identify the foods in this meal photo and ' +
+  'estimate totals. Respond with ONLY valid JSON, no prose, no markdown, shaped exactly as: ' +
+  '{"items":["food name"],"calories":480,"confidence":92,' +
+  '"carbs":55,"protein":25,"fat":20}. ' +
+  'items is an array of strings. calories is a whole number. ' +
+  'carbs+protein+fat must sum to 100.';
+
+/** Parse the JSON nutrition object from any LLM text response. */
+function parseNutritionJson(text) {
+  const start = text.indexOf('{');
+  const end   = text.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('No JSON in response: ' + text.slice(0, 100));
+  return JSON.parse(text.slice(start, end + 1));
+}
+
 /**
- * Call the Anthropic Messages API.
- * Tries Authorization: Bearer first (required for OAuth tokens sk-ant-oat*).
- * On 401, retries with x-api-key header (required for regular API keys sk-ant-api*).
- * This handles both key formats automatically without requiring env var changes.
+ * Call Anthropic Claude vision API.
+ * Supports both OAuth tokens (Bearer) and regular API keys (x-api-key).
+ * Includes anthropic-workspace-id header if ANTHROPIC_WORKSPACE_ID is set.
  */
-async function callClaude(key, body) {
-  async function _fetch(headers) {
+async function callClaude(key, image_base64, mime) {
+  const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
+  const extraHeaders = workspaceId ? { 'anthropic-workspace-id': workspaceId } : {};
+  const model = process.env.MEAL_ANALYSIS_MODEL || 'claude-haiku-4-5-20251001';
+
+  const body = {
+    model,
+    max_tokens: 400,
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: mime || 'image/jpeg', data: image_base64 } },
+        { type: 'text', text: NUTRITION_PROMPT },
+      ],
+    }],
+  };
+
+  async function _fetch(authHeaders) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', ...headers },
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', ...extraHeaders, ...authHeaders },
       body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok) throw Object.assign(new Error(data?.error?.message ?? res.statusText), { status: res.status });
-    return data;
+    const text = (data.content || []).map((c) => c.text || '').join('').trim();
+    console.log('[callClaude] response:', text.slice(0, 200));
+    return parseNutritionJson(text);
   }
 
   try {
     return await _fetch({ 'Authorization': `Bearer ${key}` });
   } catch (e) {
     if (e.status === 401) {
-      // Bearer auth rejected — try x-api-key format (regular API keys)
-      console.warn('[callClaude] Bearer auth failed, retrying with x-api-key');
+      console.warn('[callClaude] Bearer failed, retrying with x-api-key');
       return await _fetch({ 'x-api-key': key });
     }
     throw e;
   }
+}
+
+/**
+ * Call Google Gemini vision API (free tier: 1500 req/day).
+ * Get a free API key at https://aistudio.google.com/app/apikey
+ */
+async function callGemini(key, image_base64, mime) {
+  const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const body = {
+    contents: [{
+      parts: [
+        { inline_data: { mime_type: mime || 'image/jpeg', data: image_base64 } },
+        { text: NUTRITION_PROMPT },
+      ],
+    }],
+    generationConfig: { maxOutputTokens: 400, temperature: 0.1 },
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw Object.assign(new Error(data?.error?.message ?? res.statusText), { status: res.status });
+  const text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  console.log('[callGemini] response:', text.slice(0, 200));
+  return parseNutritionJson(text);
+}
+
+/**
+ * Call DeepSeek-V4.1-Flash vision API.
+ * Model: deepseek-flash — supports image input, uses reasoning.
+ * Uses effort=low to skip deep reasoning for simple food ID tasks.
+ */
+async function callDeepSeek(key, image_base64, mime) {
+  const body = {
+    model: 'deepseek-flash',
+    max_tokens: 8000, // reasoning model needs room to think + respond
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: `data:${mime || 'image/jpeg'};base64,${image_base64}` } },
+        { type: 'text', text: NUTRITION_PROMPT },
+      ],
+    }],
+  };
+
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw Object.assign(new Error(data?.error?.message ?? res.statusText), { status: res.status });
+  // deepseek-flash is a reasoning model: final answer in content, thinking in reasoning_content
+  const text = (data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning_content || '').trim();
+  console.log('[callDeepSeek] response:', text.slice(0, 200));
+  return parseNutritionJson(text);
 }
 
 const router = Router();
@@ -45,77 +138,43 @@ const MOCK = {
   fat: 20,
 };
 
-// POST /meals/analyze { image_base64, mime }  -> Claude vision food + macros
+// POST /meals/analyze { image_base64, mime }  -> AI vision food + macros
 router.post('/analyze', async (req, res) => {
   const { image_base64, mime } = req.body || {};
-  const key = process.env.ANTHROPIC_API_KEY;
+  const deepseekKey  = process.env.DEEPSEEK_API_KEY;
+  const geminiKey    = process.env.GEMINI_API_KEY;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  // Priority: DeepSeek → Gemini (free) → Anthropic (paid)
+  const provider  = deepseekKey ? 'deepseek' : geminiKey ? 'gemini' : anthropicKey ? 'anthropic' : 'none';
 
-  // Log what we received so you can see it in the backend terminal.
-  console.log('[meals/analyze] key set:', !!key, '| image_base64 length:', image_base64?.length ?? 0, '| mime:', mime);
+  console.log('[meals/analyze] provider:', provider, '| image length:', image_base64?.length ?? 0);
 
-  if (!key) {
+  if (provider === 'none') {
     console.warn('[meals/analyze] No API key — returning mock');
     return res.json({ ...MOCK, _mock: true, _reason: 'no_api_key' });
   }
   if (!image_base64) {
-    console.warn('[meals/analyze] No image data received — returning mock');
+    console.warn('[meals/analyze] No image — returning mock');
     return res.json({ ...MOCK, _mock: true, _reason: 'no_image' });
   }
 
-  // Use Haiku for vision tasks: same food-ID quality, 10× higher rate limits,
-  // 20× cheaper per token than Sonnet — avoids rate-limit errors in normal use.
-  // Override with MEAL_ANALYSIS_MODEL env var if a different model is preferred.
-  const model = process.env.MEAL_ANALYSIS_MODEL || 'claude-haiku-4-5-20251001';
-
-  const requestBody = {
-    model,
-    max_tokens: 400,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mime || 'image/jpeg', data: image_base64 },
-          },
-          {
-            type: 'text',
-            text:
-              'You are a nutrition assistant. Identify the foods in this meal photo and ' +
-              'estimate totals. Respond with ONLY valid JSON, no prose, no markdown, shaped exactly as: ' +
-              '{"items":["food name"],"calories":480,"confidence":92,' +
-              '"carbs":55,"protein":25,"fat":20}. ' +
-              'items is an array of strings. calories is a whole number. ' +
-              'carbs+protein+fat must sum to 100.',
-          },
-        ],
-      },
-    ],
-  };
-
   async function attemptAnalysis(attemptsLeft) {
     try {
-      console.log(`[meals/analyze] Calling model: ${model} (attempts left: ${attemptsLeft})`);
-      const msg = await callClaude(key, requestBody);
-
-      const text = (msg.content || []).map((c) => c.text || '').join('').trim();
-      console.log('[meals/analyze] Claude response:', text.slice(0, 300));
-
-      const start = text.indexOf('{');
-      const end   = text.lastIndexOf('}');
-      if (start === -1 || end === -1) throw new Error('No JSON in Claude response: ' + text.slice(0, 100));
-      return JSON.parse(text.slice(start, end + 1));
+      const json = deepseekKey
+        ? await callDeepSeek(deepseekKey, image_base64, mime)
+        : geminiKey
+          ? await callGemini(geminiKey, image_base64, mime)
+          : await callClaude(anthropicKey, image_base64, mime);
+      return json;
     } catch (e) {
       const isRateLimit = e.status === 429 || (e.message || '').toLowerCase().includes('rate limit');
+      if (isRateLimit && attemptsLeft > 1) {
+        console.warn(`[meals/analyze] Rate limited — retrying in 8s (${attemptsLeft - 1} left)`);
+        await new Promise((r) => setTimeout(r, 8000));
+        return attemptAnalysis(attemptsLeft - 1);
+      }
       if (isRateLimit) {
-        if (attemptsLeft > 1) {
-          // Wait 8 seconds then retry — handles transient rate-limit spikes.
-          console.warn(`[meals/analyze] Rate limited — retrying in 8s (${attemptsLeft - 1} left)`);
-          await new Promise((r) => setTimeout(r, 8000));
-          return attemptAnalysis(attemptsLeft - 1);
-        }
-        // All retries exhausted — return mock so the user can still log their meal.
-        console.warn('[meals/analyze] Rate limit exhausted — returning mock estimate');
+        console.warn('[meals/analyze] Rate limit exhausted — returning mock');
         return { ...MOCK, _mock: true, _reason: 'rate_limit' };
       }
       throw e;
@@ -123,12 +182,12 @@ router.post('/analyze', async (req, res) => {
   }
 
   try {
-    const json = await attemptAnalysis(3); // 1 attempt + 2 retries on rate limit
+    const json = await attemptAnalysis(3);
     res.json({ ...MOCK, ...json });
   } catch (e) {
-    // Non-rate-limit failures: still fall back to mock so user isn't blocked.
-    console.error('[meals/analyze] Claude FAILED —', e.message, '| status:', e.status ?? 'n/a');
-    res.json({ ...MOCK, _mock: true, _reason: 'ai_error' });
+    console.error('[meals/analyze] AI FAILED —', e.message, '| status:', e.status ?? 'n/a');
+    const reason = (e.status === 401 || e.status === 403) ? 'auth_error' : 'ai_error';
+    res.json({ ...MOCK, _mock: true, _reason: reason });
   }
 });
 
@@ -164,6 +223,7 @@ router.post('/', async (req, res) => {
   const baseXp = doubleXpActive ? 30 : 15;
   await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [req.user.uid, baseXp]);
   await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [req.user.uid, baseXp]);
+  await updateUserLevel(req.user.uid);
 
   // First meal badge
   const mealCount = await q(`SELECT COUNT(*) FROM meals WHERE user_id=$1`, [req.user.uid]);
@@ -195,6 +255,7 @@ router.post('/', async (req, res) => {
       bonusXp = doubleXpActive ? 40 : 20;
       await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [req.user.uid, bonusXp]);
       await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [req.user.uid, bonusXp]);
+      await updateUserLevel(req.user.uid);
       await q(`INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'combo_bonus','🍽️ Combo Bonus!','All 4 meals logged today! +${bonusXp} bonus XP')`, [req.user.uid]);
     }
   }

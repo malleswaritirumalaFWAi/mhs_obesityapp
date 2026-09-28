@@ -50,21 +50,36 @@ class ProfileScreen extends ConsumerWidget {
     final badges = (user?.badges as List?) ?? [];
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     final gamState = ref.watch(gamificationProvider);
-    final level = gamState.level.name;
+    final levelLabel = gamState.level.label;
     final royalRank = gamState.royalRank;
     final weightAsync = ref.watch(weightHistoryProvider);
+
+    // Level progress calculation
+    final tier = getTierFromXP(gamState.totalXp);
+    final nextTier = tier.nextMin;
+    final levelProgress = nextTier != null
+        ? ((gamState.totalXp - tier.min) / (nextTier - tier.min)).clamp(0.0, 1.0)
+        : 1.0;
+    final xpInLevel = gamState.totalXp - tier.min;
+    final xpNeeded = nextTier != null ? nextTier - tier.min : 0;
+    // Find next tier label
+    final tierIndex = xpTiers.indexOf(tier);
+    final nextTierLabel = tierIndex < xpTiers.length - 1
+        ? xpTiers[tierIndex + 1].label
+        : 'Max';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Neumorphic hero ──
+        // ── Profile hero card ──
         NeuCard(
-          padding: const EdgeInsets.all(16),
+          depth: 0.5,
+          padding: const EdgeInsets.all(20),
           child: Column(children: [
             Row(children: [
               Container(
-                width: 50,
-                height: 50,
+                width: 54,
+                height: 54,
                 decoration: const BoxDecoration(
                   color: AppColors.coralSoft,
                   shape: BoxShape.circle,
@@ -76,17 +91,13 @@ class ProfileScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w800,
                         fontSize: 22)),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name,
-                        style: const TextStyle(
-                            color: AppColors.ink,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 17)),
-                    const SizedBox(height: 4),
+                    Text(name, style: T.title(context).copyWith(fontSize: 18)),
+                    const SizedBox(height: 6),
                     Row(children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -95,23 +106,31 @@ class ProfileScreen extends ConsumerWidget {
                           color: AppColors.coralSoft,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text('🔥 $streak day streak',
-                            style: const TextStyle(
-                                color: AppColors.coral,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Symbols.local_fire_department_rounded,
+                                size: 13, color: AppColors.coral),
+                            const SizedBox(width: 3),
+                            Text('$streak day streak',
+                                style: const TextStyle(
+                                    color: AppColors.coral,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11)),
+                          ],
+                        ),
                       ),
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.goldSoft,
+                          color: AppColors.coralSoft,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(level,
+                        child: Text(levelLabel,
                             style: const TextStyle(
-                                color: AppColors.goldDark,
+                                color: AppColors.coral,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 11)),
                       ),
@@ -121,89 +140,109 @@ class ProfileScreen extends ConsumerWidget {
               ),
               GestureDetector(
                 onTap: () => context.push(Routes.settings),
-                child: const Icon(Symbols.settings_rounded,
-                    color: AppColors.inkMid, size: 22),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.bg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Symbols.settings_rounded,
+                      color: AppColors.inkMid, size: 20),
+                ),
               ),
             ]),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(children: [
-                Expanded(
-                    child: Column(children: [
-                  Text('$xp',
-                      style: const TextStyle(
-                          color: AppColors.ink,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 18)),
-                  const Text('XP',
-                      style: TextStyle(
-                          color: AppColors.inkSoft,
-                          fontSize: 12)),
-                ])),
-                Container(
-                    width: 1,
-                    height: 28,
-                    color: AppColors.line),
-                Expanded(
-                    child: Column(children: [
-                  Text(royalRank != null ? '#$royalRank' : '#—',
-                      style: const TextStyle(
-                          color: AppColors.ink,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 18)),
-                  const Text('Rank',
-                      style: TextStyle(
-                          color: AppColors.inkSoft,
-                          fontSize: 12)),
-                ])),
-                Container(
-                    width: 1,
-                    height: 28,
-                    color: AppColors.line),
-                Expanded(
-                    child: Column(children: [
-                  Text('${badges.length}',
-                      style: const TextStyle(
-                          color: AppColors.ink,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 18)),
-                  const Text('Badges',
-                      style: TextStyle(
-                          color: AppColors.inkSoft,
-                          fontSize: 12)),
-                ])),
-              ]),
-            ),
           ]),
         ),
-        const SizedBox(height: 16),
-        // Contact info card
+        const SizedBox(height: 24),
+
+        // ── Stats row ──
+        Text('STATS', style: T.section(context)),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(
+            child: _StatCard(
+              icon: Symbols.bolt_rounded,
+              iconBg: AppColors.coral,
+              value: '$xp',
+              label: 'Total XP',
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _StatCard(
+              icon: Symbols.local_fire_department_rounded,
+              iconBg: AppColors.coral,
+              value: '$streak',
+              label: 'Day Streak',
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _StatCard(
+              icon: Symbols.leaderboard_rounded,
+              iconBg: AppColors.coral,
+              value: royalRank != null ? '#$royalRank' : '#--',
+              label: 'Rank',
+            ),
+          ),
+        ]),
+        const SizedBox(height: 24),
+
+        // ── Level progress ──
+        Text('LEVEL PROGRESS', style: T.section(context)),
+        const SizedBox(height: 12),
         NeuCard(
+          depth: 0.5,
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Account details', style: T.title(context)),
-              const SizedBox(height: 14),
-              _InfoRow(icon: Symbols.person_rounded, label: 'Name', value: name),
-              if (email.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _InfoRow(icon: Symbols.mail_rounded, label: 'Email', value: email),
-              ],
-              if (phone.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _InfoRow(icon: Symbols.phone_rounded, label: 'Phone', value: phone),
-              ],
+              Row(children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.coral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Symbols.workspace_premium_rounded,
+                      size: 18, color: AppColors.coral),
+                ),
+                const SizedBox(width: 10),
+                Text('$levelLabel  \u2192  $nextTierLabel',
+                    style: T.title(context).copyWith(fontSize: 14)),
+                const Spacer(),
+                Text(
+                  nextTier != null ? '$xpInLevel / $xpNeeded XP' : 'MAX',
+                  style: T.small(context).copyWith(
+                      fontWeight: FontWeight.w700, fontSize: 12),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: levelProgress,
+                  minHeight: 6,
+                  backgroundColor: AppColors.line,
+                  valueColor:
+                      const AlwaysStoppedAnimation(AppColors.coral),
+                ),
+              ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
+
+        // ── Weight progress ──
+        Text('WEIGHT PROGRESS', style: T.section(context)),
+        const SizedBox(height: 12),
         weightAsync.when(
           loading: () => NeuCard(
+            depth: 0.5,
             child: SizedBox(
               height: 100,
               child: const Center(child: CircularProgressIndicator()),
@@ -248,43 +287,66 @@ class ProfileScreen extends ConsumerWidget {
             if (w.startWeight > 0) maxY = max(maxY, w.startWeight + 2);
 
             return NeuCard(
+              depth: 0.5,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
-                    Text('Weight progress', style: T.title(context)),
-                    const Spacer(),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.coral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(Symbols.monitor_weight_rounded,
+                          size: 18, color: AppColors.coral),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        curW != null ? '${curW.toStringAsFixed(1)} kg' : '-- kg',
+                        style: T.h2(context),
+                      ),
+                    ),
                     if (change != null)
                       NeuPill(
-                        color: change <= 0 ? AppColors.sageSoft : AppColors.coralSoft,
-                        child: Text(
-                          '${change > 0 ? '↑' : '↓'} ${change.abs().toStringAsFixed(1)} kg',
-                          style: TextStyle(
-                            color: change <= 0 ? AppColors.sageDark : AppColors.coral,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                          ),
+                        color: change <= 0 ? AppColors.coralSoft : AppColors.coralSoft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              change <= 0
+                                  ? Symbols.trending_down_rounded
+                                  : Symbols.trending_up_rounded,
+                              size: 14,
+                              color: change <= 0 ? AppColors.coral : AppColors.coral,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${change.abs().toStringAsFixed(1)} kg',
+                              style: TextStyle(
+                                color: change <= 0 ? AppColors.coral : AppColors.coral,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ]),
-                  const SizedBox(height: 8),
-                  Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text(
-                      curW != null ? '${curW.toStringAsFixed(1)} kg' : '— kg',
-                      style: T.h1(context),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 42),
+                    child: Text(
+                      [
+                        if (w.startWeight > 0) 'from ${w.startWeight.toStringAsFixed(1)}',
+                        if (w.targetWeight > 0) 'target ${w.targetWeight.toStringAsFixed(0)}',
+                      ].join(' \u00B7 '),
+                      style: T.small(context),
                     ),
-                    const SizedBox(width: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Text(
-                        [
-                          if (w.startWeight > 0) 'from ${w.startWeight.toStringAsFixed(1)}',
-                          if (w.targetWeight > 0) 'target ${w.targetWeight.toStringAsFixed(0)}',
-                        ].join(' · '),
-                        style: T.small(context),
-                      ),
-                    ),
-                  ]),
+                  ),
                   const SizedBox(height: 18),
                   if (spots.length >= 2) ...[
                     SizedBox(
@@ -314,23 +376,56 @@ class ProfileScreen extends ConsumerWidget {
             );
           },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
+
+        // ── Account details ──
+        Text('ACCOUNT', style: T.section(context)),
+        const SizedBox(height: 12),
+        NeuCard(
+          depth: 0.5,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _InfoRow(icon: Symbols.person_rounded, iconBg: AppColors.coral, label: 'Name', value: name),
+              if (email.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _InfoRow(icon: Symbols.mail_rounded, iconBg: AppColors.coral, label: 'Email', value: email),
+              ],
+              if (phone.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _InfoRow(icon: Symbols.phone_rounded, iconBg: AppColors.coral, label: 'Phone', value: phone),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Recent badges ──
         Row(children: [
-          Text('Recent badges', style: T.title(context)),
+          Text('BADGES', style: T.section(context)),
           const Spacer(),
           GestureDetector(
             onTap: () => context.push(Routes.badgeGallery),
-            child: Text('View all →',
-                style: T.small(context).copyWith(
-                    color: AppColors.coral, fontWeight: FontWeight.w700)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('View all',
+                    style: T.small(context).copyWith(
+                        color: AppColors.coral, fontWeight: FontWeight.w700, fontSize: 12)),
+                const SizedBox(width: 2),
+                const Icon(Symbols.chevron_right_rounded,
+                    size: 16, color: AppColors.coral),
+              ],
+            ),
           ),
         ]),
         const SizedBox(height: 12),
         Builder(builder: (ctx) {
           if (badges.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+            return NeuCard(
+              depth: 0.5,
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+              child: Center(
                 child: Text(
                   'Complete challenges to earn badges!',
                   style: T.small(context).copyWith(color: AppColors.inkSoft),
@@ -345,7 +440,7 @@ class ProfileScreen extends ConsumerWidget {
                 if (i > 0) const SizedBox(width: 12),
                 Expanded(
                   child: _Badge(
-                    emoji: shown[i]['emoji'] as String? ?? '🏅',
+                    emoji: shown[i]['emoji'] as String? ?? '',
                     label: shown[i]['name'] as String? ?? 'Badge',
                   ),
                 ),
@@ -353,71 +448,109 @@ class ProfileScreen extends ConsumerWidget {
             ],
           );
         }),
-        const SizedBox(height: 20),
-        Text('Tools', style: T.title(context)),
+        const SizedBox(height: 24),
+
+        // ── Tools ──
+        Text('TOOLS', style: T.section(context)),
         const SizedBox(height: 12),
         _SettingRow(
             icon: Symbols.stars_rounded,
+            iconBg: AppColors.coral,
             label: 'Gamification & XP',
             onTap: () => context.push(Routes.gamification)),
         _SettingRow(
             icon: Symbols.bar_chart_rounded,
+            iconBg: AppColors.coral,
             label: 'Weekly progress',
             onTap: () => context.push(Routes.weeklyProgress)),
         _SettingRow(
             icon: Symbols.help_outline_rounded,
+            iconBg: AppColors.coral,
             label: 'How to play',
             onTap: () => context.push(Routes.gamificationTutorial)),
         _SettingRow(
             icon: Symbols.straighten_rounded,
+            iconBg: AppColors.coral,
             label: 'Body measurements',
             onTap: () => context.push(Routes.measurements)),
         _SettingRow(
             icon: Symbols.photo_camera_rounded,
+            iconBg: AppColors.coral,
             label: 'Progress photos',
             onTap: () => context.push(Routes.progressPhotos)),
         _SettingRow(
             icon: Symbols.card_giftcard_rounded,
+            iconBg: AppColors.coral,
             label: 'Refer & earn',
             onTap: () => context.push(Routes.referral)),
         _SettingRow(
             icon: Symbols.restaurant_menu_rounded,
+            iconBg: AppColors.coral,
             label: 'Diet plan',
             onTap: () => context.push(Routes.dietPlan)),
-        const SizedBox(height: 20),
-        Text('Settings', style: T.title(context)),
+        const SizedBox(height: 24),
+
+        // ── Settings ──
+        Text('SETTINGS', style: T.section(context)),
         const SizedBox(height: 12),
         _SettingRow(
             icon: Symbols.notifications_rounded,
+            iconBg: AppColors.coral,
             label: 'Notifications',
             onTap: () => context.push(Routes.notifications)),
         _SettingRow(
             icon: Symbols.favorite_rounded,
+            iconBg: AppColors.coral,
             label: 'Health goals',
             onTap: () => context.push(Routes.settings)),
         _SettingRow(
             icon: Symbols.help_rounded,
+            iconBg: AppColors.coral,
             label: 'Help & support',
             onTap: () => context.push(Routes.settings)),
       ],
     );
   }
 
-  Widget _divider() =>
-      Container(width: 1, height: 36, color: AppColors.line, margin: const EdgeInsets.symmetric(horizontal: 8));
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.value, required this.label});
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.icon,
+    required this.iconBg,
+    required this.value,
+    required this.label,
+  });
+  final IconData icon;
+  final Color iconBg;
   final String value;
   final String label;
+
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(children: [
-        Text(value, style: T.h2(context).copyWith(fontSize: 20)),
-        Text(label, style: T.small(context)),
-      ]),
+    return NeuCard(
+      depth: 0.5,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      child: Column(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: iconBg.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 18, color: iconBg),
+          ),
+          const SizedBox(height: 10),
+          Text(value,
+              style: T.h2(context).copyWith(fontSize: 18)),
+          const SizedBox(height: 2),
+          Text(label,
+              style: T.small(context).copyWith(fontSize: 11)),
+        ],
+      ),
     );
   }
 }
@@ -446,18 +579,18 @@ class _WeightChart extends StatelessWidget {
             spots: spots,
             isCurved: true,
             color: AppColors.coral,
-            barWidth: 4,
+            barWidth: 3,
             dotData: FlDotData(
               show: true,
               getDotPainter: (s, _, __, ___) => FlDotCirclePainter(
-                  radius: 5, color: Colors.white, strokeColor: AppColors.coral, strokeWidth: 3),
+                  radius: 4, color: Colors.white, strokeColor: AppColors.coral, strokeWidth: 2.5),
             ),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [AppColors.coral.withValues(alpha: 0.25), AppColors.coral.withValues(alpha: 0.0)],
+                colors: [AppColors.coral.withValues(alpha: 0.2), AppColors.coral.withValues(alpha: 0.0)],
               ),
             ),
           ),
@@ -474,33 +607,47 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NeuCard(
-      padding: const EdgeInsets.symmetric(vertical: 18),
+      depth: 0.5,
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
       child: Column(children: [
-        Text(emoji, style: const TextStyle(fontSize: 30)),
+        Text(emoji, style: const TextStyle(fontSize: 28)),
         const SizedBox(height: 8),
-        Text(label, style: T.small(context).copyWith(fontWeight: FontWeight.w700)),
+        Text(label,
+            textAlign: TextAlign.center,
+            style: T.small(context).copyWith(fontWeight: FontWeight.w700, fontSize: 12)),
       ]),
     );
   }
 }
 
 class _SettingRow extends StatelessWidget {
-  const _SettingRow({required this.icon, required this.label, this.onTap});
+  const _SettingRow({required this.icon, required this.label, this.onTap, required this.iconBg});
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
+  final Color iconBg;
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: NeuCard(
+        depth: 0.5,
         onTap: onTap,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(children: [
-          Icon(icon, color: AppColors.inkMid),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: iconBg.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 18, color: iconBg),
+          ),
           const SizedBox(width: 14),
           Expanded(child: Text(label, style: T.title(context).copyWith(fontSize: 15))),
-          const Icon(Symbols.chevron_right_rounded, color: AppColors.inkSoft),
+          const Icon(Symbols.chevron_right_rounded, color: AppColors.inkSoft, size: 20),
         ]),
       ),
     );
@@ -508,17 +655,28 @@ class _SettingRow extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({required this.icon, required this.label, required this.value, required this.iconBg});
   final IconData icon;
   final String label;
   final String value;
+  final Color iconBg;
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      Icon(icon, size: 20, color: AppColors.inkMid),
+      Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: iconBg.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.center,
+        child: Icon(icon, size: 16, color: iconBg),
+      ),
       const SizedBox(width: 12),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label, style: T.small(context).copyWith(fontSize: 11)),
+        const SizedBox(height: 1),
         Text(value, style: T.title(context).copyWith(fontSize: 14)),
       ]),
     ]);

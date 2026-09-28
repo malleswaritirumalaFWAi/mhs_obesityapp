@@ -93,20 +93,29 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       color: AppColors.inkMid, size: 24),
                 ),
                 const SizedBox(height: 20),
-                const Text('🏆', style: TextStyle(fontSize: 40)),
-                const SizedBox(height: 12),
-                const Text(
-                  'Join FitQuest',
-                  style: TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                      height: 1.1),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Start your 12-week transformation today.',
-                  style: TextStyle(color: AppColors.inkMid, fontSize: 15),
+                Center(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text('🏆', style: TextStyle(fontSize: 48)),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Join FitQuest',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: AppColors.ink,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                            height: 1.1),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Start your 12-week transformation today.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppColors.inkMid, fontSize: 15),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

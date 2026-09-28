@@ -40,10 +40,12 @@ class _RecipeLibraryScreenState extends ConsumerState<RecipeLibraryScreen> {
     return Scaffold(
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
               child: NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -67,14 +69,27 @@ class _RecipeLibraryScreenState extends ConsumerState<RecipeLibraryScreen> {
                       ],
                     ),
                   ),
-                  const Text('🍛', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.restaurant_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text('DIET TYPE', style: T.section(context)),
+            ),
+            const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(children: [
                 for (final f in [('all','All'), ('veg','Vegetarian'), ('nonveg','Non-veg')])
                   Padding(
@@ -94,12 +109,17 @@ class _RecipeLibraryScreenState extends ConsumerState<RecipeLibraryScreen> {
                   ),
               ]),
             ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text('RECIPES', style: T.section(context)),
+            ),
             const SizedBox(height: 12),
             Expanded(
               child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.85),
                     itemCount: _recipes.length,
@@ -121,16 +141,28 @@ class _RecipeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isVeg = recipe['diet_type'] == 'veg';
     return NeuCard(
+      depth: 0.5,
       padding: const EdgeInsets.all(14),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Text(isVeg ? '🥦' : '🍗', style: const TextStyle(fontSize: 28)),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: isVeg ? AppColors.coralSoft : AppColors.coralSoft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isVeg ? Symbols.eco_rounded : Symbols.kebab_dining_rounded,
+              color: isVeg ? AppColors.coral : AppColors.coral,
+              size: 20, fill: 1,
+            ),
+          ),
           const Spacer(),
           NeuPill(
-            color: isVeg ? AppColors.sageSoft : AppColors.coralSoft,
+            color: isVeg ? AppColors.coralSoft : AppColors.coralSoft,
             child: Text(isVeg ? 'Veg' : 'Non-veg',
               style: TextStyle(
-                color: isVeg ? AppColors.sageDark : AppColors.coral,
+                color: isVeg ? AppColors.coral : AppColors.coral,
                 fontWeight: FontWeight.w700, fontSize: 10)),
           ),
         ]),
@@ -144,7 +176,7 @@ class _RecipeCard extends StatelessWidget {
         const Spacer(),
         Text(
           (recipe['cuisine'] as String? ?? '').replaceAll('_', ' ').toUpperCase(),
-          style: T.label(context).copyWith(fontSize: 10),
+          style: T.section(context).copyWith(fontSize: 10),
         ),
       ]),
     );

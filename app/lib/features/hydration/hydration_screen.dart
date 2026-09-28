@@ -148,8 +148,8 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
   void _showGoalReached() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('🎉 Daily water goal reached! +5 XP'),
-        backgroundColor: AppColors.sage,
+        content: Text('Daily water goal reached! +5 XP'),
+        backgroundColor: AppColors.coral,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -164,12 +164,13 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Top bar ──
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -193,14 +194,24 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
                       ],
                     ),
                   ),
-                  const Text('💧', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.water_drop_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
               const SizedBox(height: 24),
 
               // ── Hero card ──
               NeuCard(
-                color: done ? AppColors.sageSoft : AppColors.berrySoft,
+                depth: 0.5,
+                color: done ? AppColors.coralSoft : AppColors.coralSoft,
                 child: Column(children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -216,7 +227,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
                                   style: TextStyle(
                                       fontSize: 76,
                                       fontWeight: FontWeight.w900,
-                                      color: done ? AppColors.sageDark : AppColors.berry,
+                                      color: done ? AppColors.coral : AppColors.coral,
                                       height: 1)),
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 10, left: 6),
@@ -224,7 +235,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
                                     style: TextStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.w700,
-                                        color: done ? AppColors.sageDark.withValues(alpha: 0.6) : AppColors.berry.withValues(alpha: 0.6))),
+                                        color: done ? AppColors.coral.withValues(alpha: 0.6) : AppColors.coral.withValues(alpha: 0.6))),
                               ),
                             ],
                           ),
@@ -232,7 +243,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
                         const SizedBox(height: 2),
                         Text('glasses today',
                             style: TextStyle(
-                                color: done ? AppColors.sageDark : AppColors.berry,
+                                color: done ? AppColors.coral : AppColors.coral,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600)),
                       ]),
@@ -241,15 +252,15 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
                         width: 74,
                         height: 74,
                         decoration: BoxDecoration(
-                          color: done ? AppColors.sageDark.withValues(alpha: 0.12) : AppColors.berry.withValues(alpha: 0.12),
+                          color: done ? AppColors.coral.withValues(alpha: 0.12) : AppColors.coral.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: done ? AppColors.sageDark.withValues(alpha: 0.3) : AppColors.berry.withValues(alpha: 0.3), width: 2),
+                              color: done ? AppColors.coral.withValues(alpha: 0.3) : AppColors.coral.withValues(alpha: 0.3), width: 2),
                         ),
                         alignment: Alignment.center,
                         child: Text('${(pct * 100).round()}%',
                             style: TextStyle(
-                                color: done ? AppColors.sageDark : AppColors.berry,
+                                color: done ? AppColors.coral : AppColors.coral,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 18)),
                       ),
@@ -262,28 +273,44 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
                       value: pct,
                       minHeight: 10,
                       backgroundColor: AppColors.bg,
-                      valueColor: AlwaysStoppedAnimation<Color>(done ? AppColors.sageDark : AppColors.berry),
+                      valueColor: AlwaysStoppedAnimation<Color>(done ? AppColors.coral : AppColors.coral),
                     ),
                   ),
                   const SizedBox(height: 14),
                   if (done)
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      const Icon(Symbols.check_circle_rounded,
-                          color: AppColors.sageDark, fill: 1, size: 18),
-                      const SizedBox(width: 6),
-                      const Text('Daily goal reached! 🎉',
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.coral.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Symbols.check_circle_rounded,
+                            color: AppColors.coral, fill: 1, size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('Daily goal reached!',
                           style: TextStyle(
-                              color: AppColors.sageDark, fontWeight: FontWeight.w700)),
+                              color: AppColors.coral, fontWeight: FontWeight.w700)),
                     ])
                   else
                     Row(children: [
-                      const Icon(Symbols.water_drop_rounded,
-                          color: AppColors.berry, size: 14, fill: 1),
-                      const SizedBox(width: 6),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.coral.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Symbols.water_drop_rounded,
+                            color: AppColors.coral, size: 20, fill: 1),
+                      ),
+                      const SizedBox(width: 10),
                       Text(
                           '$remaining more glass${remaining == 1 ? '' : 'es'} to go',
                           style: const TextStyle(
-                              color: AppColors.berry,
+                              color: AppColors.coral,
                               fontSize: 13,
                               fontWeight: FontWeight.w600)),
                     ]),
@@ -292,21 +319,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
               const SizedBox(height: 24),
 
               // ── Glass grid ──
-              Row(children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.sageDark,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text('YOUR GLASSES TODAY',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                          letterSpacing: 0.5)),
-                ),
-              ]),
+              Text('YOUR GLASSES TODAY', style: T.section(context)),
               const SizedBox(height: 14),
               _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -317,8 +330,8 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
               if (!done)
                 NeuButton.primary(
                   _adding
-                      ? 'Adding…'
-                      : '+ Add a glass  💧',
+                      ? 'Adding...'
+                      : '+ Add a glass',
                   onPressed: _adding ? null : _addGlass,
                 )
               else
@@ -326,14 +339,22 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
                   decoration: BoxDecoration(
-                    color: AppColors.sageDark,
+                    color: AppColors.coral,
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Symbols.emoji_events_rounded,
-                          color: AppColors.gold, fill: 1, size: 24),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Symbols.emoji_events_rounded,
+                            color: Colors.white, fill: 1, size: 20),
+                      ),
                       const SizedBox(width: 10),
                       Text(
                         'All $_goal glasses done — great work!',
@@ -383,10 +404,19 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
       children: [
         // Section header
         NeuCard(
+          depth: 0.5,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Row(children: [
-            const Icon(Symbols.water_drop_rounded,
-                color: AppColors.berry, size: 18, fill: 1),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.coralSoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Symbols.water_drop_rounded,
+                  color: AppColors.coral, size: 20, fill: 1),
+            ),
             const SizedBox(width: 10),
             const Expanded(
               child: Text('Hydration history',
@@ -398,12 +428,12 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.berrySoft,
+                color: AppColors.coralSoft,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text('${allEntries.length} day${allEntries.length != 1 ? 's' : ''}',
                   style: const TextStyle(
-                      color: AppColors.berry,
+                      color: AppColors.coral,
                       fontWeight: FontWeight.w700,
                       fontSize: 11)),
             ),
@@ -472,10 +502,10 @@ class _GlassGrid extends StatelessWidget {
         final isFilled = i < filled;
         return Container(
           decoration: BoxDecoration(
-            color: isFilled ? AppColors.sageDark : AppColors.bg,
+            color: isFilled ? AppColors.coral : AppColors.bg,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isFilled ? AppColors.sageDark : AppColors.line,
+              color: isFilled ? AppColors.coral : AppColors.line,
               width: isFilled ? 0 : 1.5,
             ),
           ),
@@ -485,7 +515,7 @@ class _GlassGrid extends StatelessWidget {
               Icon(
                 Symbols.water_drop_rounded,
                 fill: isFilled ? 1 : 0,
-                color: isFilled ? Colors.white : AppColors.berry,
+                color: isFilled ? Colors.white : AppColors.coral,
                 size: 32,
               ),
               const SizedBox(height: 4),
@@ -494,7 +524,7 @@ class _GlassGrid extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: isFilled ? Colors.white : AppColors.berry,
+                  color: isFilled ? Colors.white : AppColors.coral,
                 ),
               ),
             ],
@@ -519,10 +549,10 @@ class _TipsCard extends StatelessWidget {
   ];
 
   static const _tipColors = [
-    AppColors.gold,
     AppColors.coral,
-    AppColors.sageDark,
-    AppColors.berry,
+    AppColors.coral,
+    AppColors.coral,
+    AppColors.coral,
   ];
 
   @override
@@ -530,41 +560,20 @@ class _TipsCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppColors.sageDark,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Text('HYDRATION TIPS',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                  letterSpacing: 0.5)),
-        ),
+        Text('HYDRATION TIPS', style: T.section(context)),
         const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4)),
-            ],
-          ),
+        NeuCard(
+          depth: 0.5,
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
               for (int i = 0; i < _tips.length; i++) ...[
                 Row(children: [
                   Container(
-                    width: 42,
-                    height: 42,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: _tipColors[i].withValues(alpha: 0.15),
+                      color: _tipColors[i].withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(_tips[i].icon,
@@ -609,7 +618,7 @@ class _HistoryDayLabel extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: isToday
-              ? AppColors.sageDark
+              ? AppColors.coral
               : isYesterday
                   ? AppColors.coral
                   : AppColors.bg,
@@ -640,32 +649,22 @@ class _HydrationHistoryCard extends StatelessWidget {
     final pct = (entry.glasses / _goal).clamp(0.0, 1.0);
     final done = entry.glasses >= _goal;
     return Stack(children: [
-      Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.line),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2))
-          ],
-        ),
+      NeuCard(
+        depth: 0.5,
         padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Container(
               width: 46,
               height: 46,
-              decoration: const BoxDecoration(
-                color: AppColors.sageSoft,
+              decoration: BoxDecoration(
+                color: done ? AppColors.coralSoft : AppColors.coralSoft,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Text('${entry.glasses}',
-                  style: const TextStyle(
-                      color: AppColors.sageDark,
+                  style: TextStyle(
+                      color: done ? AppColors.coral : AppColors.coral,
                       fontSize: 18,
                       fontWeight: FontWeight.w900)),
             ),
@@ -684,14 +683,14 @@ class _HydrationHistoryCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.sageSoft,
+                            color: AppColors.coralSoft,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text('Goal reached!',
                               style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.sageDark)),
+                                  color: AppColors.coral)),
                         ),
                     ]),
                     const SizedBox(height: 8),
@@ -699,14 +698,14 @@ class _HydrationHistoryCard extends StatelessWidget {
                       Container(
                           height: 6,
                           decoration: BoxDecoration(
-                              color: const Color(0xFFD6EFF8),
+                              color: AppColors.line,
                               borderRadius: BorderRadius.circular(999))),
                       FractionallySizedBox(
                         widthFactor: pct,
                         child: Container(
                           height: 6,
                           decoration: BoxDecoration(
-                            color: AppColors.sageDark,
+                            color: done ? AppColors.coral : AppColors.coral,
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
@@ -721,9 +720,9 @@ class _HydrationHistoryCard extends StatelessWidget {
         left: 0, top: 0, bottom: 0,
         child: Container(
           width: 5,
-          decoration: const BoxDecoration(
-            color: AppColors.sageDark,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: done ? AppColors.coral : AppColors.coral,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(16),
               bottomLeft: Radius.circular(16),
             ),

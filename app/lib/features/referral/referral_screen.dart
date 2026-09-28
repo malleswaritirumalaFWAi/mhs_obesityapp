@@ -50,7 +50,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
       await ref.read(apiClientProvider).postJson('/referral/apply', {'code': code});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('🎉 Referral applied! +500 XP bonus'), backgroundColor: AppColors.sage));
+          const SnackBar(content: Text('Referral applied! +500 XP bonus'), backgroundColor: AppColors.coral));
         _applyCtrl.clear();
         _load();
       }
@@ -69,9 +69,10 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
           children: [
             NeuCard(
+              depth: 0.5,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Row(children: [
                 GestureDetector(
@@ -80,43 +81,52 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
                       color: AppColors.inkMid, size: 22),
                 ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Refer & Earn',
+                      const Text('Refer & Earn',
                           style: TextStyle(
                               color: AppColors.ink,
                               fontSize: 20,
                               fontWeight: FontWeight.w900)),
-                      Text('Invite friends, earn rewards',
-                          style: TextStyle(
-                              color: AppColors.inkSoft, fontSize: 12)),
+                      Text('INVITE FRIENDS, EARN REWARDS',
+                          style: T.section(context)),
                     ],
                   ),
                 ),
-                const Text('🎁', style: TextStyle(fontSize: 26)),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.redeem_rounded,
+                      color: AppColors.coral, size: 20, fill: 1),
+                ),
               ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // My referral code
+            Text('YOUR REFERRAL CODE', style: T.section(context)),
+            const SizedBox(height: 12),
             NeuCard(
-              color: AppColors.goldSoft,
+              depth: 0.5,
+              color: AppColors.coralSoft,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Your referral code', style: T.title(context).copyWith(color: AppColors.goldDark)),
-                const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                    border: Border.all(color: AppColors.coral.withValues(alpha: 0.3)),
                   ),
                   child: Row(children: [
                     Expanded(
                       child: Text(_code ?? '---',
-                        style: T.h2(context).copyWith(letterSpacing: 4, color: AppColors.goldDark)),
+                        style: T.h2(context).copyWith(letterSpacing: 4, color: AppColors.coral)),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -126,37 +136,53 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
                             const SnackBar(content: Text('Code copied!')));
                         }
                       },
-                      child: const Icon(Symbols.copy_all_rounded, color: AppColors.gold),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.coral.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Symbols.copy_all_rounded,
+                            color: AppColors.coral, size: 20, fill: 1),
+                      ),
                     ),
                   ]),
                 ),
                 const SizedBox(height: 12),
                 Text('Both you and your friend get +500 XP when they join!',
-                  style: T.small(context).copyWith(color: AppColors.goldDark)),
+                  style: T.small(context).copyWith(color: AppColors.coral)),
               ]),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             // Stats
+            Text('YOUR STATS', style: T.section(context)),
+            const SizedBox(height: 12),
             Row(children: [
               Expanded(child: _StatCard(
-                emoji: '👥',
+                icon: Symbols.group_rounded,
+                iconColor: AppColors.coral,
+                iconBg: AppColors.coralSoft,
                 label: 'Friends joined',
                 value: _stats['joined']?.toString() ?? '0',
               )),
               const SizedBox(width: 12),
               Expanded(child: _StatCard(
-                emoji: '🎁',
+                icon: Symbols.redeem_rounded,
+                iconColor: AppColors.coral,
+                iconBg: AppColors.coralSoft,
                 label: 'Rewards given',
                 value: _stats['rewarded']?.toString() ?? '0',
               )),
             ]),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // Apply a code
-            Text('Apply a friend\'s code', style: T.title(context)),
+            Text('APPLY A FRIEND\'S CODE', style: T.section(context)),
             const SizedBox(height: 12),
             NeuCard(
+              depth: 0.5,
               padding: EdgeInsets.zero,
               child: Row(children: [
                 Expanded(
@@ -193,19 +219,44 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
 
             if (_leaderboard.isNotEmpty) ...[
               const SizedBox(height: 24),
-              Text('Referral Leaderboard', style: T.title(context)),
+              Text('REFERRAL LEADERBOARD', style: T.section(context)),
               const SizedBox(height: 12),
               ..._leaderboard.take(5).map((m) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: NeuCard(
-                  color: m['you'] == true ? AppColors.goldSoft : null,
+                  depth: 0.5,
+                  color: m['you'] == true ? AppColors.coralSoft : null,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(children: [
-                    Text('#${m['rank']}', style: T.title(context).copyWith(
-                      color: m['rank'] == 1 ? AppColors.gold : AppColors.inkMid)),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: m['rank'] == 1
+                            ? AppColors.coralSoft
+                            : AppColors.coralSoft,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text('#${m['rank']}',
+                            style: T.title(context).copyWith(
+                                fontSize: 13,
+                                color: m['rank'] == 1
+                                    ? AppColors.coral
+                                    : AppColors.coral)),
+                      ),
+                    ),
                     const SizedBox(width: 14),
                     Expanded(child: Text(m['name'] as String? ?? 'Member', style: T.title(context).copyWith(fontSize: 14))),
-                    Text('${m['referrals']} referrals', style: T.small(context)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.coralSoft,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('${m['referrals']} referrals',
+                          style: T.small(context).copyWith(color: AppColors.coral, fontWeight: FontWeight.w700)),
+                    ),
                   ]),
                 ),
               )),
@@ -218,15 +269,33 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
 }
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({required this.emoji, required this.label, required this.value});
-  final String emoji, label, value;
+  const _StatCard({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    required this.label,
+    required this.value,
+  });
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final String label, value;
   @override
   Widget build(BuildContext context) {
     return NeuCard(
+      depth: 0.5,
       padding: const EdgeInsets.all(16),
       child: Column(children: [
-        Text(emoji, style: const TextStyle(fontSize: 28)),
-        const SizedBox(height: 6),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: iconBg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 20, fill: 1),
+        ),
+        const SizedBox(height: 10),
         Text(value, style: T.h2(context).copyWith(fontSize: 24)),
         Text(label, style: T.small(context), textAlign: TextAlign.center),
       ]),

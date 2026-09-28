@@ -168,8 +168,12 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
 
   void _showGoalReached() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🎉 Daily movement goal reached! +5 XP'),
+      SnackBar(
+        content: Row(children: [
+          const Icon(Symbols.celebration_rounded, color: Colors.white, size: 20, fill: 1),
+          const SizedBox(width: 8),
+          const Text('Daily movement goal reached! +5 XP'),
+        ]),
         backgroundColor: AppColors.coral,
         behavior: SnackBarBehavior.floating,
       ),
@@ -185,11 +189,12 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -213,14 +218,23 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                       ],
                     ),
                   ),
-                  const Text('🏃', style: TextStyle(fontSize: 26)),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.coralSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.directions_run_rounded,
+                        color: AppColors.coral, size: 20, fill: 1),
+                  ),
                 ]),
               ),
               const SizedBox(height: 24),
 
               // ── Hero card ──
               NeuCard(
-                color: done ? AppColors.sageSoft : AppColors.coralSoft,
+                depth: 0.5,
+                color: done ? AppColors.coralSoft : AppColors.coralSoft,
                 child: Column(children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -237,7 +251,7 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                                 style: TextStyle(
                                     fontSize: 76,
                                     fontWeight: FontWeight.w900,
-                                    color: done ? AppColors.sageDark : AppColors.coral,
+                                    color: done ? AppColors.coral : AppColors.coral,
                                     height: 1),
                               ),
                               Padding(
@@ -246,7 +260,7 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                                     style: TextStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.w700,
-                                        color: done ? AppColors.sageDark.withValues(alpha: 0.6) : AppColors.coral.withValues(alpha: 0.6))),
+                                        color: done ? AppColors.coral.withValues(alpha: 0.6) : AppColors.coral.withValues(alpha: 0.6))),
                               ),
                             ],
                           ),
@@ -254,7 +268,7 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                         const SizedBox(height: 2),
                         Text('steps today',
                             style: TextStyle(
-                                color: done ? AppColors.sageDark : AppColors.coral,
+                                color: done ? AppColors.coral : AppColors.coral,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600)),
                       ]),
@@ -262,15 +276,15 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                         width: 74,
                         height: 74,
                         decoration: BoxDecoration(
-                          color: done ? AppColors.sageDark.withValues(alpha: 0.12) : AppColors.coral.withValues(alpha: 0.12),
+                          color: done ? AppColors.coral.withValues(alpha: 0.12) : AppColors.coral.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: done ? AppColors.sageDark.withValues(alpha: 0.3) : AppColors.coral.withValues(alpha: 0.3), width: 2),
+                              color: done ? AppColors.coral.withValues(alpha: 0.3) : AppColors.coral.withValues(alpha: 0.3), width: 2),
                         ),
                         alignment: Alignment.center,
                         child: Text('${(pct * 100).round()}%',
                             style: TextStyle(
-                                color: done ? AppColors.sageDark : AppColors.coral,
+                                color: done ? AppColors.coral : AppColors.coral,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 18)),
                       ),
@@ -283,19 +297,23 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                       value: pct,
                       minHeight: 10,
                       backgroundColor: AppColors.bg,
-                      valueColor: AlwaysStoppedAnimation<Color>(done ? AppColors.sageDark : AppColors.coral),
+                      valueColor: AlwaysStoppedAnimation<Color>(done ? AppColors.coral : AppColors.coral),
                     ),
                   ),
                   const SizedBox(height: 14),
                   if (done)
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       const Icon(Symbols.check_circle_rounded,
-                          color: AppColors.sageDark, fill: 1, size: 18),
+                          color: AppColors.coral, fill: 1, size: 18),
                       const SizedBox(width: 6),
-                      const Text('Daily goal reached! 🎉',
-                          style: TextStyle(
-                              color: AppColors.sageDark,
-                              fontWeight: FontWeight.w700)),
+                      Row(children: [
+                        const Text('Daily goal reached! ',
+                            style: TextStyle(
+                                color: AppColors.coral,
+                                fontWeight: FontWeight.w700)),
+                        const Icon(Symbols.celebration_rounded,
+                            color: AppColors.coral, size: 18, fill: 1),
+                      ]),
                     ])
                   else
                     Row(children: [
@@ -314,44 +332,16 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
               const SizedBox(height: 24),
 
               // ── Progress milestones ──
-              Row(children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.coral,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text('PROGRESS',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                          letterSpacing: 0.5)),
-                ),
-              ]),
+              Text('PROGRESS', style: T.section(context)),
               const SizedBox(height: 14),
               _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _MilestoneRow(steps: _steps, goal: _goal),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // ── Add step presets ──
               if (!done) ...[
-                Row(children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.coral,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text('LOG STEPS',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 11,
-                            letterSpacing: 0.5)),
-                  ),
-                ]),
+                Text('LOG STEPS', style: T.section(context)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -370,25 +360,26 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                 ),
                 const SizedBox(height: 10),
                 _PresetButton(
-                  label: '✏️  Enter custom steps',
+                  label: 'Enter custom steps',
+                  icon: Symbols.edit_rounded,
                   fullWidth: true,
                   onTap: _adding ? null : _showCustomInput,
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
               ] else ...[
                 Container(
                   width: double.infinity,
                   padding:
                       const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
                   decoration: BoxDecoration(
-                    color: AppColors.sageDark,
+                    color: AppColors.coral,
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Symbols.emoji_events_rounded,
-                          color: AppColors.gold, fill: 1, size: 24),
+                          color: Colors.white, fill: 1, size: 24),
                       const SizedBox(width: 10),
                       Text(
                         '${_formatSteps(_goal)} steps done — amazing!',
@@ -400,12 +391,12 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
               ],
 
               // ── Tips ──
               _TipsCard(steps: _steps),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
               // ── History ──
               _buildHistory(context),
@@ -436,10 +427,18 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         NeuCard(
+          depth: 0.5,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Row(children: [
-            const Icon(Symbols.directions_run_rounded,
-                color: AppColors.coral, size: 18, fill: 1),
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.coralSoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Symbols.directions_run_rounded,
+                  color: AppColors.coral, size: 20, fill: 1),
+            ),
             const SizedBox(width: 10),
             const Expanded(
               child: Text('Movement history',
@@ -519,22 +518,32 @@ class _MilestoneRow extends StatelessWidget {
   final int steps;
   final int goal;
 
+  static const _milestoneColors = [
+    AppColors.coral,
+    AppColors.coral,
+    AppColors.coral,
+    AppColors.coral,
+  ];
+
   @override
   Widget build(BuildContext context) {
     const milestones = [2000, 4000, 6000, 8000];
     return Row(
-      children: milestones.map((m) {
+      children: milestones.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final m = entry.value;
         final reached = steps >= m;
+        final color = _milestoneColors[idx];
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(right: m == milestones.last ? 0 : 8),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: reached ? AppColors.coral : AppColors.bg,
+                color: reached ? color : AppColors.bg,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: reached ? AppColors.coral : AppColors.line,
+                  color: reached ? color : AppColors.line,
                   width: reached ? 0 : 1.5,
                 ),
               ),
@@ -543,7 +552,7 @@ class _MilestoneRow extends StatelessWidget {
                   reached
                       ? Symbols.check_circle_rounded
                       : Symbols.radio_button_unchecked_rounded,
-                  color: reached ? Colors.white : AppColors.coral,
+                  color: reached ? Colors.white : color,
                   fill: 1,
                   size: 22,
                 ),
@@ -553,7 +562,7 @@ class _MilestoneRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: reached ? Colors.white : AppColors.coral,
+                    color: reached ? Colors.white : color,
                   ),
                 ),
               ]),
@@ -572,10 +581,12 @@ class _PresetButton extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.fullWidth = false,
+    this.icon,
   });
   final String label;
   final VoidCallback? onTap;
   final bool fullWidth;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -589,13 +600,13 @@ class _PresetButton extends StatelessWidget {
           color: active ? Colors.white : AppColors.line,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: active ? AppColors.tealLight : AppColors.line,
+            color: active ? AppColors.coral : AppColors.line,
             width: active ? 1.5 : 1,
           ),
           boxShadow: active
               ? [
                   BoxShadow(
-                    color: AppColors.tealLight.withOpacity(0.15),
+                    color: AppColors.coral.withOpacity(0.15),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   )
@@ -603,13 +614,22 @@ class _PresetButton extends StatelessWidget {
               : null,
         ),
         child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: active ? AppColors.teal : AppColors.inkSoft,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, color: active ? AppColors.coral : AppColors.inkSoft, size: 18),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: active ? AppColors.coral : AppColors.inkSoft,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -632,10 +652,10 @@ class _TipsCard extends StatelessWidget {
   ];
 
   static const _tipColors = [
-    AppColors.sageDark,
-    AppColors.gold,
     AppColors.coral,
-    AppColors.berry,
+    AppColors.coral,
+    AppColors.coral,
+    AppColors.coral,
   ];
 
   @override
@@ -643,19 +663,7 @@ class _TipsCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppColors.coral,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Text('MOVEMENT TIPS',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                  letterSpacing: 0.5)),
-        ),
+        Text('MOVEMENT TIPS', style: T.section(context)),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
@@ -674,10 +682,10 @@ class _TipsCard extends StatelessWidget {
               for (int i = 0; i < _tips.length; i++) ...[
                 Row(children: [
                   Container(
-                    width: 42,
-                    height: 42,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: _tipColors[i].withValues(alpha: 0.15),
+                      color: _tipColors[i].withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(_tips[i].icon,
@@ -724,7 +732,7 @@ class _MovementDayLabel extends StatelessWidget {
           color: isToday
               ? AppColors.coral
               : isYesterday
-                  ? AppColors.sageDark
+                  ? AppColors.coral
                   : AppColors.bg,
           borderRadius: BorderRadius.circular(20),
         ),
@@ -797,14 +805,14 @@ class _MovementHistoryCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.sageSoft,
+                            color: AppColors.coralSoft,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text('Goal reached!',
                               style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.sageDark)),
+                                  color: AppColors.coral)),
                         ),
                     ]),
                     const SizedBox(height: 8),
@@ -812,7 +820,7 @@ class _MovementHistoryCard extends StatelessWidget {
                       Container(
                           height: 6,
                           decoration: BoxDecoration(
-                              color: AppColors.orangeSoft,
+                              color: AppColors.coralSoft,
                               borderRadius: BorderRadius.circular(999))),
                       FractionallySizedBox(
                         widthFactor: pct,

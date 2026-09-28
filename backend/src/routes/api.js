@@ -551,6 +551,7 @@ router.post('/posts', async (req, res) => {
     if (Number(postsToday.rows[0].count) <= 3) {
       await q(`UPDATE users SET xp=xp+10, total_xp=total_xp+10 WHERE id=$1`, [uid(req)]);
       await q(`UPDATE group_members SET weekly_xp=weekly_xp+10 WHERE user_id=$1`, [uid(req)]);
+      await updateUserLevel(uid(req));
     }
     // First post badge
     const totalPosts = await q(`SELECT COUNT(*) FROM posts WHERE user_id=$1`, [uid(req)]);
@@ -1044,7 +1045,27 @@ router.post('/chat', async (req, res) => {
   }
 
   // Context-aware fallback used only when Claude is unavailable
-  let reply = 'I\'m having a moment of connectivity trouble — try again in a bit! In the meantime, keep up your daily tasks and stay hydrated.';
+  const t = text.toLowerCase();
+  let reply = (() => {
+    if (/\b(hi|hello|hey|hii|helo)\b/.test(t)) return "Hey! 👋 Great to hear from you. How are you feeling today?";
+    if (/weight|kg|lose|loss|gained/.test(t)) return "Every step counts! Stay consistent with your meals and movement — progress shows up when you least expect it. 💪";
+    if (/food|eat|meal|diet|hungry|craving/.test(t)) return "Stick to your meal plan as much as possible. Small mindful choices add up to big results over 12 weeks! 🥗";
+    if (/exercise|workout|walk|run|gym|steps/.test(t)) return "Love the energy! Even a 20-minute walk makes a real difference. Keep that momentum going 🏃";
+    if (/sleep|tired|rest|exhausted/.test(t)) return "Rest is part of the plan! Aim for 7-8 hours — good sleep directly supports weight loss and recovery. 😴";
+    if (/stress|anxious|worried|sad|demotivat/.test(t)) return "It's okay to have tough days. Consistency over perfection — you're already doing great by showing up. 🤗";
+    if (/water|hydrat|drink/.test(t)) return "Hydration is key! Try to hit your 8 glasses today — it boosts metabolism and keeps hunger in check. 💧";
+    if (/cheat|skip|missed|failed|broke/.test(t)) return "One slip doesn't erase your progress. Get back on track with your next meal — that's what champions do! 🏆";
+    if (/good|great|well|awesome|happy|did it|done/.test(t)) return "That's what I love to hear! 🎉 Keep riding that positive momentum — you're closer to your goal than you think!";
+    if (/ok|okay|fine|alright|sure/.test(t)) return "Glad to hear it! Stay consistent today — every healthy choice is a vote for the person you're becoming. 💪";
+    const pool = [
+      "You're doing amazing — trust the process and keep going! 🌟",
+      "Remember: small daily actions lead to big transformations. Stay on track! 💪",
+      "Focus on today's tasks and drink plenty of water. You've got this! 💧",
+      "Your consistency is your superpower. Keep showing up every day! 🏆",
+      "Check your today's plan and knock off those tasks — every one counts! ✅",
+    ];
+    return pool[Math.floor(Math.random() * pool.length)];
+  })();
 
   const key = process.env.ANTHROPIC_API_KEY;
   if (key && text) {
@@ -1098,7 +1119,7 @@ router.post('/chat', async (req, res) => {
       }
       reply = chatData.content?.[0]?.text?.trim() || reply;
     } catch (e) {
-      console.warn('[chat] Claude failed, using fallback:', e.message);
+      console.error('[chat] Claude API failed (status:', e.status, '):', e.message, '— update ANTHROPIC_API_KEY in .env');
     }
   }
 

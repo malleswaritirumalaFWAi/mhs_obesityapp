@@ -58,6 +58,7 @@ Future<Uint8List> _resizeImage(Uint8List bytes, {int maxDim = 320, double qualit
 /// On desktop browsers it opens a file picker (browser limitation — no native camera API).
 Future<(Uint8List?, String)> captureImageFromCamera() async {
   final completer = Completer<(Uint8List?, String)>();
+  bool fileSelected = false;
 
   final input = html.FileUploadInputElement()
     ..accept = 'image/*'
@@ -69,6 +70,7 @@ Future<(Uint8List?, String)> captureImageFromCamera() async {
 
   // Resolve with the selected/captured image bytes (resized before returning).
   input.onChange.listen((_) async {
+    fileSelected = true; // prevent focus handler from resolving early
     final files = input.files;
     if (files == null || files.isEmpty) {
       _cleanup(input, completer, null);
@@ -99,7 +101,7 @@ Future<(Uint8List?, String)> captureImageFromCamera() async {
   // resolve after a short delay so the UI doesn't hang.
   html.window.addEventListener('focus', (_) {
     Future.delayed(const Duration(milliseconds: 600), () {
-      if (!completer.isCompleted) {
+      if (!completer.isCompleted && !fileSelected) {
         _cleanup(input, completer, null);
       }
     });

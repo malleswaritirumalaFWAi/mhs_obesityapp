@@ -24,9 +24,10 @@ class BadgeGalleryScreen extends ConsumerWidget {
             final earned = badges.where((b) => b.earned).toList();
             final locked = badges.where((b) => !b.earned).toList();
             return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
               children: [
                 NeuCard(
+                  depth: 0.5,
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                   child: Row(children: [
                     GestureDetector(
@@ -35,10 +36,10 @@ class BadgeGalleryScreen extends ConsumerWidget {
                           color: AppColors.inkMid, size: 22),
                     ),
                     const SizedBox(width: 14),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: const [
                           Text('Badge Collection',
                               style: TextStyle(
                                   color: AppColors.ink,
@@ -50,16 +51,24 @@ class BadgeGalleryScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const Text('🏅', style: TextStyle(fontSize: 26)),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.coralSoft,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Symbols.military_tech_rounded, color: AppColors.coral, size: 20, fill: 1),
+                    ),
                   ]),
                 ),
                 const SizedBox(height: 8),
                 // Summary pill row
                 Row(children: [
                   NeuPill(
-                    color: AppColors.goldSoft,
+                    color: AppColors.coralSoft,
                     child: Text('${earned.length} earned',
-                        style: const TextStyle(color: AppColors.goldDark, fontWeight: FontWeight.w800, fontSize: 12)),
+                        style: const TextStyle(color: AppColors.coral, fontWeight: FontWeight.w800, fontSize: 12)),
                   ),
                   const SizedBox(width: 10),
                   NeuPill(
@@ -68,10 +77,10 @@ class BadgeGalleryScreen extends ConsumerWidget {
                         style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w700, fontSize: 12)),
                   ),
                 ]),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 if (earned.isNotEmpty) ...[
-                  Text('Earned', style: T.title(context)),
+                  Text('EARNED', style: T.section(context)),
                   const SizedBox(height: 12),
                   GridView.count(
                     crossAxisCount: 3,
@@ -85,7 +94,7 @@ class BadgeGalleryScreen extends ConsumerWidget {
                 ],
 
                 if (locked.isNotEmpty) ...[
-                  Text('Locked', style: T.title(context)),
+                  Text('LOCKED', style: T.section(context)),
                   const SizedBox(height: 12),
                   GridView.count(
                     crossAxisCount: 3,
@@ -110,13 +119,21 @@ class _BadgeTile extends StatelessWidget {
   final BadgeItem badge;
   final bool locked;
 
+  static const _earnedColors = [AppColors.coral, AppColors.coral, AppColors.coral, AppColors.coral];
+  static const _earnedSoftColors = [AppColors.coralSoft, AppColors.coralSoft, AppColors.coralSoft, AppColors.coralSoft];
+
   @override
   Widget build(BuildContext context) {
+    final colorIdx = badge.name.length % _earnedColors.length;
+    final accent = _earnedColors[colorIdx];
+    final softAccent = _earnedSoftColors[colorIdx];
+
     return GestureDetector(
-      onTap: () => _showDetail(context),
+      onTap: () => _showDetail(context, accent, softAccent),
       child: NeuCard(
+        depth: 0.5,
         padding: const EdgeInsets.all(12),
-        color: locked ? null : AppColors.goldSoft,
+        color: locked ? null : softAccent,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -138,7 +155,7 @@ class _BadgeTile extends StatelessWidget {
               badge.name,
               style: T.label(context).copyWith(
                   fontSize: 11,
-                  color: locked ? AppColors.inkSoft : AppColors.goldDark),
+                  color: locked ? AppColors.inkSoft : accent),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -149,7 +166,7 @@ class _BadgeTile extends StatelessWidget {
     );
   }
 
-  void _showDetail(BuildContext context) {
+  void _showDetail(BuildContext context, Color accent, Color softAccent) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -188,10 +205,10 @@ class _BadgeTile extends StatelessWidget {
               ),
             ] else ...[
               NeuPill(
-                color: AppColors.goldSoft,
+                color: softAccent,
                 child: Text('+${badge.xpReward} XP earned',
-                    style: const TextStyle(
-                        color: AppColors.goldDark,
+                    style: TextStyle(
+                        color: accent,
                         fontWeight: FontWeight.w800,
                         fontSize: 12)),
               ),

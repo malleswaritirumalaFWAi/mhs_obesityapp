@@ -21,13 +21,14 @@ const _typeIcons = <String, IconData>{
 };
 
 const _typeColors = <String, Color>{
-  'badge': AppColors.gold,
+  'badge': AppColors.coral,
   'streak_risk': AppColors.coral,
-  'combo_bonus': AppColors.sage,
-  'perfect_day': AppColors.gold,
-  'weekly_winner': AppColors.gold,
-  'challenge_complete': AppColors.berry,
-  'diet_plan': AppColors.berry,
+  'combo_bonus': AppColors.coral,
+  'perfect_day': AppColors.coral,
+  'weekly_winner': AppColors.coral,
+  'challenge_complete': AppColors.coral,
+  'diet_plan': AppColors.coral,
+  'rank_change': AppColors.coral,
 };
 
 class NotificationsScreen extends ConsumerWidget {
@@ -42,8 +43,9 @@ class NotificationsScreen extends ConsumerWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
               child: NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 child: Row(children: [
                   GestureDetector(
@@ -85,21 +87,46 @@ class NotificationsScreen extends ConsumerWidget {
                       ),
                     )
                   else
-                    const Text('🔔', style: TextStyle(fontSize: 26)),
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.coral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Symbols.notifications_rounded,
+                          color: AppColors.coral, size: 20, fill: 1),
+                    ),
                 ]),
               ),
             ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('ALL NOTIFICATIONS', style: T.section(context)),
+              ),
+            ),
+            const SizedBox(height: 12),
             Expanded(
               child: state.loading
                 ? const Center(child: CircularProgressIndicator())
                 : state.items.isEmpty
                   ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Symbols.notifications_off_rounded, size: 48, color: AppColors.inkSoft),
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.coral.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Symbols.notifications_off_rounded,
+                            color: AppColors.coral, size: 20, fill: 1),
+                      ),
                       const SizedBox(height: 12),
                       Text('All caught up!', style: T.body(context)),
                     ]))
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                       itemCount: state.items.length,
                       itemBuilder: (_, i) {
                         final n = state.items[i];
@@ -108,16 +135,17 @@ class NotificationsScreen extends ConsumerWidget {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: NeuCard(
+                            depth: 0.5,
                             padding: const EdgeInsets.all(14),
                             color: n.read ? null : color.withValues(alpha: 0.05),
                             child: Row(children: [
                               Container(
-                                width: 44, height: 44,
+                                width: 36, height: 36,
                                 decoration: BoxDecoration(
                                   color: color.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Icon(icon, color: color, fill: 1),
+                                child: Icon(icon, color: color, size: 20, fill: 1),
                               ),
                               const SizedBox(width: 12),
                               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

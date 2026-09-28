@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -106,7 +106,7 @@ class _AdminContentPanelState extends State<AdminContentPanel>
           child: TabBar(
             controller: _tab,
             indicator: BoxDecoration(
-              color: AppColors.sageDark,
+              color: AppColors.coral,
               borderRadius: BorderRadius.circular(14),
             ),
             indicatorSize: TabBarIndicatorSize.tab,
@@ -221,7 +221,7 @@ class _LessonsTab extends StatelessWidget {
       itemBuilder: (_, i) => _ContentCard(
         contentKey: modules[i].unlockKey,
         badge: 'Module ${modules[i].moduleNum}',
-        badgeColor: AppColors.teal,
+        badgeColor: AppColors.coral,
         title: modules[i].title,
         scheduledUnlock: modules[i].scheduledUnlock,
         users: users,
@@ -370,7 +370,7 @@ class _ContentCardState extends State<_ContentCard> {
                       horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: allUnlocked
-                        ? AppColors.sageSoft
+                        ? AppColors.coralSoft
                         : AppColors.coralSoft,
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -381,7 +381,7 @@ class _ContentCardState extends State<_ContentCard> {
                           : Symbols.lock_rounded,
                       size: 13,
                       color: allUnlocked
-                          ? AppColors.sageDark
+                          ? AppColors.coral
                           : AppColors.coral,
                     ),
                     const SizedBox(width: 5),
@@ -391,7 +391,7 @@ class _ContentCardState extends State<_ContentCard> {
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: allUnlocked
-                              ? AppColors.sageDark
+                              ? AppColors.coral
                               : AppColors.coral),
                     ),
                   ]),
@@ -411,7 +411,7 @@ class _ContentCardState extends State<_ContentCard> {
                           decoration: BoxDecoration(
                             color: allUnlocked
                                 ? AppColors.coralSoft
-                                : AppColors.sageDark,
+                                : AppColors.coral,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -441,7 +441,7 @@ class _ContentCardState extends State<_ContentCard> {
                   Text(
                     _expanded ? 'Hide details' : 'Show details & per-user unlock',
                     style: T.small(context).copyWith(
-                        color: AppColors.teal,
+                        color: AppColors.coral,
                         fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(width: 4),
@@ -450,7 +450,7 @@ class _ContentCardState extends State<_ContentCard> {
                         ? Symbols.keyboard_arrow_up_rounded
                         : Symbols.keyboard_arrow_down_rounded,
                     size: 18,
-                    color: AppColors.teal,
+                    color: AppColors.coral,
                   ),
                 ],
               ),
@@ -506,7 +506,7 @@ class _ContentCardState extends State<_ContentCard> {
                             value: unlocked,
                             onChanged: (v) =>
                                 _handleToggleUser(u.id, v),
-                            activeTrackColor: AppColors.teal,
+                            activeTrackColor: AppColors.coral,
                           ),
                         ],
                       ),

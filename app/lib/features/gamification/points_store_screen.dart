@@ -45,8 +45,8 @@ class _PointsStoreScreenState extends ConsumerState<PointsStoreScreen> {
       await ref.read(gamificationProvider.notifier).load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('✅ $name redeemed!'),
-          backgroundColor: AppColors.sage,
+          content: Text('$name redeemed!'),
+          backgroundColor: AppColors.coral,
         ));
       }
     } catch (e) {
@@ -55,6 +55,10 @@ class _PointsStoreScreenState extends ConsumerState<PointsStoreScreen> {
     }
   }
 
+  static const _itemColors = [AppColors.coral, AppColors.coral, AppColors.coral, AppColors.coral];
+  static const _itemSoftColors = [AppColors.coralSoft, AppColors.coralSoft, AppColors.coralSoft, AppColors.coralSoft];
+  static const _itemIcons = [Symbols.bolt_rounded, Symbols.restaurant_rounded, Symbols.ac_unit_rounded, Symbols.redeem_rounded];
+
   @override
   Widget build(BuildContext context) {
     final g = ref.watch(gamificationProvider);
@@ -62,9 +66,10 @@ class _PointsStoreScreenState extends ConsumerState<PointsStoreScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
           children: [
             NeuCard(
+              depth: 0.5,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Row(children: [
                 GestureDetector(
@@ -73,10 +78,10 @@ class _PointsStoreScreenState extends ConsumerState<PointsStoreScreen> {
                       color: AppColors.inkMid, size: 22),
                 ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: const [
                       Text('Points Store',
                           style: TextStyle(
                               color: AppColors.ink,
@@ -88,39 +93,67 @@ class _PointsStoreScreenState extends ConsumerState<PointsStoreScreen> {
                     ],
                   ),
                 ),
-                const Text('🛍️', style: TextStyle(fontSize: 26)),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.shopping_bag_rounded, color: AppColors.coral, size: 20, fill: 1),
+                ),
               ]),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
+            Text('YOUR BALANCE', style: T.section(context)),
+            const SizedBox(height: 12),
             NeuCard(
-              color: AppColors.goldSoft,
+              depth: 0.5,
+              color: AppColors.coralSoft,
               child: Row(children: [
-                const Text('⚡', style: TextStyle(fontSize: 32)),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.bolt_rounded, color: AppColors.coral, size: 20, fill: 1),
+                ),
                 const SizedBox(width: 12),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('${g.xp} XP available', style: T.h2(context).copyWith(color: AppColors.goldDark)),
+                  Text('${g.xp} XP available', style: T.h2(context).copyWith(color: AppColors.coral)),
                   Text('Earn more by completing tasks', style: T.small(context)),
                 ]),
               ]),
             ),
             // ── Active perks banner ──────────────────────────────────────
             if (g.doubleXpActive || g.cheatMealPasses > 0) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 24),
+              Text('ACTIVE PERKS', style: T.section(context)),
+              const SizedBox(height: 12),
               NeuCard(
-                color: const Color(0xFFE8F5E9),
+                depth: 0.5,
+                color: AppColors.coralSoft,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Active Perks', style: T.title(context).copyWith(color: AppColors.sage)),
-                    const SizedBox(height: 8),
                     if (g.doubleXpActive) ...[
                       Row(children: [
-                        const Text('⚡', style: TextStyle(fontSize: 18)),
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.coral.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Symbols.bolt_rounded, color: AppColors.coral, size: 20, fill: 1),
+                        ),
                         const SizedBox(width: 8),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text('Double XP is ON', style: T.body(context).copyWith(
-                            fontWeight: FontWeight.w700, color: AppColors.sage)),
+                            fontWeight: FontWeight.w700, color: AppColors.coral)),
                           if (g.doubleXpExpiresAt != null)
                             Text(
                               'Expires ${DateFormat('MMM d, h:mm a').format(g.doubleXpExpiresAt!.toLocal())}',
@@ -133,12 +166,20 @@ class _PointsStoreScreenState extends ConsumerState<PointsStoreScreen> {
                       const SizedBox(height: 6),
                     if (g.cheatMealPasses > 0)
                       Row(children: [
-                        const Text('🍕', style: TextStyle(fontSize: 18)),
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.coral.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Symbols.fastfood_rounded, color: AppColors.coral, size: 20, fill: 1),
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           '${g.cheatMealPasses} Cheat Meal Pass${g.cheatMealPasses > 1 ? "es" : ""} ready',
                           style: T.body(context).copyWith(
-                            fontWeight: FontWeight.w700, color: AppColors.orange),
+                            fontWeight: FontWeight.w700, color: AppColors.coral),
                         ),
                       ]),
                   ],
@@ -148,19 +189,36 @@ class _PointsStoreScreenState extends ConsumerState<PointsStoreScreen> {
 
             const SizedBox(height: 24),
 
+            Text('REWARDS', style: T.section(context)),
+            const SizedBox(height: 12),
+
             if (_loading)
               const Center(child: CircularProgressIndicator())
             else
-              ..._items.map((item) {
+              ..._items.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final item = entry.value;
                 final itemId = item['id'] as String;
                 final cost = (item['cost'] as num?)?.toInt() ?? 0;
-                // Double XP stacks (adds 24h to existing timer), so always redeemable if affordable
                 final canAfford = g.xp >= cost;
+                final accent = _itemColors[idx % _itemColors.length];
+                final softAccent = _itemSoftColors[idx % _itemSoftColors.length];
+                final itemIcon = _itemIcons[idx % _itemIcons.length];
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 14),
                   child: NeuCard(
+                    depth: 0.5,
                     child: Row(children: [
-                      Text(item['emoji'] as String? ?? '🎁', style: const TextStyle(fontSize: 40)),
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: softAccent,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(itemIcon, color: accent, size: 28, fill: 1),
+                      ),
                       const SizedBox(width: 16),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(item['name'] as String? ?? '', style: T.title(context)),
@@ -169,24 +227,24 @@ class _PointsStoreScreenState extends ConsumerState<PointsStoreScreen> {
                         const SizedBox(height: 8),
                         Row(children: [
                           NeuPill(
-                            color: AppColors.goldSoft,
-                            child: Text('$cost XP', style: const TextStyle(
-                              color: AppColors.goldDark, fontWeight: FontWeight.w800, fontSize: 12)),
+                            color: softAccent,
+                            child: Text('$cost XP', style: TextStyle(
+                              color: accent, fontWeight: FontWeight.w800, fontSize: 12)),
                           ),
                           if (itemId == 'double_xp_day' && g.doubleXpActive) ...[
                             const SizedBox(width: 6),
                             NeuPill(
-                              color: const Color(0xFFE8F5E9),
+                              color: AppColors.coralSoft,
                               child: Text('Active', style: T.small(context).copyWith(
-                                color: AppColors.sage, fontWeight: FontWeight.w700)),
+                                color: AppColors.coral, fontWeight: FontWeight.w700)),
                             ),
                           ],
                           if (itemId == 'cheat_meal' && g.cheatMealPasses > 0) ...[
                             const SizedBox(width: 6),
                             NeuPill(
-                              color: const Color(0xFFFFF3E0),
+                              color: AppColors.coralSoft,
                               child: Text('x${g.cheatMealPasses}', style: T.small(context).copyWith(
-                                color: AppColors.orange, fontWeight: FontWeight.w700)),
+                                color: AppColors.coral, fontWeight: FontWeight.w700)),
                             ),
                           ],
                         ]),
@@ -197,7 +255,7 @@ class _PointsStoreScreenState extends ConsumerState<PointsStoreScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
-                            color: canAfford ? AppColors.coral : AppColors.line,
+                            color: canAfford ? accent : AppColors.line,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text('Redeem',

@@ -46,10 +46,11 @@ class LearningHubScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           children: [
             // ── Header ──
             NeuCard(
+              depth: 0.5,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Row(children: [
                 GestureDetector(
@@ -73,23 +74,38 @@ class LearningHubScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const Icon(Symbols.notifications_rounded,
-                    color: AppColors.inkMid, size: 22),
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.notifications_rounded,
+                      color: AppColors.coral, size: 20, fill: 1),
+                ),
               ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // ── Overall weekly progress bar ──────────────────────────────────
             if (!state.loading && totalWeeks > 0) ...[
               NeuCard(
+                depth: 0.5,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
-                      const Icon(Symbols.school_rounded,
-                          color: AppColors.berry, size: 18, fill: 1),
-                      const SizedBox(width: 8),
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.coralSoft,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Symbols.school_rounded,
+                            color: AppColors.coral, size: 20, fill: 1),
+                      ),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           '$completedWeeks of $totalWeeks weekly lessons completed',
@@ -100,7 +116,7 @@ class LearningHubScreen extends ConsumerWidget {
                       Text(
                         '${(completedWeeks / totalWeeks * 100).round()}%',
                         style: const TextStyle(
-                            color: AppColors.berry,
+                            color: AppColors.coral,
                             fontWeight: FontWeight.w800,
                             fontSize: 13),
                       ),
@@ -111,15 +127,15 @@ class LearningHubScreen extends ConsumerWidget {
                       child: LinearProgressIndicator(
                         value: totalWeeks > 0 ? completedWeeks / totalWeeks : 0,
                         minHeight: 8,
-                        backgroundColor: AppColors.berrySoft,
+                        backgroundColor: AppColors.coralSoft,
                         valueColor:
-                            const AlwaysStoppedAnimation(AppColors.berry),
+                            const AlwaysStoppedAnimation(AppColors.coral),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
             ],
 
             // ── Active lesson hero card ──────────────────────────────────────
@@ -130,12 +146,13 @@ class LearningHubScreen extends ConsumerWidget {
               )
             else if (active != null) ...[
               NeuCard(
-                color: AppColors.berrySoft,
+                depth: 0.5,
+                color: AppColors.coralSoft,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     NeuPill(
-                      color: AppColors.berry,
+                      color: AppColors.coral,
                       child: Text(
                           'Week ${active.weekNumber} · +${active.xpReward} XP',
                           style: const TextStyle(
@@ -161,7 +178,7 @@ class LearningHubScreen extends ConsumerWidget {
                           minHeight: 8,
                           backgroundColor: Colors.white.withValues(alpha: 0.5),
                           valueColor:
-                              const AlwaysStoppedAnimation(AppColors.berry),
+                              const AlwaysStoppedAnimation(AppColors.coral),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -180,7 +197,7 @@ class LearningHubScreen extends ConsumerWidget {
 
             // ── Up next ──────────────────────────────────────────────────────
             if (upNext.isNotEmpty) ...[
-              Text('Up next', style: T.title(context)),
+              Text('UP NEXT', style: T.section(context)),
               const SizedBox(height: 12),
               for (final lesson in upNext)
                 _UpNextRow(
@@ -191,11 +208,12 @@ class LearningHubScreen extends ConsumerWidget {
             ],
 
             // ── Your journey ─────────────────────────────────────────────────
-            Text('Your journey', style: T.title(context)),
+            Text('YOUR JOURNEY', style: T.section(context)),
             const SizedBox(height: 12),
 
             if (modules.isEmpty && !state.loading)
               const NeuCard(
+                depth: 0.5,
                 padding: EdgeInsets.all(24),
                 child: Center(
                     child:
@@ -226,26 +244,25 @@ class _UpNextRow extends StatelessWidget {
     final isVideo = lesson.lessonType == 'video';
     final isQuiz = lesson.lessonType == 'quiz';
     final iconColor =
-        isQuiz ? AppColors.gold : isVideo ? AppColors.coral : AppColors.berry;
+        isQuiz ? AppColors.coral : isVideo ? AppColors.coral : AppColors.coral;
+    final iconBg =
+        isQuiz ? AppColors.coralSoft : isVideo ? AppColors.coralSoft : AppColors.coralSoft;
     // Admin override: allow navigation even if API status is locked
     final canNavigate = !lesson.isLocked || adminUnlocked;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: NeuCard(
+        depth: 0.5,
         onTap: canNavigate ? () => context.push('/lesson/${lesson.id}') : null,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Row(children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: isQuiz
-                  ? AppColors.goldSoft
-                  : isVideo
-                      ? AppColors.coralSoft
-                      : AppColors.berrySoft,
-              shape: BoxShape.circle,
+              color: iconBg,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               isQuiz
@@ -255,7 +272,7 @@ class _UpNextRow extends StatelessWidget {
                       : Symbols.article_rounded,
               color: iconColor,
               fill: 1,
-              size: 22,
+              size: 20,
             ),
           ),
           const SizedBox(width: 14),
@@ -272,7 +289,7 @@ class _UpNextRow extends StatelessWidget {
           ),
           if (adminUnlocked && lesson.isLocked)
             const Icon(Symbols.lock_open_rounded,
-                color: AppColors.teal, size: 18)
+                color: AppColors.coral, size: 18)
           else
             const Icon(Symbols.chevron_right_rounded,
                 color: AppColors.inkSoft, size: 20),
@@ -304,37 +321,37 @@ class _WeekModuleRow extends StatelessWidget {
       statusIcon = Container(
         width: 36,
         height: 36,
-        decoration: const BoxDecoration(
-            color: AppColors.sageSoft, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+            color: AppColors.coralSoft, borderRadius: BorderRadius.circular(12)),
         child: const Icon(Symbols.check_circle_rounded,
-            color: AppColors.sage, size: 20, fill: 1),
+            color: AppColors.coral, size: 20, fill: 1),
       );
     } else if (locked) {
       statusIcon = Container(
         width: 36,
         height: 36,
-        decoration: const BoxDecoration(
-            color: AppColors.bg, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+            color: AppColors.bg, borderRadius: BorderRadius.circular(12)),
         child: const Icon(Symbols.lock_rounded,
-            color: AppColors.inkSoft, size: 18, fill: 1),
+            color: AppColors.inkSoft, size: 20, fill: 1),
       );
     } else if (adminUnlocked && module.isLocked) {
       // Locked by API but admin-unlocked — show teal open-lock icon
       statusIcon = Container(
         width: 36,
         height: 36,
-        decoration: const BoxDecoration(
-            color: AppColors.sageSoft, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+            color: AppColors.coralSoft, borderRadius: BorderRadius.circular(12)),
         child: const Icon(Symbols.lock_open_rounded,
-            color: AppColors.teal, size: 18, fill: 1),
+            color: AppColors.coral, size: 20, fill: 1),
       );
     } else {
       // active
       statusIcon = Container(
         width: 36,
         height: 36,
-        decoration: const BoxDecoration(
-            color: AppColors.coral, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+            color: AppColors.coral, borderRadius: BorderRadius.circular(12)),
         child: const Icon(Symbols.play_arrow_rounded,
             color: Colors.white, size: 20, fill: 1),
       );
@@ -344,10 +361,10 @@ class _WeekModuleRow extends StatelessWidget {
     Color statusColor;
     if (completed) {
       statusLabel = 'Completed';
-      statusColor = AppColors.sageDark;
+      statusColor = AppColors.coral;
     } else if (adminUnlocked && module.isLocked) {
       statusLabel = 'Admin Unlocked';
-      statusColor = AppColors.teal;
+      statusColor = AppColors.coral;
     } else if (active) {
       statusLabel = 'Active now';
       statusColor = AppColors.coral;
@@ -363,6 +380,7 @@ class _WeekModuleRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: NeuCard(
+        depth: 0.5,
         color: cardColor,
         onTap: (!locked && firstLessonId != null)
             ? () => context.push('/lesson/$firstLessonId')

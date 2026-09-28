@@ -37,26 +37,26 @@ class _Phase {
 const _kPhases = [
   _Phase(
     number: 1, name: 'Awareness',
-    grad: LinearGradient(colors: [Color(0xFFFF7A6B), Color(0xFFFFB3AB)]),
-    color: Color(0xFFFF7A6B), soft: Color(0xFFFFE6E1), textColor: Color(0xFF7A1F18),
+    grad: LinearGradient(colors: [AppColors.coral, Color(0xFFFFB3AB)]),
+    color: AppColors.coral, soft: AppColors.coralSoft, textColor: AppColors.ink,
     weeks: [1, 2, 3],
   ),
   _Phase(
     number: 2, name: 'Habit Building',
-    grad: LinearGradient(colors: [Color(0xFF2E6B4F), Color(0xFF8BC4A9)]),
-    color: Color(0xFF2E6B4F), soft: Color(0xFFDDEFE4), textColor: Color(0xFF1A3D2C),
+    grad: LinearGradient(colors: [AppColors.coral, Color(0xFFB8D4C8)]),
+    color: AppColors.coral, soft: AppColors.coralSoft, textColor: AppColors.ink,
     weeks: [4, 5, 6],
   ),
   _Phase(
     number: 3, name: 'Pushing Limits',
-    grad: LinearGradient(colors: [Color(0xFFB788D9), Color(0xFFD4AFEA)]),
-    color: Color(0xFFB788D9), soft: Color(0xFFEFE3F7), textColor: Color(0xFF7B4FA0),
+    grad: LinearGradient(colors: [AppColors.coral, Color(0xFFFFE0A0)]),
+    color: AppColors.coral, soft: AppColors.coralSoft, textColor: AppColors.ink,
     weeks: [7, 8, 9],
   ),
   _Phase(
     number: 4, name: 'Identity Shift',
-    grad: LinearGradient(colors: [Color(0xFFE5B36A), Color(0xFFF0CFA3)]),
-    color: Color(0xFFE5B36A), soft: Color(0xFFFFF3DC), textColor: Color(0xFFA36F1A),
+    grad: LinearGradient(colors: [AppColors.coral, Color(0xFFD4A0D4)]),
+    color: AppColors.coral, soft: AppColors.coralSoft, textColor: AppColors.ink,
     weeks: [10, 11, 12],
   ),
 ];
@@ -95,13 +95,7 @@ class _WeekMeta {
               ? 'Advanced'
               : 'Elite';
 
-  Color get difficultyColor => week <= 3
-      ? const Color(0xFFFF7A6B)
-      : week <= 6
-          ? const Color(0xFF2E6B4F)
-          : week <= 9
-              ? const Color(0xFFB788D9)
-              : const Color(0xFFE5B36A);
+  Color get difficultyColor => _phaseOf(week).color;
 }
 
 const _kWeeks = [
@@ -109,7 +103,7 @@ const _kWeeks = [
   _WeekMeta(
     week: 1, type: 'weight_and_meals', target: 7, minValue: 0, xp: 50,
     title: 'Know Your Baseline',
-    scienceFact: 'People who track food and weight lose 2× more than those who don\'t.',
+    scienceFact: 'People who track food and weight lose 2x more than those who don\'t.',
     howTo: [
       'Log your weight every morning from the Scale task',
       'Log every meal — Breakfast, Lunch, and Dinner',
@@ -451,7 +445,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                     // App bar
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                         child: Row(children: [
                           NeuIconButton(
                             icon: Symbols.arrow_back_rounded,
@@ -468,12 +462,12 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                         ]),
                       ),
                     ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
                     // Hero banner for active week
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: AnimatedBuilder(
                           animation: _shimmerAnim,
                           builder: (context, _) => _HeroBanner(
@@ -487,7 +481,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                         ),
                       ),
                     ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
                     // Phase tab bar
                     SliverToBoxAdapter(
@@ -497,17 +491,17 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                         onSelect: (i) => setState(() => _selectedPhase = i),
                       ),
                     ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
                     // Phase label
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Row(children: [
-                          Text('Phase ${phase.number}: ${phase.name}',
-                              style: T.title(context).copyWith(fontSize: 16)),
+                          Text('PHASE ${phase.number}: ${phase.name.toUpperCase()}',
+                              style: T.section(context)),
                           const Spacer(),
-                          Text('Weeks ${phaseWeeks.first}–${phaseWeeks.last}',
+                          Text('Weeks ${phaseWeeks.first}--${phaseWeeks.last}',
                               style: T.small(context)),
                         ]),
                       ),
@@ -524,7 +518,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                           final isLocked = week > currentWeek && !_isAdminUnlocked(week);
                           final isCompleted = entry?['completed'] == true;
                           return Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
                             child: GestureDetector(
                               onTap: () => _showDetailSheet(week),
                               child: AnimatedBuilder(
@@ -553,7 +547,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                     const SliverToBoxAdapter(child: SizedBox(height: 8)),
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: _MiniTimeline(
                           currentWeek: currentWeek,
                           entriesMap: _entriesMap,
@@ -632,15 +626,24 @@ class _HeroBanner extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(
-                color: AppColors.goldSoft,
+                color: AppColors.coralSoft,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Text('⭐', style: TextStyle(fontSize: 11)),
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: AppColors.coral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(Symbols.star_rounded,
+                      color: AppColors.coral, size: 12, fill: 1),
+                ),
                 const SizedBox(width: 4),
                 Text('+$xp XP',
                     style: const TextStyle(
-                        color: AppColors.goldDark, fontSize: 12, fontWeight: FontWeight.w800)),
+                        color: AppColors.coral, fontSize: 12, fontWeight: FontWeight.w800)),
               ]),
             ),
           ]),
@@ -691,13 +694,23 @@ class _HeroBanner extends StatelessWidget {
             ]),
           ] else
             Row(children: [
-              const Text('✅ ', style: TextStyle(fontSize: 16)),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.coral.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Symbols.check_circle_rounded,
+                    color: AppColors.coral, size: 20, fill: 1),
+              ),
+              const SizedBox(width: 10),
               const Text('Challenge Complete!',
                   style: TextStyle(color: AppColors.ink,
                       fontSize: 14, fontWeight: FontWeight.w700)),
               const Spacer(),
-              Text('+$xp XP earned 🏅',
-                  style: const TextStyle(color: AppColors.goldDark,
+              Text('+$xp XP earned',
+                  style: const TextStyle(color: AppColors.coral,
                       fontSize: 12, fontWeight: FontWeight.w600)),
             ]),
 
@@ -710,7 +723,16 @@ class _HeroBanner extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('💡', style: TextStyle(fontSize: 14)),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.coral.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Symbols.lightbulb_rounded,
+                    color: AppColors.coral, size: 20, fill: 1),
+              ),
               const SizedBox(width: 8),
               Expanded(child: Text(meta.scienceFact,
                   style: const TextStyle(color: AppColors.inkMid,
@@ -780,7 +802,7 @@ class _PhaseTabBar extends StatelessWidget {
       height: 64,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         itemCount: 4,
         itemBuilder: (context, i) {
           final phase = _kPhases[i];
@@ -920,11 +942,11 @@ class _WeekCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF3DC),
+            color: phase.soft,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text('+${meta.xp} XP',
-              style: const TextStyle(color: Color(0xFFA36F1A),
+              style: TextStyle(color: phase.color,
                   fontSize: 11, fontWeight: FontWeight.w800)),
         ),
       ]),
@@ -959,17 +981,16 @@ class _WeekCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.goldSoft,
+              color: AppColors.coralSoft,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text('+${meta.xp} XP',
-                style: const TextStyle(color: AppColors.goldDark,
+                style: const TextStyle(color: AppColors.coral,
                     fontSize: 11, fontWeight: FontWeight.w800)),
           ),
         ]),
         const SizedBox(height: 10),
         Row(children: [
-          const Text('', style: TextStyle(fontSize: 12)),
           Text('Week $week', style: const TextStyle(
               color: AppColors.inkMid, fontSize: 12,
               fontWeight: FontWeight.w600)),
@@ -1027,7 +1048,7 @@ class _WeekCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.coral,
+              color: phase.color,
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text('View Details',
@@ -1109,7 +1130,7 @@ class _MiniTimeline extends StatelessWidget {
         ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Your 12-Week Journey', style: T.title(context).copyWith(fontSize: 14)),
+        Text('YOUR 12-WEEK JOURNEY', style: T.section(context)),
         const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1146,9 +1167,7 @@ class _MiniTimeline extends StatelessWidget {
                             style: TextStyle(
                               color: isActive
                                   ? Colors.white
-                                  : isLocked
-                                      ? AppColors.inkSoft
-                                      : AppColors.inkSoft,
+                                  : AppColors.inkSoft,
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                             )),
@@ -1218,7 +1237,7 @@ class _ChallengeDetailSheet extends StatelessWidget {
           children: [
             Expanded(child: ListView(
           controller: scrollCtrl,
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
           children: [
             // Handle
             Center(child: Container(
@@ -1258,15 +1277,37 @@ class _ChallengeDetailSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isCompleted ? AppColors.sageSoft : isActive ? phase.soft : AppColors.bg,
+                      color: isCompleted ? AppColors.coralSoft : isActive ? phase.soft : AppColors.bg,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      isCompleted ? '✅ Done' : isActive ? '⚡ Active' : '🔒 Locked',
-                      style: TextStyle(
-                          color: isCompleted ? AppColors.sageDark : isActive ? phase.color : AppColors.inkSoft,
-                          fontSize: 11, fontWeight: FontWeight.w700),
-                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: isCompleted
+                              ? AppColors.coral.withValues(alpha: 0.12)
+                              : isActive
+                                  ? phase.color.withValues(alpha: 0.12)
+                                  : AppColors.inkSoft.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          isCompleted ? Symbols.check_circle_rounded
+                              : isActive ? Symbols.bolt_rounded
+                              : Symbols.lock_rounded,
+                          color: isCompleted ? AppColors.coral : isActive ? phase.color : AppColors.inkSoft,
+                          size: 12, fill: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isCompleted ? 'Done' : isActive ? 'Active' : 'Locked',
+                        style: TextStyle(
+                            color: isCompleted ? AppColors.coral : isActive ? phase.color : AppColors.inkSoft,
+                            fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                    ]),
                   ),
                 ]),
                 const SizedBox(height: 10),
@@ -1278,12 +1319,17 @@ class _ChallengeDetailSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
-                      color: AppColors.goldSoft,
+                      color: AppColors.coralSoft,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Text('⭐ +$xp XP',
-                        style: const TextStyle(color: AppColors.goldDark,
-                            fontSize: 12, fontWeight: FontWeight.w800)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Symbols.star_rounded,
+                          color: AppColors.coral, size: 12, fill: 1),
+                      const SizedBox(width: 4),
+                      Text('+$xp XP',
+                          style: const TextStyle(color: AppColors.coral,
+                              fontSize: 12, fontWeight: FontWeight.w800)),
+                    ]),
                   ),
                   const SizedBox(width: 8),
                   // Difficulty badge
@@ -1300,11 +1346,11 @@ class _ChallengeDetailSheet extends StatelessWidget {
                 ]),
               ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // Progress (active or completed)
             if (!isLocked) ...[
-              Text('Day Tracker', style: T.title(context).copyWith(fontSize: 15)),
+              Text('DAY TRACKER', style: T.section(context)),
               const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.all(14),
@@ -1378,7 +1424,7 @@ class _ChallengeDetailSheet extends StatelessWidget {
                   ],
                 ]),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
 
             // Locked info
@@ -1394,7 +1440,16 @@ class _ChallengeDetailSheet extends StatelessWidget {
                   ],
                 ),
                 child: Row(children: [
-                  Icon(Symbols.lock_clock_rounded, color: AppColors.inkSoft, size: 22),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.inkSoft.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Symbols.lock_clock_rounded,
+                        color: AppColors.inkSoft, size: 20, fill: 1),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(child: Text(
                     weeksUntilUnlock == 1
@@ -1404,11 +1459,11 @@ class _ChallengeDetailSheet extends StatelessWidget {
                   )),
                 ]),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
 
             // How to complete
-            Text('How to Complete', style: T.title(context).copyWith(fontSize: 15)),
+            Text('HOW TO COMPLETE', style: T.section(context)),
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(14),
@@ -1441,10 +1496,10 @@ class _ChallengeDetailSheet extends StatelessWidget {
                 ],
               ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // Why it works
-            Text('Why It Works', style: T.title(context).copyWith(fontSize: 15)),
+            Text('WHY IT WORKS', style: T.section(context)),
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(14),
@@ -1453,7 +1508,16 @@ class _ChallengeDetailSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('🧠', style: const TextStyle(fontSize: 18)),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: phase.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Symbols.psychology_rounded,
+                      color: phase.color, size: 20, fill: 1),
+                ),
                 const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(meta.whyItWorks, style: T.body(context).copyWith(
@@ -1466,7 +1530,16 @@ class _ChallengeDetailSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(children: [
-                      const Text('💡', style: TextStyle(fontSize: 14)),
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: AppColors.coral.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Symbols.lightbulb_rounded,
+                            color: AppColors.coral, size: 16, fill: 1),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(child: Text(meta.scienceFact, style: const TextStyle(
                           color: AppColors.inkMid, fontSize: 12,
@@ -1480,24 +1553,34 @@ class _ChallengeDetailSheet extends StatelessWidget {
         )),
             // Sticky CTA button always visible at bottom
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
               child: NeuButton(
                 expand: true,
                 color: isCompleted
-                    ? AppColors.sageSoft
+                    ? AppColors.coralSoft
                     : isLocked
                         ? AppColors.surface
-                        : AppColors.coral,
-                foreground: isCompleted ? AppColors.sageDark : isLocked ? AppColors.inkSoft : Colors.white,
+                        : phase.color,
+                foreground: isCompleted ? AppColors.coral : isLocked ? AppColors.inkSoft : Colors.white,
                 onPressed: isLocked ? null : () => Navigator.of(context).pop(),
-                child: Text(
-                  isCompleted ? '✅ Challenge Completed!' : isActive ? '⚡ Keep Going!' : '🔒 Locked',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isCompleted ? AppColors.sageDark : isLocked ? AppColors.inkSoft : Colors.white,
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(
+                    isCompleted ? Symbols.check_circle_rounded
+                        : isActive ? Symbols.bolt_rounded
+                        : Symbols.lock_rounded,
+                    color: isCompleted ? AppColors.coral : isLocked ? AppColors.inkSoft : Colors.white,
+                    size: 18, fill: 1,
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isCompleted ? 'Challenge Completed!' : isActive ? 'Keep Going!' : 'Locked',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: isCompleted ? AppColors.coral : isLocked ? AppColors.inkSoft : Colors.white,
+                    ),
+                  ),
+                ]),
               ),
             ),
           ],
@@ -1544,7 +1627,7 @@ class _Week6MilestoneDialogState extends State<_Week6MilestoneDialog>
   @override
   Widget build(BuildContext context) {
     final lost = (widget.startWeight - widget.currentWeight);
-    final lostStr = lost > 0 ? '−${lost.toStringAsFixed(1)} kg' : '${lost.abs().toStringAsFixed(1)} kg';
+    final lostStr = lost > 0 ? '-${lost.toStringAsFixed(1)} kg' : '${lost.abs().toStringAsFixed(1)} kg';
 
     return ScaleTransition(
       scale: _scale,
@@ -1563,7 +1646,16 @@ class _Week6MilestoneDialogState extends State<_Week6MilestoneDialog>
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(children: [
-              const Text('🎉', style: TextStyle(fontSize: 48)),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.coralSoft,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Symbols.celebration_rounded,
+                    color: AppColors.coral, size: 32, fill: 1),
+              ),
               const SizedBox(height: 8),
               const Text('Halfway There!', style: TextStyle(
                   color: AppColors.ink, fontSize: 28, fontWeight: FontWeight.w900)),
@@ -1577,25 +1669,27 @@ class _Week6MilestoneDialogState extends State<_Week6MilestoneDialog>
                 Expanded(child: _StatCard(
                   label: 'Start Weight',
                   value: '${widget.startWeight.toStringAsFixed(1)} kg',
-                  icon: '⚖️',
+                  icon: Symbols.monitor_weight_rounded,
+                  iconColor: AppColors.coral,
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _StatCard(
                   label: 'Now',
                   value: '${widget.currentWeight.toStringAsFixed(1)} kg',
-                  icon: '📉',
+                  icon: Symbols.trending_down_rounded,
+                  iconColor: AppColors.coral,
                 )),
               ]),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: AppColors.sageSoft,
+                  color: AppColors.coralSoft,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(children: [
                   Text(lostStr, style: const TextStyle(
-                      color: AppColors.sageDark, fontSize: 32, fontWeight: FontWeight.w900)),
+                      color: AppColors.coral, fontSize: 32, fontWeight: FontWeight.w900)),
                   const Text('lost in 6 weeks', style: TextStyle(
                       color: AppColors.inkMid, fontSize: 13)),
                 ]),
@@ -1611,7 +1705,7 @@ class _Week6MilestoneDialogState extends State<_Week6MilestoneDialog>
                     color: AppColors.bg,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: _WeightChart(spots: widget.weightHistory, color: AppColors.sageDark),
+                  child: _WeightChart(spots: widget.weightHistory, color: AppColors.coral),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -1624,7 +1718,7 @@ class _Week6MilestoneDialogState extends State<_Week6MilestoneDialog>
                 ),
                 child: const Text(
                   'You\'ve built the habits that make lasting change possible. '
-                  'The next 6 weeks will push you further — but you\'re ready. 💪',
+                  'The next 6 weeks will push you further — but you\'re ready.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.inkMid,
                       fontSize: 13, height: 1.5),
@@ -1641,7 +1735,7 @@ class _Week6MilestoneDialogState extends State<_Week6MilestoneDialog>
                     color: AppColors.coral,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text('Continue to Phase 3 →',
+                  child: const Text('Continue to Phase 3',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white,
                           fontSize: 16, fontWeight: FontWeight.w800)),
@@ -1702,9 +1796,9 @@ class _Week12MilestoneDialogState extends State<_Week12MilestoneDialog>
       rotation: _rng.nextDouble() * math.pi * 2,
       vRotation: (_rng.nextDouble() - 0.5) * 0.1,
       color: [
-        AppColors.gold, AppColors.coral, AppColors.berry,
-        AppColors.sageDark, AppColors.sage, AppColors.goldDark,
-        AppColors.coralSoft, AppColors.berrySoft,
+        AppColors.coral, AppColors.coral, AppColors.coral,
+        AppColors.coral, AppColors.coral, AppColors.coral,
+        AppColors.coralSoft, AppColors.coralSoft,
       ][i % 8],
     ));
   }
@@ -1763,7 +1857,16 @@ class _Week12MilestoneDialogState extends State<_Week12MilestoneDialog>
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(children: [
-                const Text('🏆', style: TextStyle(fontSize: 52)),
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(Symbols.emoji_events_rounded,
+                      color: AppColors.coral, size: 32, fill: 1),
+                ),
                 const SizedBox(height: 8),
                 const Text('Transformation Complete!', style: TextStyle(
                     color: AppColors.ink, fontSize: 24, fontWeight: FontWeight.w900),
@@ -1782,12 +1885,18 @@ class _Week12MilestoneDialogState extends State<_Week12MilestoneDialog>
                   mainAxisSpacing: 10,
                   childAspectRatio: 2.2,
                   children: [
-                    _StatCard(label: 'Started At', value: '${widget.startWeight.toStringAsFixed(1)} kg', icon: '⚖️'),
-                    _StatCard(label: 'Finished At', value: '${widget.currentWeight.toStringAsFixed(1)} kg', icon: '🎯'),
-                    _StatCard(label: 'Total Lost', value: lostStr, icon: '📉'),
-                    _StatCard(label: 'XP Earned', value: '${widget.totalXp}', icon: '⭐'),
-                    _StatCard(label: 'Total Steps', value: '$stepsK steps', icon: '👟'),
-                    _StatCard(label: 'Best Streak', value: '${widget.longestStreak} days', icon: '🔥'),
+                    _StatCard(label: 'Started At', value: '${widget.startWeight.toStringAsFixed(1)} kg',
+                        icon: Symbols.monitor_weight_rounded, iconColor: AppColors.coral),
+                    _StatCard(label: 'Finished At', value: '${widget.currentWeight.toStringAsFixed(1)} kg',
+                        icon: Symbols.flag_rounded, iconColor: AppColors.coral),
+                    _StatCard(label: 'Total Lost', value: lostStr,
+                        icon: Symbols.trending_down_rounded, iconColor: AppColors.coral),
+                    _StatCard(label: 'XP Earned', value: '${widget.totalXp}',
+                        icon: Symbols.star_rounded, iconColor: AppColors.coral),
+                    _StatCard(label: 'Total Steps', value: '$stepsK steps',
+                        icon: Symbols.directions_walk_rounded, iconColor: AppColors.coral),
+                    _StatCard(label: 'Best Streak', value: '${widget.longestStreak} days',
+                        icon: Symbols.local_fire_department_rounded, iconColor: AppColors.coral),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -1802,12 +1911,11 @@ class _Week12MilestoneDialogState extends State<_Week12MilestoneDialog>
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('12-Week Weight Trend',
-                          style: TextStyle(color: AppColors.inkMid,
-                              fontSize: 11, fontWeight: FontWeight.w700)),
+                      Text('12-WEEK WEIGHT TREND',
+                          style: T.section(context)),
                       const SizedBox(height: 4),
                       Expanded(child: _WeightChart(
-                          spots: widget.weightHistory, color: AppColors.sageDark)),
+                          spots: widget.weightHistory, color: AppColors.coral)),
                     ]),
                   ),
                   const SizedBox(height: 20),
@@ -1818,16 +1926,25 @@ class _Week12MilestoneDialogState extends State<_Week12MilestoneDialog>
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.goldSoft,
+                    color: AppColors.coralSoft,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.gold, width: 1.5),
+                    border: Border.all(color: AppColors.coral, width: 1.5),
                   ),
                   child: Row(children: [
-                    const Text('🎓', style: TextStyle(fontSize: 32)),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.coral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Symbols.school_rounded,
+                          color: AppColors.coral, size: 20, fill: 1),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       const Text('FitQuest Graduate', style: TextStyle(
-                          color: AppColors.goldDark, fontSize: 16, fontWeight: FontWeight.w900)),
+                          color: AppColors.coral, fontSize: 16, fontWeight: FontWeight.w900)),
                       Text('12-Week Challenge · ${lost.toStringAsFixed(1)} kg lost',
                           style: const TextStyle(color: AppColors.inkMid, fontSize: 12)),
                     ])),
@@ -1862,8 +1979,10 @@ class _Week12MilestoneDialogState extends State<_Week12MilestoneDialog>
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({required this.label, required this.value, required this.icon});
-  final String label, value, icon;
+  const _StatCard({required this.label, required this.value, required this.icon, required this.iconColor});
+  final String label, value;
+  final IconData icon;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1873,7 +1992,15 @@ class _StatCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
     ),
     child: Row(children: [
-      Text(icon, style: const TextStyle(fontSize: 18)),
+      Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: iconColor, size: 20, fill: 1),
+      ),
       const SizedBox(width: 8),
       Expanded(child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

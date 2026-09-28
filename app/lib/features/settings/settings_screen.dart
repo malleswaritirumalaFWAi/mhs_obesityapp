@@ -71,7 +71,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await ref.read(apiClientProvider).postJson('/compliance/data-export', {});
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Data export requested. You\'ll be notified when ready.'),
-          backgroundColor: AppColors.sage));
+          backgroundColor: AppColors.coral));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.coral));
@@ -101,7 +101,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Data deletion request submitted.'),
-            backgroundColor: AppColors.sage));
+            backgroundColor: AppColors.coral));
         await ref.read(sessionProvider.notifier).signOut();
         if (mounted) context.go(Routes.welcome);
       }
@@ -117,9 +117,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       backgroundColor: AppColors.bg,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           children: [
             NeuCard(
+              depth: 0.5,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Row(children: [
                 GestureDetector(
@@ -135,18 +136,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           fontSize: 20,
                           fontWeight: FontWeight.w900)),
                 ),
-                const Icon(Symbols.tune_rounded, color: AppColors.inkMid, size: 22),
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.tune_rounded,
+                      color: AppColors.coral, size: 20, fill: 1),
+                ),
               ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
-            Text('NOTIFICATIONS', style: T.label(context)),
+            Text('NOTIFICATIONS', style: T.section(context)),
             const SizedBox(height: 12),
             NeuCard(
+              depth: 0.5,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Column(children: [
                 _Toggle(
                     icon: Symbols.notifications_rounded,
+                    iconColor: AppColors.coral,
                     label: 'Push notifications',
                     value: _push,
                     onChanged: (v) {
@@ -155,6 +166,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     }),
                 _Toggle(
                     icon: Symbols.restaurant_rounded,
+                    iconColor: AppColors.coral,
                     label: 'Daily coach digest',
                     value: _coachDigest,
                     onChanged: (v) {
@@ -163,6 +175,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     }),
                 _Toggle(
                     icon: Symbols.emoji_events_rounded,
+                    iconColor: AppColors.coral,
                     label: 'Leaderboard updates',
                     value: _leaderboard,
                     onChanged: (v) {
@@ -172,25 +185,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     last: true),
               ]),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
 
-            Text('ACCOUNT', style: T.label(context)),
+            Text('ACCOUNT', style: T.section(context)),
             const SizedBox(height: 12),
-            _LinkRow(icon: Symbols.favorite_rounded, label: 'Health goals',
+            _LinkRow(icon: Symbols.favorite_rounded, iconColor: AppColors.coral, label: 'Health goals',
                 onTap: () => context.push(Routes.healthGoals)),
-            _LinkRow(icon: Symbols.help_rounded, label: 'Help & support',
+            _LinkRow(icon: Symbols.help_rounded, iconColor: AppColors.coral, label: 'Help & support',
                 onTap: () => context.push(Routes.helpSupport)),
-            _LinkRow(icon: Symbols.description_rounded, label: 'Terms & conditions',
+            _LinkRow(icon: Symbols.description_rounded, iconColor: AppColors.coral, label: 'Terms & conditions',
                 onTap: () => context.push(Routes.termsConditions)),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
 
-            Text('PRIVACY & DATA (DPDP ACT 2023)', style: T.label(context)),
+            Text('PRIVACY & DATA (DPDP ACT 2023)', style: T.section(context)),
             const SizedBox(height: 12),
             NeuCard(
+              depth: 0.5,
               onTap: _requestDataExport,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(children: [
-                const Icon(Symbols.download_rounded, color: AppColors.inkMid),
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.download_rounded,
+                      color: AppColors.coral, size: 20, fill: 1),
+                ),
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Export my data', style: T.title(context).copyWith(fontSize: 15)),
@@ -201,10 +223,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 10),
             NeuCard(
+              depth: 0.5,
               onTap: _requestDataDeletion,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(children: [
-                const Icon(Symbols.delete_rounded, color: AppColors.coral),
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.delete_rounded,
+                      color: AppColors.coral, size: 20, fill: 1),
+                ),
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Delete my data', style: T.title(context).copyWith(fontSize: 15, color: AppColors.coral)),
@@ -213,13 +244,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const Icon(Symbols.chevron_right_rounded, color: AppColors.inkSoft),
               ]),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
 
             NeuCard(
+              depth: 0.5,
               onTap: _logout,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(children: [
-                const Icon(Symbols.logout_rounded, color: AppColors.coral),
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.coral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Symbols.logout_rounded,
+                      color: AppColors.coral, size: 20, fill: 1),
+                ),
                 const SizedBox(width: 14),
                 Text('Log out',
                     style: T.title(context).copyWith(color: AppColors.coral, fontSize: 15)),
@@ -237,12 +277,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 class _Toggle extends StatelessWidget {
   const _Toggle({
     required this.icon,
+    required this.iconColor,
     required this.label,
     required this.value,
     required this.onChanged,
     this.last = false,
   });
   final IconData icon;
+  final Color iconColor;
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -255,7 +297,14 @@ class _Toggle extends StatelessWidget {
         border: last ? null : const Border(bottom: BorderSide(color: AppColors.line)),
       ),
       child: Row(children: [
-        Icon(icon, color: AppColors.inkMid, size: 22),
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 20, fill: 1),
+        ),
         const SizedBox(width: 14),
         Expanded(child: Text(label, style: T.title(context).copyWith(fontSize: 15))),
         Switch(
@@ -271,8 +320,9 @@ class _Toggle extends StatelessWidget {
 }
 
 class _LinkRow extends StatelessWidget {
-  const _LinkRow({required this.icon, required this.label, required this.onTap});
+  const _LinkRow({required this.icon, required this.iconColor, required this.label, required this.onTap});
   final IconData icon;
+  final Color iconColor;
   final String label;
   final VoidCallback onTap;
   @override
@@ -280,10 +330,18 @@ class _LinkRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: NeuCard(
+        depth: 0.5,
         onTap: onTap,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(children: [
-          Icon(icon, color: AppColors.inkMid),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 20, fill: 1),
+          ),
           const SizedBox(width: 14),
           Expanded(child: Text(label, style: T.title(context).copyWith(fontSize: 15))),
           const Icon(Symbols.chevron_right_rounded, color: AppColors.inkSoft),
