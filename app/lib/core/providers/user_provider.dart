@@ -37,13 +37,15 @@ class UserProfile {
 final userProvider = FutureProvider<UserProfile>((ref) async {
   ref.watch(currentUserKeyProvider);
   final api = ref.watch(apiClientProvider);
+  final sessionName = ref.watch(sessionProvider).name ?? '';
   final data = await api.getJson('/profile');
   final user = (data['user'] as Map?) ?? {};
   final rawBadges = (data['badges'] as List?) ?? [];
+  final dbName = (user['name'] as String?) ?? '';
   return UserProfile(
-    name: (user['name'] as String?)?.isNotEmpty == true
-        ? user['name'] as String
-        : (user['phone'] as String?) ?? 'User',
+    name: dbName.isNotEmpty ? dbName
+        : sessionName.isNotEmpty ? sessionName
+        : 'User',
     phone: (user['phone'] as String?) ?? '',
     email: (user['email'] as String?) ?? '',
     xp: (user['xp'] as num?)?.toInt() ?? 0,
