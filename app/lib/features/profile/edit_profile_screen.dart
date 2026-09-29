@@ -78,9 +78,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 70,
+      maxWidth: 256,
+      maxHeight: 256,
+      imageQuality: 50,
     );
     if (picked == null) return;
 
@@ -89,7 +89,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final bytes = await picked.readAsBytes();
       final base64Photo = 'data:image/jpeg;base64,${base64Encode(bytes)}';
       final api = ref.read(apiClientProvider);
-      final res = await api.postJson('/profile/photo', {'photo': base64Photo});
+      final res = await api.postJson('/profile/photo', {'photo': base64Photo},);
       if (res['updated'] == true) {
         setState(() => _photoUrl = base64Photo);
       }
