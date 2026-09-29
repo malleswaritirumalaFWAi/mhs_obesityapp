@@ -41,7 +41,9 @@ final userProvider = FutureProvider<UserProfile>((ref) async {
   final user = (data['user'] as Map?) ?? {};
   final rawBadges = (data['badges'] as List?) ?? [];
   return UserProfile(
-    name: (user['name'] as String?) ?? 'User',
+    name: (user['name'] as String?)?.isNotEmpty == true
+        ? user['name'] as String
+        : (user['phone'] as String?) ?? 'User',
     phone: (user['phone'] as String?) ?? '',
     email: (user['email'] as String?) ?? '',
     xp: (user['xp'] as num?)?.toInt() ?? 0,

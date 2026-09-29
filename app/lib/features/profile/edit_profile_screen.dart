@@ -147,107 +147,111 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
       body: userAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const Center(child: Text('Failed to load profile')),
+        error: (_, __) {
+          // Still allow editing with empty fields if profile fetch fails
+          final fallback = UserProfile(
+            name: '', phone: '', email: '', xp: 0, totalXp: 0, streak: 0, badges: [],
+          );
+          _initFromUser(fallback);
+          return _buildForm(fallback);
+        },
         data: (user) {
           _initFromUser(user);
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-            child: Column(
-              children: [
-                // ── Profile photo ──
-                Center(
-                  child: GestureDetector(
-                    onTap: _uploadingPhoto ? null : _pickPhoto,
-                    child: Stack(
-                      children: [
-                        _buildAvatar(user),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.coral,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: AppColors.bg, width: 2),
-                            ),
-                            alignment: Alignment.center,
-                            child: _uploadingPhoto
-                                ? const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Symbols.photo_camera_rounded,
-                                    size: 16, color: Colors.white),
-                          ),
-                        ),
-                      ],
+          return _buildForm(user);
+        },
+      ),
+    );
+  }
+
+  Widget _buildForm(UserProfile user) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+      child: Column(
+        children: [
+          // ── Profile photo ──
+          Center(
+            child: GestureDetector(
+              onTap: _uploadingPhoto ? null : _pickPhoto,
+              child: Stack(
+                children: [
+                  _buildAvatar(user),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.coral,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.bg, width: 2),
+                      ),
+                      alignment: Alignment.center,
+                      child: _uploadingPhoto
+                          ? const SizedBox(
+                              width: 14, height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Symbols.photo_camera_rounded,
+                              size: 16, color: Colors.white),
                     ),
                   ),
-                ),
-                const SizedBox(height: 28),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
 
-                // ── Personal info ──
-                NeuCard(
-                  depth: 0.5,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('PERSONAL INFO',
-                          style: T.section(context)),
-                      const SizedBox(height: 16),
-                      _buildField('Name', _nameCtrl, Symbols.person_rounded),
-                      const SizedBox(height: 14),
-                      _buildField('Email', _emailCtrl, Symbols.mail_rounded,
-                          keyboardType: TextInputType.emailAddress),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // ── Body metrics ──
-                NeuCard(
-                  depth: 0.5,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('BODY METRICS',
-                          style: T.section(context)),
-                      const SizedBox(height: 16),
-                      _buildField(
-                          'Height (cm)', _heightCtrl, Symbols.height_rounded,
-                          keyboardType: TextInputType.number),
-                      const SizedBox(height: 14),
-                      _buildField('Start Weight (kg)', _startWeightCtrl,
-                          Symbols.monitor_weight_rounded,
-                          keyboardType: TextInputType.number),
-                      const SizedBox(height: 14),
-                      _buildField('Target Weight (kg)', _targetWeightCtrl,
-                          Symbols.flag_rounded,
-                          keyboardType: TextInputType.number),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // ── Save button ──
-                NeuButton.primary(
-                  'Save Changes',
-                  onPressed: _saving ? null : _save,
-                  loading: _saving,
-                ),
+          // ── Personal info ──
+          NeuCard(
+            depth: 0.5,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('PERSONAL INFO', style: T.section(context)),
+                const SizedBox(height: 16),
+                _buildField('Name', _nameCtrl, Symbols.person_rounded),
+                const SizedBox(height: 14),
+                _buildField('Email', _emailCtrl, Symbols.mail_rounded,
+                    keyboardType: TextInputType.emailAddress),
               ],
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 20),
+
+          // ── Body metrics ──
+          NeuCard(
+            depth: 0.5,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('BODY METRICS', style: T.section(context)),
+                const SizedBox(height: 16),
+                _buildField('Height (cm)', _heightCtrl, Symbols.height_rounded,
+                    keyboardType: TextInputType.number),
+                const SizedBox(height: 14),
+                _buildField('Start Weight (kg)', _startWeightCtrl,
+                    Symbols.monitor_weight_rounded,
+                    keyboardType: TextInputType.number),
+                const SizedBox(height: 14),
+                _buildField('Target Weight (kg)', _targetWeightCtrl,
+                    Symbols.flag_rounded,
+                    keyboardType: TextInputType.number),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+
+          // ── Save button ──
+          NeuButton.primary(
+            'Save Changes',
+            onPressed: _saving ? null : _save,
+            loading: _saving,
+          ),
+        ],
       ),
     );
   }
