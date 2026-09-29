@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,7 +69,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     setState(() => _uploadingPhoto = true);
     try {
-      final bytes = await File(picked.path).readAsBytes();
+      final bytes = await picked.readAsBytes();
       final base64Photo = 'data:image/jpeg;base64,${base64Encode(bytes)}';
       final api = ref.read(apiClientProvider);
       final res = await api.postJson('/profile/photo', {'photo': base64Photo});
