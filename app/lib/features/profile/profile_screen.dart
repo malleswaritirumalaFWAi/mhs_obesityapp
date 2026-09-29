@@ -135,7 +135,10 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () => context.push(Routes.editProfile),
+                onTap: () async {
+                  await context.push(Routes.editProfile);
+                  ref.invalidate(userProvider);
+                },
                 child: Container(
                   width: 38,
                   height: 38,
@@ -468,7 +471,10 @@ class ProfileScreen extends ConsumerWidget {
             icon: Symbols.edit_rounded,
             iconBg: AppColors.coral,
             label: 'Edit profile',
-            onTap: () => context.push(Routes.editProfile)),
+            onTap: () async {
+              await context.push(Routes.editProfile);
+              ref.invalidate(userProvider);
+            }),
         _SettingRow(
             icon: Symbols.stars_rounded,
             iconBg: AppColors.coral,
