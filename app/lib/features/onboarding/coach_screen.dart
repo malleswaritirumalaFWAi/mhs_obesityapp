@@ -193,7 +193,7 @@ class CoachScreen extends StatelessWidget {
                 Expanded(
                   child: Center(
                     child: TextButton(
-                      onPressed: () => context.go(Routes.payment),
+                      onPressed: () => context.go(Routes.home),
                       child: Text('Skip for now', style: T.small(context)),
                     ),
                   ),

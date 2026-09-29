@@ -305,6 +305,10 @@ router.post('/stats/today', async (req, res) => {
   if (water !== undefined && Number(water) >= 8) {
     await markTasksDoneByIcon(uid(req), ['water_drop']);
   }
+  // Mark movement task done if steps reached 8000 via home screen card
+  if (steps !== undefined && Number(steps) >= 8000) {
+    await markTasksDoneByIcon(uid(req), ['directions_run', 'directions_walk']);
+  }
   res.json({ updated: true });
 });
 
@@ -510,7 +514,7 @@ router.get('/group/leaderboard', async (req, res) => {
      WHERE gm.group_id=$1 ORDER BY gm.weekly_xp DESC LIMIT 50`,
     [gid]
   );
-  const leaderboard = r.rows.map((m, i) => ({ ...m, rank: i + 1, you: m.id === uid(req) }));
+  const leaderboard = r.rows.map((m, i) => ({ ...m, xp: m.weekly_xp, rank: i + 1, you: Number(m.id) === Number(uid(req)) }));
   res.json({ leaderboard, members: leaderboard }); // both keys for compatibility
 });
 

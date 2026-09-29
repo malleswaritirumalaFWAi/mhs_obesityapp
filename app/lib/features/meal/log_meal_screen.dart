@@ -307,6 +307,67 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
   void _removeItem(int i) => setState(() => _result?.items.removeAt(i));
 
+  Future<void> _addItem() async {
+    final ctrl = TextEditingController();
+    final item = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Add food item'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(hintText: 'e.g. Rice, Curd'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (item != null && item.isNotEmpty && _result != null) {
+      setState(() => _result!.items.add(item));
+    }
+  }
+
+  Future<void> _editItems() async {
+    if (_result == null) return;
+    final ctrl = TextEditingController(text: _result!.items.join(', '));
+    final edited = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Edit items'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          maxLines: 3,
+          decoration: const InputDecoration(hintText: 'Comma-separated items'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (edited != null && edited.isNotEmpty && _result != null) {
+      setState(() {
+        _result!.items.clear();
+        _result!.items.addAll(edited.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+      });
+    }
+  }
+
   /// Shows a simple dialog to enter meal details manually when AI analysis fails.
   Future<void> _enterManually() async {
     final foodCtrl = TextEditingController();
@@ -815,16 +876,16 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                 _resultBody(context),
                 const SizedBox(height: 16),
                 Row(children: [
-                  Expanded(
-                    child: NeuButton(
-                      onPressed: () => _pick(ImageSource.camera),
-                      filled: false,
-                      child: const Text('Retake'),
+                  NeuButton(
+                    onPressed: () => _pick(ImageSource.camera),
+                    filled: false,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('Retake'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    flex: 2,
                     child: NeuButton.primary(
                       'Save · +5 XP',
                       loading: _saving,
@@ -852,7 +913,10 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
         Row(children: [
           Text('DETECTED ITEMS', style: T.section(context)),
           const Spacer(),
-          Text('Edit', style: T.small(context).copyWith(color: AppColors.coral)),
+          GestureDetector(
+            onTap: _editItems,
+            child: Text('Edit', style: T.small(context).copyWith(color: AppColors.coral)),
+          ),
         ]),
         const SizedBox(height: 10),
         Wrap(
@@ -873,13 +937,16 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                   ),
                 ]),
               ),
-            NeuPill(
-              child: Row(mainAxisSize: MainAxisSize.min, children: const [
-                Icon(Symbols.add_rounded, size: 16, color: AppColors.coral),
-                SizedBox(width: 4),
-                Text('Add',
-                    style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w700)),
-              ]),
+            GestureDetector(
+              onTap: _addItem,
+              child: NeuPill(
+                child: Row(mainAxisSize: MainAxisSize.min, children: const [
+                  Icon(Symbols.add_rounded, size: 16, color: AppColors.coral),
+                  SizedBox(width: 4),
+                  Text('Add',
+                      style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w700)),
+                ]),
+              ),
             ),
           ],
         ),

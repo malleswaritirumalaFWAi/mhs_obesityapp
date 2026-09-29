@@ -267,7 +267,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 Expanded(
                   child: Text(q.options[i].title,
                       style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 15,
                           fontWeight: FontWeight.w800,
                           color: selected == i ? _accent : AppColors.ink)),
                 ),

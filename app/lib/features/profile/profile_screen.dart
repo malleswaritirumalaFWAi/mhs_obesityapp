@@ -8,6 +8,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/providers/gamification_provider.dart';
 import '../../core/providers/user_provider.dart';
+import '../../features/group/leaderboard_provider.dart';
 import 'profile_provider.dart';
 import '../../core/router.dart';
 import '../../core/theme/app_colors.dart';
@@ -51,7 +52,13 @@ class ProfileScreen extends ConsumerWidget {
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     final gamState = ref.watch(gamificationProvider);
     final levelLabel = gamState.level.label;
-    final royalRank = gamState.royalRank;
+    final leaderboardData = ref.watch(leaderboardProvider);
+    final royalRank = leaderboardData.whenOrNull(
+      data: (members) {
+        final me = members.where((m) => m.you).firstOrNull;
+        return me?.rank;
+      },
+    );
     final weightAsync = ref.watch(weightHistoryProvider);
 
     // Level progress calculation

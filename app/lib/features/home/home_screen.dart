@@ -8,6 +8,7 @@ import '../../core/providers/lessons_provider.dart';
 import '../../core/providers/notifications_provider.dart';
 import '../../core/providers/tasks_provider.dart';
 import '../../core/providers/user_provider.dart';
+import '../../features/group/leaderboard_provider.dart';
 import '../../core/router.dart';
 import '../../core/state/session.dart';
 import '../../core/theme/app_colors.dart';
@@ -57,6 +58,14 @@ class HomeScreen extends ConsumerWidget {
     final tasksState = ref.watch(tasksProvider);
     final stats = ref.watch(dailyStatsProvider);
     final unreadCount = ref.watch(notificationsProvider).unreadCount;
+
+    final leaderboard = ref.watch(leaderboardProvider);
+    final myRank = leaderboard.whenOrNull(
+      data: (members) {
+        final me = members.where((m) => m.you).firstOrNull;
+        return me?.rank;
+      },
+    );
 
     final done = tasksState.done;
     final total = tasksState.total;
@@ -375,8 +384,8 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       Text('YOUR RANK', style: T.section(context)),
                       const SizedBox(height: 4),
-                      const Text('#12',
-                          style: TextStyle(
+                      Text(myRank != null ? '#$myRank' : '#--',
+                          style: const TextStyle(
                               color: AppColors.coral, fontSize: 28,
                               fontWeight: FontWeight.w900)),
                     ]),
@@ -530,7 +539,8 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
     if (result != null && result >= 0) {
-      ref.read(dailyStatsProvider.notifier).updateSteps(result);
+      await ref.read(dailyStatsProvider.notifier).updateSteps(result);
+      ref.read(tasksProvider.notifier).fetch();
     }
     controller.dispose();
   }

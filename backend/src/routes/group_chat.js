@@ -25,7 +25,7 @@ router.get('/group/chat', async (req, res) => {
      ORDER BY m.created_at DESC LIMIT $2`,
     before ? [gid, Number(limit), before] : [gid, Number(limit)]
   )).rows.reverse();
-  res.json({ messages: rows.map(r => ({ ...r, is_mine: r.author_id === userId })) });
+  res.json({ messages: rows.map(r => ({ ...r, is_mine: Number(r.author_id) === Number(userId) })) });
 });
 
 router.post('/group/chat', async (req, res) => {

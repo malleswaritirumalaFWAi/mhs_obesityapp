@@ -234,6 +234,42 @@ class _InputBar extends StatelessWidget {
   final VoidCallback onSend;
   final bool sending;
 
+  static const _quickEmojis = ['👍', '❤️', '🔥', '💪', '🎉', '😊'];
+
+  void _showEmojiPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: _quickEmojis.map((e) => GestureDetector(
+            onTap: () {
+              ctrl.text = ctrl.text + e;
+              ctrl.selection = TextSelection.collapsed(offset: ctrl.text.length);
+              Navigator.pop(context);
+            },
+            child: Container(
+              width: 48, height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.line),
+              ),
+              alignment: Alignment.center,
+              child: Text(e, style: const TextStyle(fontSize: 24)),
+            ),
+          )).toList(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -243,6 +279,20 @@ class _InputBar extends StatelessWidget {
         border: Border(top: BorderSide(color: AppColors.line)),
       ),
       child: Row(children: [
+        GestureDetector(
+          onTap: () => _showEmojiPicker(context),
+          child: Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.coralSoft,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Symbols.emoji_emotions_rounded,
+                color: AppColors.coral, size: 20),
+          ),
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
