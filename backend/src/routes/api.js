@@ -1151,10 +1151,13 @@ router.post('/chat', async (req, res) => {
         })),
       };
       // Try Bearer auth first (OAuth tokens), fall back to x-api-key (regular API keys).
+      const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
       async function chatFetch(headers) {
+        const hdrs = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', ...headers };
+        if (workspaceId) hdrs['anthropic-workspace-id'] = workspaceId;
         const r = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', ...headers },
+          headers: hdrs,
           body: JSON.stringify(chatBody),
         });
         const d = await r.json();
