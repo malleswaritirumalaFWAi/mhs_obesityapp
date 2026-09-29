@@ -185,6 +185,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     last: true),
               ]),
             ),
+            const SizedBox(height: 12),
+            _LinkRow(icon: Symbols.alarm_rounded, iconColor: AppColors.coral, label: 'Reminders',
+                onTap: () => context.push(Routes.reminders)),
             const SizedBox(height: 24),
 
             Text('ACCOUNT', style: T.section(context)),

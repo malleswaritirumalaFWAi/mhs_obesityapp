@@ -3,6 +3,7 @@ import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
 import { ensureTasksForDay, ensureTasksForToday, TASK_TEMPLATES, markTasksDoneByIcon } from '../tasks.js';
 import { updateUserLevel } from './gamification.js';
+import { sendPush } from '../push.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -21,7 +22,7 @@ async function groupId(userId) {
 
 // ---- Profile + quiz ----
 router.get('/profile', async (req, res) => {
-  const u = await q(`SELECT id, phone, email, name, onboarded, xp, total_xp, streak, start_weight, target_weight FROM users WHERE id=$1`, [uid(req)]);
+  const u = await q(`SELECT id, phone, email, name, onboarded, xp, total_xp, streak, start_weight, target_weight, height, profile_photo_url FROM users WHERE id=$1`, [uid(req)]);
   const p = await q(`SELECT gender, activity, goal, food_pref, challenge FROM profiles WHERE user_id=$1`, [uid(req)]);
   const badges = await q(
     `SELECT b.emoji, b.name FROM user_badges ub JOIN badges b ON b.id=ub.badge_id WHERE ub.user_id=$1 ORDER BY ub.earned_at DESC`,
@@ -32,6 +33,27 @@ router.get('/profile', async (req, res) => {
     console.warn('[tasks] bootstrap failed:', e.message)
   );
   res.json({ user: u.rows[0] || null, profile: p.rows[0] || null, badges: badges.rows });
+});
+
+router.post('/profile/update', async (req, res) => {
+  const { name, email, target_weight, start_weight, height } = req.body || {};
+  const sets = [];
+  const vals = [uid(req)];
+  if (name !== undefined) sets.push(`name = $${vals.push(name)}`);
+  if (email !== undefined) sets.push(`email = $${vals.push(email)}`);
+  if (target_weight !== undefined) sets.push(`target_weight = $${vals.push(Number(target_weight))}`);
+  if (start_weight !== undefined) sets.push(`start_weight = $${vals.push(Number(start_weight))}`);
+  if (height !== undefined) sets.push(`height = $${vals.push(Number(height))}`);
+  if (sets.length === 0) return res.json({ updated: false });
+  await q(`UPDATE users SET ${sets.join(', ')} WHERE id=$1`, vals);
+  res.json({ updated: true });
+});
+
+router.post('/profile/photo', async (req, res) => {
+  const { photo } = req.body || {};
+  if (!photo) return res.status(400).json({ message: 'photo required' });
+  await q(`UPDATE users SET profile_photo_url=$1 WHERE id=$2`, [photo, uid(req)]);
+  res.json({ updated: true, photo_url: photo });
 });
 
 router.post('/profile/onboarded', async (req, res) => {
@@ -612,6 +634,19 @@ router.post('/posts/:id/like', async (req, res) => {
       // Not yet liked — add like
       await q(`INSERT INTO post_likes (user_id, post_id) VALUES ($1,$2)`, [userId, postId]);
       await q(`UPDATE posts SET likes = likes + 1 WHERE id=$1`, [postId]);
+      // Notify post author
+      const post = (await q(`SELECT user_id FROM posts WHERE id=$1`, [postId])).rows[0];
+      if (post && post.user_id !== userId) {
+        const liker = (await q(`SELECT name FROM users WHERE id=$1`, [userId])).rows[0];
+        const likerName = liker?.name || 'Someone';
+        const title = `${likerName} liked your post`;
+        const body = 'Tap to view your post.';
+        await q(
+          `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'post_like',$2,$3)`,
+          [post.user_id, title, body]
+        ).catch(() => {});
+        sendPush(post.user_id, title, body).catch(() => {});
+      }
       res.json({ liked: true });
     }
   } catch (e) {
@@ -637,11 +672,25 @@ router.post('/posts/:id/comments', async (req, res) => {
   try {
     const { body } = req.body || {};
     if (!body?.trim()) return res.status(400).json({ message: 'body is required' });
+    const commenterId = uid(req);
     await q(
       `INSERT INTO post_comments (post_id, user_id, body) VALUES ($1,$2,$3)`,
-      [req.params.id, uid(req), body]
+      [req.params.id, commenterId, body]
     );
     await q(`UPDATE posts SET comments = comments + 1 WHERE id=$1`, [req.params.id]);
+    // Notify post author
+    const post = (await q(`SELECT user_id FROM posts WHERE id=$1`, [req.params.id])).rows[0];
+    if (post && post.user_id !== commenterId) {
+      const commenter = (await q(`SELECT name FROM users WHERE id=$1`, [commenterId])).rows[0];
+      const commenterName = commenter?.name || 'Someone';
+      const title = `${commenterName} commented on your post`;
+      const notifBody = body.length > 60 ? body.slice(0, 57) + '...' : body;
+      await q(
+        `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'post_comment',$2,$3)`,
+        [post.user_id, title, notifBody]
+      ).catch(() => {});
+      sendPush(post.user_id, title, notifBody).catch(() => {});
+    }
     res.json({ saved: true });
   } catch (e) {
     res.status(500).json({ message: e.message });
@@ -1164,6 +1213,31 @@ router.post('/compliance/data-delete', async (req, res) => {
     [uid(req)]
   );
   res.json({ request_submitted: true, message: 'Your data deletion request has been received. Your account will be deleted within 30 days per DPDP Act requirements.' });
+});
+
+// ---- User Reminders ----
+router.get('/reminders', async (req, res) => {
+  const rows = (await q(
+    `SELECT id, type, time, enabled FROM user_reminders WHERE user_id=$1 ORDER BY type`,
+    [uid(req)]
+  )).rows;
+  res.json({ reminders: rows });
+});
+
+router.post('/reminders', async (req, res) => {
+  const { type, time, enabled } = req.body || {};
+  if (!type || !time) return res.status(400).json({ message: 'type and time required' });
+  await q(
+    `INSERT INTO user_reminders (user_id, type, time, enabled) VALUES ($1,$2,$3,$4)
+     ON CONFLICT (user_id, type) DO UPDATE SET time=EXCLUDED.time, enabled=EXCLUDED.enabled`,
+    [uid(req), type, time, enabled !== false]
+  );
+  res.json({ ok: true });
+});
+
+router.delete('/reminders/:type', async (req, res) => {
+  await q(`DELETE FROM user_reminders WHERE user_id=$1 AND type=$2`, [uid(req), req.params.type]);
+  res.json({ ok: true });
 });
 
 export default router;

@@ -18,6 +18,16 @@ const _typeIcons = <String, IconData>{
   'challenge_complete': Symbols.military_tech_rounded,
   'diet_plan': Symbols.menu_book_rounded,
   'rank_change': Symbols.leaderboard_rounded,
+  'morning_nudge': Symbols.wb_sunny_rounded,
+  'evening_reminder': Symbols.nightlight_rounded,
+  'daily_summary': Symbols.bar_chart_rounded,
+  'post_like': Symbols.favorite_rounded,
+  'post_comment': Symbols.chat_bubble_rounded,
+  'reminder_water': Symbols.water_drop_rounded,
+  'reminder_meal': Symbols.restaurant_rounded,
+  'reminder_weighin': Symbols.monitor_weight_rounded,
+  'reminder_fasting': Symbols.timer_rounded,
+  'reminder_steps': Symbols.directions_walk_rounded,
 };
 
 const _typeColors = <String, Color>{
@@ -29,6 +39,16 @@ const _typeColors = <String, Color>{
   'challenge_complete': AppColors.coral,
   'diet_plan': AppColors.coral,
   'rank_change': AppColors.coral,
+  'morning_nudge': AppColors.coral,
+  'evening_reminder': AppColors.coral,
+  'daily_summary': AppColors.coral,
+  'post_like': AppColors.coral,
+  'post_comment': AppColors.coral,
+  'reminder_water': AppColors.coral,
+  'reminder_meal': AppColors.coral,
+  'reminder_weighin': AppColors.coral,
+  'reminder_fasting': AppColors.coral,
+  'reminder_steps': AppColors.coral,
 };
 
 class NotificationsScreen extends ConsumerWidget {

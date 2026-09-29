@@ -302,6 +302,15 @@ async function runMigrations() {
         FROM challenge_entries
       ) DELETE FROM challenge_entries WHERE id IN (SELECT id FROM ranked WHERE rn > 1)`,
       `ALTER TABLE challenge_entries ADD CONSTRAINT IF NOT EXISTS challenge_entries_user_challenge_unique UNIQUE (user_id, challenge_id)`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_url TEXT`,
+      `CREATE TABLE IF NOT EXISTS user_reminders (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        time TEXT NOT NULL DEFAULT '08:00',
+        enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        UNIQUE (user_id, type)
+      )`,
     ];
 
     for (const sql of migrations) {
@@ -615,6 +624,134 @@ cron.schedule('0 20 * * *', async () => {
     client.release();
     console.log(`[cron] Streak alerts sent to ${atRisk.length} users`);
   } catch(e) { console.warn('[cron] Streak alert error:', e.message); }
+});
+
+// User-configured reminders — check every 15 minutes
+cron.schedule('*/15 * * * *', async () => {
+  try {
+    const { pool } = await import('./db.js');
+    const client = await pool.connect();
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+    const timeSlot = `${hh}:${mm}`;
+    // Also check the previous slot in case cron was slightly delayed
+    const prevMin = (Math.floor(now.getMinutes() / 15) * 15) - 15;
+    const prevHH = prevMin < 0 ? String((now.getHours() - 1 + 24) % 24).padStart(2, '0') : hh;
+    const prevMM = String((prevMin + 60) % 60).padStart(2, '0');
+    const prevSlot = `${prevHH}:${prevMM}`;
+
+    const reminders = (await client.query(
+      `SELECT r.*, u.name FROM user_reminders r JOIN users u ON u.id=r.user_id
+       WHERE r.enabled=TRUE AND (r.time=$1 OR r.time=$2)`,
+      [timeSlot, prevSlot]
+    )).rows;
+
+    const messages = {
+      water: { title: 'Hydration Reminder', body: 'Time to drink a glass of water! Stay hydrated.' },
+      meal: { title: 'Meal Reminder', body: 'Don\'t forget to log your meal!' },
+      weighin: { title: 'Weigh-in Reminder', body: 'Time for your daily weigh-in. Track your progress!' },
+      fasting: { title: 'Fasting Reminder', body: 'Check your fasting window status!' },
+      steps: { title: 'Movement Reminder', body: 'Time to get moving! Log your steps.' },
+    };
+
+    const today = new Date().toISOString().slice(0, 10);
+    for (const r of reminders) {
+      const msg = messages[r.type] || { title: 'FitQuest Reminder', body: 'Time for your health check!' };
+      // Avoid duplicate notifications for same type today
+      const existing = (await client.query(
+        `SELECT id FROM notifications WHERE user_id=$1 AND type=$2 AND created_at::date=$3`,
+        [r.user_id, `reminder_${r.type}`, today]
+      )).rows[0];
+      if (!existing) {
+        await client.query(
+          `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,$2,$3,$4)`,
+          [r.user_id, `reminder_${r.type}`, msg.title, msg.body]
+        ).catch(() => {});
+        sendPush(r.user_id, msg.title, msg.body).catch(() => {});
+      }
+    }
+    client.release();
+  } catch(e) { console.warn('[cron] Reminder error:', e.message); }
+});
+
+// Evening reminder: 6pm — nudge users who haven't completed all tasks today
+cron.schedule('0 18 * * *', async () => {
+  console.log('[cron] Evening reminder check...');
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const { pool } = await import('./db.js');
+    const client = await pool.connect();
+    const incomplete = (await client.query(
+      `SELECT u.id, u.name,
+              COUNT(t.id) FILTER (WHERE t.done = FALSE) AS remaining
+       FROM users u
+       JOIN tasks t ON t.user_id = u.id AND t.day::date = $1
+       WHERE u.role='user'
+       GROUP BY u.id, u.name
+       HAVING COUNT(t.id) FILTER (WHERE t.done = FALSE) > 0`,
+      [today]
+    )).rows;
+    for (const u of incomplete) {
+      const existing = (await client.query(
+        `SELECT id FROM notifications WHERE user_id=$1 AND type='evening_reminder' AND created_at::date=$2`,
+        [u.id, today]
+      )).rows[0];
+      if (!existing) {
+        const title = 'You still have tasks left today!';
+        const body = 'Complete them before bed to keep your streak alive!';
+        await client.query(
+          `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'evening_reminder',$2,$3)`,
+          [u.id, title, body]
+        ).catch(() => {});
+        sendPush(u.id, title, body).catch(() => {});
+      }
+    }
+    client.release();
+    console.log(`[cron] Evening reminders sent to ${incomplete.length} users`);
+  } catch(e) { console.warn('[cron] Evening reminder error:', e.message); }
+});
+
+// Daily goals summary: 9pm — send progress summary to all active users
+cron.schedule('0 21 * * *', async () => {
+  console.log('[cron] Daily goals summary...');
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const { pool } = await import('./db.js');
+    const client = await pool.connect();
+    const summaries = (await client.query(
+      `SELECT u.id, u.name,
+              COUNT(t.id) AS total,
+              COUNT(t.id) FILTER (WHERE t.done = TRUE) AS done
+       FROM users u
+       JOIN tasks t ON t.user_id = u.id AND t.day::date = $1
+       WHERE u.role='user'
+       GROUP BY u.id, u.name`,
+      [today]
+    )).rows;
+    for (const u of summaries) {
+      const existing = (await client.query(
+        `SELECT id FROM notifications WHERE user_id=$1 AND type='daily_summary' AND created_at::date=$2`,
+        [u.id, today]
+      )).rows[0];
+      if (!existing) {
+        const allDone = Number(u.done) >= Number(u.total);
+        const title = allDone
+          ? 'Perfect day! All tasks completed!'
+          : `You've completed ${u.done}/${u.total} tasks today`;
+        const body = allDone
+          ? 'Amazing work! Keep up the momentum tomorrow!'
+          : 'Finish strong — there\'s still time!';
+        await client.query(
+          `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'daily_summary',$2,$3)`,
+          [u.id, title, body]
+        ).catch(() => {});
+        sendPush(u.id, title, body).catch(() => {});
+      }
+    }
+    client.release();
+    console.log(`[cron] Daily summaries sent to ${summaries.length} users`);
+  } catch(e) { console.warn('[cron] Daily summary error:', e.message); }
 });
 
 const port = process.env.PORT || 4000;

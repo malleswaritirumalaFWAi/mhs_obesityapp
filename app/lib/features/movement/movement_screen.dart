@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/providers/daily_stats_provider.dart';
+import '../../core/providers/step_tracking_provider.dart';
 import '../../core/providers/tasks_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -229,7 +230,11 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
                   ),
                 ]),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              // ── Auto-tracking card ──
+              _AutoTrackCard(),
+              const SizedBox(height: 16),
 
               // ── Hero card ──
               NeuCard(
@@ -509,6 +514,81 @@ String _formatSteps(int n) {
     return k == k.truncateToDouble() ? '${k.toInt()}k' : '${k.toStringAsFixed(1)}k';
   }
   return '$n';
+}
+
+// ── Auto-track card ───────────────────────────────────────────────────────────
+
+class _AutoTrackCard extends ConsumerWidget {
+  const _AutoTrackCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tracking = ref.watch(stepTrackingProvider);
+    return NeuCard(
+      depth: 0.5,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.coral.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Symbols.sensors_rounded, color: AppColors.coral, size: 20, fill: 1),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Auto-track steps', style: T.title(context).copyWith(fontSize: 15)),
+                Text(tracking.isTracking ? 'Tracking active' : 'Tap to enable',
+                  style: T.small(context)),
+              ],
+            )),
+            Switch(
+              value: tracking.isTracking,
+              onChanged: (v) {
+                if (v) {
+                  ref.read(stepTrackingProvider.notifier).startTracking();
+                } else {
+                  ref.read(stepTrackingProvider.notifier).stopTracking();
+                }
+              },
+              activeTrackColor: AppColors.coral,
+              activeThumbColor: Colors.white,
+            ),
+          ]),
+          if (tracking.isTracking) ...[
+            const SizedBox(height: 12),
+            Row(children: [
+              Text('${tracking.todaySteps}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.coral)),
+              const SizedBox(width: 6),
+              Text('steps detected', style: T.small(context)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => ref.read(stepTrackingProvider.notifier).syncNow(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text('Sync now', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w700, fontSize: 12)),
+                ),
+              ),
+            ]),
+          ],
+          if (tracking.error != null) ...[
+            const SizedBox(height: 8),
+            Text(tracking.error!, style: T.small(context).copyWith(color: AppColors.inkSoft)),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 // ── Milestone row ──────────────────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' show min, max;
 
 import 'package:fl_chart/fl_chart.dart';
@@ -50,6 +51,7 @@ class ProfileScreen extends ConsumerWidget {
     final streak = (user?.streak as int?) ?? 0;
     final badges = (user?.badges as List?) ?? [];
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final profilePhotoUrl = (user?.profilePhotoUrl as String?);
     final gamState = ref.watch(gamificationProvider);
     final levelLabel = gamState.level.label;
     final leaderboardData = ref.watch(leaderboardProvider);
@@ -84,20 +86,7 @@ class ProfileScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(20),
           child: Column(children: [
             Row(children: [
-              Container(
-                width: 54,
-                height: 54,
-                decoration: const BoxDecoration(
-                  color: AppColors.coralSoft,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(initial,
-                    style: const TextStyle(
-                        color: AppColors.coral,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 22)),
-              ),
+              _buildProfileAvatar(initial, profilePhotoUrl, 54),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -145,6 +134,21 @@ class ProfileScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              GestureDetector(
+                onTap: () => context.push(Routes.editProfile),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.bg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Symbols.edit_rounded,
+                      color: AppColors.inkMid, size: 20),
+                ),
+              ),
+              const SizedBox(width: 6),
               GestureDetector(
                 onTap: () => context.push(Routes.settings),
                 child: Container(
@@ -461,6 +465,11 @@ class ProfileScreen extends ConsumerWidget {
         Text('TOOLS', style: T.section(context)),
         const SizedBox(height: 12),
         _SettingRow(
+            icon: Symbols.edit_rounded,
+            iconBg: AppColors.coral,
+            label: 'Edit profile',
+            onTap: () => context.push(Routes.editProfile)),
+        _SettingRow(
             icon: Symbols.stars_rounded,
             iconBg: AppColors.coral,
             label: 'Gamification & XP',
@@ -519,6 +528,36 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildProfileAvatar(String initial, String? photoUrl, double size) {
+    final hasBase64 = photoUrl != null && photoUrl.startsWith('data:image');
+    if (hasBase64) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          image: DecorationImage(
+            image: MemoryImage(base64Decode(photoUrl.split(',').last)),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        color: AppColors.coralSoft,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(initial,
+          style: TextStyle(
+              color: AppColors.coral,
+              fontWeight: FontWeight.w800,
+              fontSize: size * 0.4)),
+    );
+  }
 }
 
 class _StatCard extends StatelessWidget {
