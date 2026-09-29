@@ -59,12 +59,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         final name = (user['name'] as String?) ?? '';
         _nameCtrl.text = name;
         _emailCtrl.text = (user['email'] as String?) ?? '';
-        final h = user['height'];
-        if (h != null) _heightCtrl.text = (h as num).toStringAsFixed(1);
-        final sw = user['start_weight'];
-        if (sw != null) _startWeightCtrl.text = (sw as num).toStringAsFixed(1);
-        final tw = user['target_weight'];
-        if (tw != null) _targetWeightCtrl.text = (tw as num).toStringAsFixed(1);
+        final h = double.tryParse(user['height']?.toString() ?? '');
+        if (h != null) _heightCtrl.text = h.toStringAsFixed(1);
+        final sw = double.tryParse(user['start_weight']?.toString() ?? '');
+        if (sw != null) _startWeightCtrl.text = sw.toStringAsFixed(1);
+        final tw = double.tryParse(user['target_weight']?.toString() ?? '');
+        if (tw != null) _targetWeightCtrl.text = tw.toStringAsFixed(1);
         _photoUrl = user['profile_photo_url'] as String?;
         _initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
         _loading = false;

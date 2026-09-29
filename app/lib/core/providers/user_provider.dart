@@ -51,9 +51,9 @@ final userProvider = FutureProvider<UserProfile>((ref) async {
     xp: (user['xp'] as num?)?.toInt() ?? 0,
     totalXp: (user['total_xp'] as num?)?.toInt() ?? 0,
     streak: (user['streak'] as num?)?.toInt() ?? 0,
-    startWeight: (user['start_weight'] as num?)?.toDouble(),
-    targetWeight: (user['target_weight'] as num?)?.toDouble(),
-    height: (user['height'] as num?)?.toDouble(),
+    startWeight: double.tryParse(user['start_weight']?.toString() ?? ''),
+    targetWeight: double.tryParse(user['target_weight']?.toString() ?? ''),
+    height: double.tryParse(user['height']?.toString() ?? ''),
     profilePhotoUrl: user['profile_photo_url'] as String?,
     badges: rawBadges
         .map((b) => {
