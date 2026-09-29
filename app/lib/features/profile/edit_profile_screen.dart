@@ -29,8 +29,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   bool _saving = false;
   bool _uploadingPhoto = false;
+  bool _loading = true;
   String? _photoUrl;
-  bool _initialized = false;
+  String _initial = '?';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
 
   @override
   void dispose() {
@@ -42,19 +49,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
-  void _initFromUser(UserProfile user) {
-    if (_initialized) return;
-    _initialized = true;
-    _nameCtrl.text = user.name == 'User' ? '' : user.name;
-    _emailCtrl.text = user.email;
-    if (user.height != null) _heightCtrl.text = user.height!.toStringAsFixed(1);
-    if (user.startWeight != null) {
-      _startWeightCtrl.text = user.startWeight!.toStringAsFixed(1);
+  Future<void> _loadProfile() async {
+    try {
+      final api = ref.read(apiClientProvider);
+      final data = await api.getJson('/profile');
+      final user = (data['user'] as Map?) ?? {};
+      if (!mounted) return;
+      setState(() {
+        final name = (user['name'] as String?) ?? '';
+        _nameCtrl.text = name;
+        _emailCtrl.text = (user['email'] as String?) ?? '';
+        final h = user['height'];
+        if (h != null) _heightCtrl.text = (h as num).toStringAsFixed(1);
+        final sw = user['start_weight'];
+        if (sw != null) _startWeightCtrl.text = (sw as num).toStringAsFixed(1);
+        final tw = user['target_weight'];
+        if (tw != null) _targetWeightCtrl.text = (tw as num).toStringAsFixed(1);
+        _photoUrl = user['profile_photo_url'] as String?;
+        _initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
     }
-    if (user.targetWeight != null) {
-      _targetWeightCtrl.text = user.targetWeight!.toStringAsFixed(1);
-    }
-    _photoUrl = user.profilePhotoUrl;
   }
 
   Future<void> _pickPhoto() async {
@@ -74,8 +91,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final api = ref.read(apiClientProvider);
       final res = await api.postJson('/profile/photo', {'photo': base64Photo});
       if (res['updated'] == true) {
-        setState(() => _photoUrl = res['photo_url'] as String?);
-        ref.invalidate(userProvider);
+        setState(() => _photoUrl = base64Photo);
       }
     } catch (e) {
       if (mounted) {
@@ -94,7 +110,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final api = ref.read(apiClientProvider);
       final body = <String, dynamic>{};
       final name = _nameCtrl.text.trim();
-      if (name.isNotEmpty) body['name'] = name;
+      body['name'] = name;
       final email = _emailCtrl.text.trim();
       if (email.isNotEmpty) body['email'] = email;
       final h = double.tryParse(_heightCtrl.text.trim());
@@ -103,11 +119,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (sw != null) body['start_weight'] = sw;
       final tw = double.tryParse(_targetWeightCtrl.text.trim());
       if (tw != null) body['target_weight'] = tw;
-
-      if (body.isEmpty) {
-        if (mounted) context.pop();
-        return;
-      }
 
       await api.postJson('/profile/update', body);
       ref.invalidate(userProvider);
@@ -130,8 +141,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userAsync = ref.watch(userProvider);
-
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
@@ -144,119 +153,102 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         title: Text('Edit Profile', style: T.title(context)),
         centerTitle: true,
       ),
-      body: userAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) {
-          // Still allow editing with empty fields if profile fetch fails
-          final fallback = UserProfile(
-            name: '', phone: '', email: '', xp: 0, totalXp: 0, streak: 0, badges: [],
-          );
-          _initFromUser(fallback);
-          return _buildForm(fallback);
-        },
-        data: (user) {
-          _initFromUser(user);
-          return _buildForm(user);
-        },
-      ),
-    );
-  }
-
-  Widget _buildForm(UserProfile user) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-      child: Column(
-        children: [
-          // ── Profile photo ──
-          Center(
-            child: GestureDetector(
-              onTap: _uploadingPhoto ? null : _pickPhoto,
-              child: Stack(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+              child: Column(
                 children: [
-                  _buildAvatar(user),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.coral,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.bg, width: 2),
+                  // ── Profile photo ──
+                  Center(
+                    child: GestureDetector(
+                      onTap: _uploadingPhoto ? null : _pickPhoto,
+                      child: Stack(
+                        children: [
+                          _buildAvatar(),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: AppColors.coral,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.bg, width: 2),
+                              ),
+                              alignment: Alignment.center,
+                              child: _uploadingPhoto
+                                  ? const SizedBox(
+                                      width: 14, height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : const Icon(Symbols.photo_camera_rounded,
+                                      size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ],
                       ),
-                      alignment: Alignment.center,
-                      child: _uploadingPhoto
-                          ? const SizedBox(
-                              width: 14, height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Symbols.photo_camera_rounded,
-                              size: 16, color: Colors.white),
                     ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  // ── Personal info ──
+                  NeuCard(
+                    depth: 0.5,
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('PERSONAL INFO', style: T.section(context)),
+                        const SizedBox(height: 16),
+                        _buildField('Name', _nameCtrl, Symbols.person_rounded),
+                        const SizedBox(height: 14),
+                        _buildField('Email', _emailCtrl, Symbols.mail_rounded,
+                            keyboardType: TextInputType.emailAddress),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── Body metrics ──
+                  NeuCard(
+                    depth: 0.5,
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('BODY METRICS', style: T.section(context)),
+                        const SizedBox(height: 16),
+                        _buildField('Height (cm)', _heightCtrl, Symbols.height_rounded,
+                            keyboardType: TextInputType.number),
+                        const SizedBox(height: 14),
+                        _buildField('Start Weight (kg)', _startWeightCtrl,
+                            Symbols.monitor_weight_rounded,
+                            keyboardType: TextInputType.number),
+                        const SizedBox(height: 14),
+                        _buildField('Target Weight (kg)', _targetWeightCtrl,
+                            Symbols.flag_rounded,
+                            keyboardType: TextInputType.number),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  // ── Save button ──
+                  NeuButton.primary(
+                    'Save Changes',
+                    onPressed: _saving ? null : _save,
+                    loading: _saving,
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 28),
-
-          // ── Personal info ──
-          NeuCard(
-            depth: 0.5,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('PERSONAL INFO', style: T.section(context)),
-                const SizedBox(height: 16),
-                _buildField('Name', _nameCtrl, Symbols.person_rounded),
-                const SizedBox(height: 14),
-                _buildField('Email', _emailCtrl, Symbols.mail_rounded,
-                    keyboardType: TextInputType.emailAddress),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // ── Body metrics ──
-          NeuCard(
-            depth: 0.5,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('BODY METRICS', style: T.section(context)),
-                const SizedBox(height: 16),
-                _buildField('Height (cm)', _heightCtrl, Symbols.height_rounded,
-                    keyboardType: TextInputType.number),
-                const SizedBox(height: 14),
-                _buildField('Start Weight (kg)', _startWeightCtrl,
-                    Symbols.monitor_weight_rounded,
-                    keyboardType: TextInputType.number),
-                const SizedBox(height: 14),
-                _buildField('Target Weight (kg)', _targetWeightCtrl,
-                    Symbols.flag_rounded,
-                    keyboardType: TextInputType.number),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-
-          // ── Save button ──
-          NeuButton.primary(
-            'Save Changes',
-            onPressed: _saving ? null : _save,
-            loading: _saving,
-          ),
-        ],
-      ),
     );
   }
 
-  Widget _buildAvatar(UserProfile user) {
-    final initial = user.initial;
+  Widget _buildAvatar() {
     final photoUrl = _photoUrl;
     final hasBase64 = photoUrl != null && photoUrl.startsWith('data:image');
 
@@ -268,7 +260,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           : null,
       child: hasBase64
           ? null
-          : Text(initial,
+          : Text(_initial,
               style: const TextStyle(
                   color: AppColors.coral,
                   fontWeight: FontWeight.w800,
@@ -305,8 +297,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               labelStyle:
                   T.small(context).copyWith(fontSize: 12, color: AppColors.inkSoft),
               isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
               border: UnderlineInputBorder(
                 borderSide: BorderSide(
                     color: AppColors.line.withValues(alpha: 0.5)),
