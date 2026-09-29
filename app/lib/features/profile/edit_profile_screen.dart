@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -89,14 +90,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final bytes = await picked.readAsBytes();
       final base64Photo = 'data:image/jpeg;base64,${base64Encode(bytes)}';
       final api = ref.read(apiClientProvider);
-      final res = await api.postJson('/profile/photo', {'photo': base64Photo},);
+      // Use raw dio with extended timeouts for large payload
+      final response = await api.dio.post(
+        '/profile/photo',
+        data: {'photo': base64Photo},
+        options: Options(
+          sendTimeout: const Duration(seconds: 120),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+      final res = Map<String, dynamic>.from((response.data as Map?) ?? {});
       if (res['updated'] == true) {
         setState(() => _photoUrl = base64Photo);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Photo upload failed: $e')),
+          SnackBar(content: Text('Photo upload failed. Please check your connection and try again.')),
         );
       }
     } finally {

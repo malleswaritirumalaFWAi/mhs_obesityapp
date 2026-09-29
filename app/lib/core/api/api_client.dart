@@ -8,8 +8,9 @@ class ApiClient {
   ApiClient(this._storage) {
     _dio = Dio(BaseOptions(
       baseUrl: AppConfig.apiBase, // resolved at runtime (web vs Android)
-      connectTimeout: const Duration(seconds: 12),
+      connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 60),
+      sendTimeout: const Duration(seconds: 60),
       headers: {'Content-Type': 'application/json'},
     ));
     _dio.interceptors.add(InterceptorsWrapper(
