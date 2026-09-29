@@ -134,8 +134,9 @@ class SessionController extends StateNotifier<SessionState> {
       final token = res['token'] as String?;
       if (token != null) await _api.saveToken(token);
       final onboarded = res['onboarded'] == true;
+      final userName = res['name'] as String?;
       _bumpUserKey();
-      state = state.copyWith(status: AuthStatus.signedIn, busy: false, onboarded: onboarded);
+      state = state.copyWith(status: AuthStatus.signedIn, busy: false, onboarded: onboarded, name: userName);
       NotificationService.instance.initialize(_api);
       return true;
     } on DioException catch (e) {

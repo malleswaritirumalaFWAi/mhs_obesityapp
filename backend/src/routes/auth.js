@@ -119,7 +119,7 @@ router.post('/otp/verify', otpVerifyLimiter, async (req, res) => {
   const u = await q(
     `INSERT INTO users (phone) VALUES ($1)
      ON CONFLICT (phone) DO UPDATE SET phone=EXCLUDED.phone
-     RETURNING id, phone, onboarded`,
+     RETURNING id, phone, name, onboarded`,
     [phone]
   );
   const user = u.rows[0];
@@ -130,7 +130,7 @@ router.post('/otp/verify', otpVerifyLimiter, async (req, res) => {
   );
   await q(`DELETE FROM otps WHERE phone=$1`, [phone]);
 
-  res.json({ token: signToken(user), onboarded: user.onboarded });
+  res.json({ token: signToken(user), onboarded: user.onboarded, name: user.name });
 });
 
 ──────────────────────────────────────────────────────────────────────────── */
