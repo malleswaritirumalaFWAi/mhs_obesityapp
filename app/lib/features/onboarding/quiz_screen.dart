@@ -66,6 +66,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   final _answers = <int, int>{};
 
   // Body stats (step 5)
+  final _nameCtrl = TextEditingController();
   final _heightCtrl = TextEditingController();
   final _weightCtrl = TextEditingController();
   final _targetCtrl = TextEditingController();
@@ -80,6 +81,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _heightCtrl.dispose();
     _weightCtrl.dispose();
     _targetCtrl.dispose();
@@ -93,6 +95,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         _answers.containsKey(i) ? _questions[i].options[_answers[i]!].title : '';
     try {
       await ref.read(apiClientProvider).postJson('/profile/quiz', {
+        'name': _nameCtrl.text.trim(),
         'gender': pick(0),
         'activity': pick(1),
         'goal': pick(2),
@@ -113,7 +116,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   bool _canProceed() {
     if (_step < _questions.length) return _answers.containsKey(_step);
     if (_step == 5) {
-      return _heightCtrl.text.trim().isNotEmpty &&
+      return _nameCtrl.text.trim().isNotEmpty &&
+          _heightCtrl.text.trim().isNotEmpty &&
           _weightCtrl.text.trim().isNotEmpty;
     }
     if (_step == 6) return true; // optional fields
@@ -349,6 +353,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         const SizedBox(height: 8),
         Text('Helps us calculate your calorie needs and BMI.', style: T.body(context)),
         const SizedBox(height: 24),
+        _NameField(
+          controller: _nameCtrl,
+          label: 'Your name',
+          hint: 'e.g. Mahi',
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 14),
         _Field(
           controller: _heightCtrl,
           label: 'Height (cm)',
@@ -502,6 +513,37 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     if (bmi < 35) return 'Obese (Class I)';
     if (bmi < 40) return 'Obese (Class II)';
     return 'Obese (Class III)';
+  }
+}
+
+class _NameField extends StatelessWidget {
+  const _NameField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    this.onChanged,
+  });
+  final TextEditingController controller;
+  final String label, hint;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: T.title(context).copyWith(fontSize: 14)),
+      const SizedBox(height: 8),
+      TextField(
+        controller: controller,
+        textCapitalization: TextCapitalization.words,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: T.small(context),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    ]);
   }
 }
 
