@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/providers/daily_stats_provider.dart';
 import '../../core/providers/lessons_provider.dart';
+import '../../core/providers/meal_stats_provider.dart';
 import '../../core/providers/notifications_provider.dart';
 import '../../core/providers/tasks_provider.dart';
 import '../../core/providers/user_provider.dart';
@@ -67,7 +68,14 @@ class HomeScreen extends ConsumerWidget {
       },
     );
 
-    final done = tasksState.done;
+    final meals = ref.watch(mealStatsProvider);
+    final done = tasksState.tasks.where((t) {
+      if (t.done) return true;
+      if (t.icon == 'water_drop') return stats.water >= 8;
+      if (t.icon == 'directions_run' || t.icon == 'directions_walk') return stats.steps >= 8000;
+      if ((t.icon == 'restaurant' || t.icon == 'lunch_dining') && !meals.loading) return meals.mainCount >= 3;
+      return false;
+    }).length;
     final total = tasksState.total;
     final progress = total > 0 ? done / total : 0.0;
 
@@ -330,12 +338,24 @@ class HomeScreen extends ConsumerWidget {
                       child: Column(
                         children: List.generate(tasksState.tasks.length, (i) {
                           final task = tasksState.tasks[i];
+                          // Check local progress to determine done state,
+                          // same as today plan screen — prevents flicker on scroll.
+                          bool isDone = task.done;
+                          if (!isDone) {
+                            if (task.icon == 'water_drop') {
+                              isDone = stats.water >= 8;
+                            } else if (task.icon == 'directions_run' || task.icon == 'directions_walk') {
+                              isDone = stats.steps >= 8000;
+                            } else if ((task.icon == 'restaurant' || task.icon == 'lunch_dining') && !meals.loading) {
+                              isDone = meals.mainCount >= 3;
+                            }
+                          }
                           return _TaskRow(
                             icon: _iconFor(task.icon),
                             title: task.title,
                             sub: task.subtitle,
-                            done: task.done,
-                            action: task.done
+                            done: isDone,
+                            action: isDone
                                 ? null
                                 : (_routeFor(task.icon) != null ? 'Start' : 'Done'),
                             showDivider: i < tasksState.tasks.length - 1,
@@ -346,7 +366,7 @@ class HomeScreen extends ConsumerWidget {
                                     ref.read(tasksProvider.notifier).fetch();
                                   }
                                 : null,
-                            onAction: task.done
+                            onAction: isDone
                                 ? null
                                 : (_routeFor(task.icon) != null
                                     ? () async {
@@ -893,7 +913,9 @@ class _TaskRow extends StatelessWidget {
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: done ? AppColors.inkSoft : AppColors.ink,
-                          decoration: done ? TextDecoration.lineThrough : null)),
+                          decoration: done ? TextDecoration.lineThrough : TextDecoration.none,
+                          decorationColor: done ? AppColors.inkSoft : null,
+                          decorationThickness: 2)),
                   Text(sub, style: T.small(context).copyWith(fontSize: 12)),
                 ],
               ),

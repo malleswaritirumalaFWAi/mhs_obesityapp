@@ -77,10 +77,15 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
     try {
       final res = await ref.read(apiClientProvider).getJson('/movement');
       if (mounted) {
+        final steps = (res['steps'] as num?)?.toInt() ?? 0;
         setState(() {
-          _steps = (res['steps'] as num?)?.toInt() ?? 0;
+          _steps = steps;
           _loading = false;
         });
+        ref.read(dailyStatsProvider.notifier).updateSteps(steps);
+        if (steps >= _goal) {
+          ref.invalidate(tasksProvider);
+        }
       }
     } catch (_) {
       final stats = ref.read(dailyStatsProvider);
@@ -117,9 +122,10 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
       final newSteps = (res['steps'] as num?)?.toInt() ?? (_steps + amount);
       ref.read(dailyStatsProvider.notifier).updateSteps(newSteps);
       if (mounted) {
+        final wasBelow = _steps < _goal;
         setState(() { _steps = newSteps; _adding = false; });
         _bounceCtrl.forward(from: 0);
-        if (newSteps >= _goal && (_steps < _goal)) {
+        if (newSteps >= _goal && wasBelow) {
           ref.invalidate(tasksProvider);
           _showGoalReached();
         }
@@ -128,9 +134,10 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
       final next = _steps + amount;
       ref.read(dailyStatsProvider.notifier).updateSteps(next);
       if (mounted) {
+        final wasBelow = _steps < _goal;
         setState(() { _steps = next; _adding = false; });
         _bounceCtrl.forward(from: 0);
-        if (next >= _goal && (_steps < _goal)) {
+        if (next >= _goal && wasBelow) {
           ref.invalidate(tasksProvider);
           _showGoalReached();
         }

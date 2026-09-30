@@ -24,13 +24,17 @@ class GroupChatNotifier extends StateNotifier<GroupChatState> {
     state = GroupChatState(messages: state.messages, loading: true);
     try {
       final d = await _api.getJson('/group/chat');
+      final currentUserId = d['current_user_id']?.toString() ?? '';
       final msgs = (d['messages'] as List? ?? []).map((m) {
         final mm = m as Map<String, dynamic>;
+        // Use is_mine from backend; fall back to comparing author_id with current_user_id.
+        final isMine = mm['is_mine'] == true ||
+            (currentUserId.isNotEmpty && mm['author_id']?.toString() == currentUserId);
         return ChatMessage(
           id: (mm['id'] as num).toInt(),
           text: mm['text'] as String? ?? '',
           authorName: mm['author_name'] as String? ?? 'Member',
-          isMe: mm['is_mine'] as bool? ?? false,
+          isMe: isMine,
           type: mm['type'] as String? ?? 'user',
           createdAt: mm['created_at'] as String? ?? '',
           pinned: mm['pinned'] as bool? ?? false,

@@ -204,6 +204,21 @@ router.post('/', async (req, res) => {
   )).rows[0];
   if (recent) return res.json({ id: recent.id, xp_awarded: 0, combo_bonus: 0, duplicate: true });
 
+  // Duplicate guard for main meals (Breakfast / Lunch / Dinner) — only one per day allowed.
+  // Snacks can be logged multiple times.
+  const isSnack = (meal_type || '').toLowerCase() === 'snacks';
+  if (!isSnack) {
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = (await q(
+      `SELECT id FROM meals WHERE user_id=$1 AND meal_type=$2 AND DATE(created_at)=$3 LIMIT 1`,
+      [req.user.uid, meal_type, today]
+    )).rows[0];
+    if (existing) {
+      return res.status(409).json({ error: 'duplicate_meal', existing_id: existing.id,
+        message: `You already logged ${meal_type} today. Use PUT /meals/${existing.id} to update it.` });
+    }
+  }
+
   // Check active perks before inserting
   const userRow = (await q(`SELECT double_xp_expires_at, cheat_meal_passes FROM users WHERE id=$1`, [req.user.uid])).rows[0] || {};
   const doubleXpActive = userRow.double_xp_expires_at && new Date(userRow.double_xp_expires_at) > new Date();

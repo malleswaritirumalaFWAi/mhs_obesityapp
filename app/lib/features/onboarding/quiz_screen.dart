@@ -223,74 +223,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     final q = _questions[_step];
     final selected = _answers[_step];
 
-    // ── Gender step: three big stacked selection boxes ──
-    if (_step == 0) {
-      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(q.label, style: T.h1(context).copyWith(fontSize: 26)),
-        const SizedBox(height: 8),
-        Text(q.subtitle, style: T.body(context)),
-        const SizedBox(height: 24),
-        for (var i = 0; i < q.options.length; i++) ...[
-          if (i > 0) const SizedBox(height: 14),
-          GestureDetector(
-            onTap: () => setState(() => _answers[_step] = i),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 20),
-              decoration: BoxDecoration(
-                color: selected == i ? _accentSoft : AppColors.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: selected == i ? _accent : AppColors.line,
-                  width: selected == i ? 2 : 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: selected == i
-                        ? _accent.withValues(alpha: 0.12)
-                        : Colors.black.withValues(alpha: 0.05),
-                    blurRadius: selected == i ? 16 : 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(children: [
-                Container(
-                  width: 64, height: 64,
-                  decoration: BoxDecoration(
-                    color: selected == i ? _accent : AppColors.bg,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(q.options[i].icon,
-                      size: 52,
-                      color: selected == i ? Colors.white : AppColors.inkMid,
-                      fill: 1),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Text(q.options[i].title,
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: selected == i ? _accent : AppColors.ink)),
-                ),
-                Icon(
-                  selected == i
-                      ? Symbols.check_circle_rounded
-                      : Symbols.radio_button_unchecked_rounded,
-                  color: selected == i ? _accent : AppColors.line,
-                  fill: selected == i ? 1 : 0,
-                  size: 28,
-                ),
-              ]),
-            ),
-          ),
-        ],
-      ]);
-    }
-
-    // ── All other MCQ steps: standard list rows ──
+    // ── All MCQ steps: standard list rows ──
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(q.label, style: T.h1(context).copyWith(fontSize: 26)),
       const SizedBox(height: 8),

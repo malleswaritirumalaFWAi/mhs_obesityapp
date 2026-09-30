@@ -61,7 +61,7 @@ router.get('/royal-leaderboard', async (req, res) => {
      FROM users u ORDER BY u.total_xp DESC LIMIT 50`
   )).rows;
   const userId = uid(req);
-  res.json({ leaderboard: rows.map(r => ({ ...r, you: r.id === userId })) });
+  res.json({ leaderboard: rows.map(r => ({ ...r, you: String(r.id) === String(userId) })) });
 });
 
 router.get('/weekly-winners', async (req, res) => {

@@ -517,6 +517,85 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
         'protein': r?.protein,
         'fat': r?.fat,
       });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      // Backend returned 409 — this meal type was already logged today.
+      if (e.response?.statusCode == 409) {
+        setState(() => _saving = false);
+        final data = e.response?.data;
+        final existingId = (data is Map) ? data['existing_id'] : null;
+        if (existingId == null) return;
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text('Already logged $selectedType today',
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            content: Text(
+                'You already have a $selectedType entry for today. Do you want to update it with this meal?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel',
+                    style: TextStyle(color: AppColors.inkMid, fontWeight: FontWeight.w700)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Update',
+                    style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+        setState(() => _saving = true);
+        try {
+          await api.putJson('/meals/$existingId', {
+            'items': r?.items,
+            'calories': r?.calories,
+            'carbs': r?.carbs,
+            'protein': r?.protein,
+            'fat': r?.fat,
+          });
+        } catch (_) {
+          if (!mounted) return;
+          setState(() => _saving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not update meal. Check your connection and try again.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+        if (!mounted) return;
+        ref.read(mealStatsProvider.notifier).addMealType(selectedType);
+        ref.invalidate(tasksProvider);
+        setState(() {
+          _saving = false;
+          _photoBytes = null;
+          _result = null;
+          _analysisError = null;
+          _loadingHistory = true;
+          _historyError = null;
+        });
+        await _loadHistory();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('$selectedType updated')));
+        }
+        return;
+      }
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save meal. Check your connection and try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);

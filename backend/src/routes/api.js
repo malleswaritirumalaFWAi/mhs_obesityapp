@@ -510,7 +510,8 @@ router.post('/weighin', async (req, res) => {
       [uid(req), parseFloat(weight), notes || null, mood]
     );
     await markTasksDoneByIcon(uid(req), ['scale']);
-    await q(`UPDATE users SET xp = xp + 5 WHERE id=$1`, [uid(req)]);
+    await q(`UPDATE users SET xp=xp+5, total_xp=total_xp+5 WHERE id=$1`, [uid(req)]);
+    await q(`UPDATE group_members SET weekly_xp=weekly_xp+5 WHERE user_id=$1`, [uid(req)]);
     res.json({ saved: true, xp_awarded: 5 });
   }
 });
@@ -530,13 +531,15 @@ router.get('/weighin', async (req, res) => {
 // ---- Group / leaderboard ----
 router.get('/group/leaderboard', async (req, res) => {
   const gid = await groupId(uid(req));
+  // Use users.total_xp as the authoritative XP source so all pages stay consistent.
+  // group_members.weekly_xp can drift when XP-award paths miss updating it.
   const r = await q(
-    `SELECT u.id, COALESCE(u.name, 'Member') AS name, gm.weekly_xp
+    `SELECT u.id, COALESCE(u.name, 'Member') AS name, u.total_xp AS weekly_xp
      FROM group_members gm JOIN users u ON u.id=gm.user_id
-     WHERE gm.group_id=$1 ORDER BY gm.weekly_xp DESC LIMIT 50`,
+     WHERE gm.group_id=$1 ORDER BY u.total_xp DESC LIMIT 50`,
     [gid]
   );
-  const leaderboard = r.rows.map((m, i) => ({ ...m, xp: m.weekly_xp, rank: i + 1, you: Number(m.id) === Number(uid(req)) }));
+  const leaderboard = r.rows.map((m, i) => ({ ...m, xp: m.weekly_xp, rank: i + 1, you: String(m.id) === String(uid(req)) }));
   res.json({ leaderboard, members: leaderboard }); // both keys for compatibility
 });
 
