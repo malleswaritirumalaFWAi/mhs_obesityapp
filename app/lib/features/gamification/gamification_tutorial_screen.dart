@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../core/router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_button.dart';
@@ -190,7 +189,7 @@ class _GamificationTutorialScreenState
                       : NeuButton.primary(
                           "Let's go!",
                           trailing: const Icon(Symbols.rocket_launch_rounded, size: 18),
-                          onPressed: () => context.go(Routes.home),
+                          onPressed: () => context.pop(),
                         ),
                 ),
               ]),

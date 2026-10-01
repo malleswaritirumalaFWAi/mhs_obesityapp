@@ -23,16 +23,17 @@ void main() async {
   runApp(const ProviderScope(child: FitQuestApp()));
 }
 
-class FitQuestApp extends StatelessWidget {
+class FitQuestApp extends ConsumerWidget {
   const FitQuestApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.read(appRouterProvider);
     return MaterialApp.router(
       title: 'FitQuest',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      routerConfig: appRouter,
+      routerConfig: router,
     );
   }
 }

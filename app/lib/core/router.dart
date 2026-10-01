@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import 'state/session.dart';
 
 import '../features/splash/splash_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
@@ -102,10 +105,50 @@ class Routes {
 final _rootKey = GlobalKey<NavigatorState>();
 final _shellKey = GlobalKey<NavigatorState>();
 
-final appRouter = GoRouter(
-  navigatorKey: _rootKey,
-  initialLocation: Routes.splash,
-  routes: [
+/// Routes that are allowed without completing onboarding (payment).
+const _publicRoutes = {
+  Routes.splash,
+  Routes.welcome,
+  Routes.login,
+  Routes.signup,
+  Routes.signin,
+  Routes.quiz,
+  Routes.coach,
+  Routes.payment,
+  Routes.gamificationTutorial,
+  Routes.adminLogin,
+  Routes.adminDashboard,
+};
+
+final appRouterProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
+    navigatorKey: _rootKey,
+    initialLocation: Routes.splash,
+    redirect: (context, state) {
+      final path = state.matchedLocation;
+
+      // Allow public routes always.
+      if (_publicRoutes.contains(path)) return null;
+
+      // Read current session (not watch — router is created once).
+      final session = ref.read(sessionProvider);
+
+      // Still bootstrapping — let splash handle it.
+      if (session.status == AuthStatus.unknown) return null;
+
+      // If signed in but not onboarded → block access to app screens.
+      if (session.status == AuthStatus.signedIn && !session.onboarded) {
+        return Routes.payment;
+      }
+
+      // Not signed in → go to welcome.
+      if (session.status == AuthStatus.signedOut) {
+        return Routes.welcome;
+      }
+
+      return null; // allow
+    },
+    routes: [
     GoRoute(path: Routes.splash, builder: (_, __) => const SplashScreen()),
     GoRoute(path: Routes.welcome, builder: (_, __) => const WelcomeScreen()),
     GoRoute(path: Routes.login, builder: (_, __) => const LoginOtpScreen()),
@@ -267,4 +310,5 @@ final appRouter = GoRouter(
         parentNavigatorKey: _rootKey,
         builder: (_, __) => const AdminDashboardScreen()),
   ],
-);
+  );
+});
