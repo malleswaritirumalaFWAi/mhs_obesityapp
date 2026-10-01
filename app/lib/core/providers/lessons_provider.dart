@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../state/session.dart';
@@ -133,7 +134,9 @@ class LessonsNotifier extends StateNotifier<LessonsState> {
       // Re-fetch from backend so the newly unlocked next lesson becomes 'active'
       // and the progress bar updates correctly.
       await fetch();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Lessons: complete($id) failed: $e');
+    }
   }
 }
 

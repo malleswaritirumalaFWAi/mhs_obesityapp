@@ -60,8 +60,14 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
         await Future.delayed(const Duration(milliseconds: 1500));
         if (mounted) context.pop();
       }
-    } catch (_) {
-      if (mounted) setState(() => _saving = false);
+    } catch (e) {
+      debugPrint('Reflection: save failed: $e');
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save reflection. Please try again.')),
+        );
+      }
     }
   }
 

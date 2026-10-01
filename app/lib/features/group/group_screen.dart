@@ -846,7 +846,14 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       _ctrl.clear();
       widget.onCommentAdded();
       await _load();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Comments: send failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to post comment. Please try again.')),
+        );
+      }
+    }
     if (mounted) setState(() => _sending = false);
   }
 

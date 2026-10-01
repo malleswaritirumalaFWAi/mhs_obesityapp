@@ -70,7 +70,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         _initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
         _loading = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('EditProfile: loadProfile failed: $e');
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -137,6 +138,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           const SnackBar(content: Text('Profile updated')),
         );
         context.pop();
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        final status = e.response?.statusCode;
+        final url = e.requestOptions.uri;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed (HTTP $status): $url')),
+        );
       }
     } catch (e) {
       if (mounted) {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../state/session.dart';
@@ -98,7 +99,9 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
         doubleXpExpiresAt: expiresAt,
         cheatMealPasses: (d['cheat_meal_passes'] as num?)?.toInt() ?? 0,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Gamification: loadStatus failed: $e');
+    }
   }
 
   Future<bool> useFreeze() async {

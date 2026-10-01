@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../state/session.dart';
@@ -25,11 +26,13 @@ class GroupChatNotifier extends StateNotifier<GroupChatState> {
     try {
       final d = await _api.getJson('/group/chat');
       final currentUserId = d['current_user_id']?.toString() ?? '';
+      debugPrint('[GroupChat] current_user_id=$currentUserId');
       final msgs = (d['messages'] as List? ?? []).map((m) {
         final mm = m as Map<String, dynamic>;
+        final authorId = mm['author_id']?.toString() ?? '';
         // Use is_mine from backend; fall back to comparing author_id with current_user_id.
         final isMine = mm['is_mine'] == true ||
-            (currentUserId.isNotEmpty && mm['author_id']?.toString() == currentUserId);
+            (currentUserId.isNotEmpty && authorId == currentUserId);
         return ChatMessage(
           id: (mm['id'] as num).toInt(),
           text: mm['text'] as String? ?? '',

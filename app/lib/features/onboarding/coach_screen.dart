@@ -182,20 +182,10 @@ class CoachScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Row(children: [
-                Expanded(
-                  child: Center(
-                    child: TextButton(
-                      onPressed: () => context.push(Routes.gamificationTutorial),
-                      child: Text('How to play?', style: T.small(context).copyWith(color: AppColors.coral)),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: TextButton(
-                      onPressed: () => context.go(Routes.home),
-                      child: Text('Skip for now', style: T.small(context)),
-                    ),
+                Center(
+                  child: TextButton(
+                    onPressed: () => context.push(Routes.gamificationTutorial),
+                    child: Text('How to play?', style: T.small(context).copyWith(color: AppColors.coral)),
                   ),
                 ),
               ]),

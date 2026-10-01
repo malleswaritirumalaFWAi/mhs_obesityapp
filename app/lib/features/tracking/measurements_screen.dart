@@ -53,7 +53,9 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
           }
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Measurements: load failed: $e');
+    }
   }
 
   Future<void> _save() async {
@@ -71,7 +73,14 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Measurements saved! +10 XP'), backgroundColor: AppColors.coral));
       }
-    } catch (_) {} finally {
+    } catch (e) {
+      debugPrint('Measurements: save failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save measurements. Please try again.')),
+        );
+      }
+    } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
