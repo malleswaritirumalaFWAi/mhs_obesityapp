@@ -551,7 +551,11 @@ class _AutoTrackCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Auto-track steps', style: T.title(context).copyWith(fontSize: 15)),
-                Text(tracking.isTracking ? 'Tracking active' : 'Tap to enable',
+                Text(tracking.isTracking
+                    ? (tracking.source == StepSource.healthConnect
+                        ? 'Health Connect'
+                        : 'Pedometer sensor')
+                    : 'Tap to enable',
                   style: T.small(context)),
               ],
             )),
