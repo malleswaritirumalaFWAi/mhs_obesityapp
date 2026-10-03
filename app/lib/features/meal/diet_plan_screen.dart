@@ -3,11 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
+import 'dart:convert';
+
 import '../../core/api/api_client.dart';
+import '../../core/providers/meal_stats_provider.dart';
+import '../../core/providers/tasks_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
+import 'web_camera.dart';
 
 // ─── Main Screen ────────────────────────────────────────────────────────────
 
@@ -80,16 +88,172 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
     }
   }
 
-  Future<void> _completeMeal(String mealType) async {
+  void _showCompleteOptions(String mealType) {
+    if (_completions[mealType] == true || _completing.contains(mealType)) return;
+    final label = mealType[0].toUpperCase() + mealType.substring(1);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text('Log $label',
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.ink)),
+            const SizedBox(height: 4),
+            const Text('How would you like to complete this meal?',
+                style: TextStyle(fontSize: 12, color: AppColors.inkSoft)),
+            const SizedBox(height: 20),
+            Row(children: [
+              Expanded(
+                child: _CompleteOptionTile(
+                  icon: Symbols.photo_camera_rounded,
+                  label: 'Camera',
+                  subtitle: 'Take a photo',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _completeMealWithPhoto(mealType, ImageSource.camera);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _CompleteOptionTile(
+                  icon: Symbols.image_rounded,
+                  label: 'Album',
+                  subtitle: 'Pick a photo',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _completeMealWithPhoto(mealType, ImageSource.gallery);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _CompleteOptionTile(
+                  icon: Symbols.skip_next_rounded,
+                  label: 'Skip',
+                  subtitle: 'No photo',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _completeMealOnly(mealType);
+                  },
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _completeMealWithPhoto(String mealType, ImageSource source) async {
+    if (_completing.contains(mealType)) return;
+    setState(() => _completing.add(mealType));
+
+    Uint8List? bytes;
+    String mime = 'image/jpeg';
+
+    if (kIsWeb && source == ImageSource.camera) {
+      final (b, m) = await captureImageFromCamera();
+      if (b == null) {
+        if (mounted) setState(() => _completing.remove(mealType));
+        return;
+      }
+      bytes = b; mime = m;
+    } else {
+      final x = await ImagePicker().pickImage(
+          source: source, imageQuality: 30, maxWidth: 480);
+      if (x == null) {
+        if (mounted) setState(() => _completing.remove(mealType));
+        return;
+      }
+      bytes = await x.readAsBytes();
+      mime = x.mimeType?.isNotEmpty == true ? x.mimeType! : 'image/jpeg';
+    }
+
+    final api = ref.read(apiClientProvider);
+    final label = mealType[0].toUpperCase() + mealType.substring(1);
+
+    try {
+      // Analyze photo
+      final res = await api.postJson('/meals/analyze', {
+        'image_base64': base64Encode(bytes!),
+        'mime': mime,
+      });
+
+      // Save meal to log
+      await api.postJson('/meals', {
+        'meal_type': label,
+        'items': (res['items'] as List?)?.map((e) => e.toString()).toList(),
+        'calories': (res['calories'] as num?)?.toInt(),
+        'carbs': (res['carbs'] as num?)?.toInt(),
+        'protein': (res['protein'] as num?)?.toInt(),
+        'fat': (res['fat'] as num?)?.toInt(),
+      });
+
+      // Complete diet plan
+      final result = await api.postJson('/diet-plan/complete', {'meal_type': mealType});
+
+      if (mounted) {
+        ref.read(mealStatsProvider.notifier).addMealType(label);
+        ref.invalidate(tasksProvider);
+        setState(() {
+          _completions[mealType] = true;
+          _totalXpEarned += (result['xp'] as num?)?.toInt() ?? 0;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$label logged with photo!'),
+            backgroundColor: AppColors.coral,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not log meal. Try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _completing.remove(mealType));
+    }
+  }
+
+  Future<void> _completeMealOnly(String mealType) async {
     if (_completions[mealType] == true || _completing.contains(mealType)) return;
     setState(() => _completing.add(mealType));
     try {
       final result = await ref.read(apiClientProvider)
           .postJson('/diet-plan/complete', {'meal_type': mealType});
-      if (mounted) setState(() {
-        _completions[mealType] = true;
-        _totalXpEarned += (result['xp'] as num?)?.toInt() ?? 0;
-      });
+      if (mounted) {
+        final label = mealType[0].toUpperCase() + mealType.substring(1);
+        ref.read(mealStatsProvider.notifier).addMealType(label);
+        ref.invalidate(tasksProvider);
+        setState(() {
+          _completions[mealType] = true;
+          _totalXpEarned += (result['xp'] as num?)?.toInt() ?? 0;
+        });
+      }
     } catch (_) {} finally {
       if (mounted) setState(() => _completing.remove(mealType));
     }
@@ -218,7 +382,7 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
                           meal: _todayMeals![key] as Map<String, dynamic>,
                           completed: _completions[key] == true,
                           completing: _completing.contains(key),
-                          onComplete: () => _completeMeal(key),
+                          onComplete: () => _showCompleteOptions(key),
                         ),
                       ),
               ],
@@ -646,7 +810,7 @@ class _MealQuestCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Quest Complete!',
+                const Text('Meal Complete!',
                     style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w800, fontSize: 13)),
                 Text('+$_xp XP earned', style: T.small(context).copyWith(color: AppColors.coral)),
               ])),
@@ -670,12 +834,58 @@ class _MealQuestCard extends StatelessWidget {
                     const Icon(Symbols.check_circle_rounded, color: Colors.white, size: 18),
                   const SizedBox(width: 8),
                   Text(
-                    completing ? 'Saving...' : 'Complete Quest  +$_xp XP',
+                    completing ? 'Logging...' : 'Complete Meal  +$_xp XP',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
                   ),
                 ]),
               ),
             ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Complete option tile (bottom sheet) ────────────────────────────────────
+
+class _CompleteOptionTile extends StatelessWidget {
+  const _CompleteOptionTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label, subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: AppColors.bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.coral.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: AppColors.coral, size: 22, fill: 1),
+          ),
+          const SizedBox(height: 8),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink)),
+          const SizedBox(height: 2),
+          Text(subtitle,
+              style: const TextStyle(fontSize: 10, color: AppColors.inkSoft)),
         ]),
       ),
     );

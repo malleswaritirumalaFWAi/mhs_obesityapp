@@ -206,13 +206,171 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
     }
   }
 
-  /// "I followed the plan" — logs the diet plan's meal data into the meals table.
-  Future<void> _followPlan() async {
-    if (_followingPlan) return;
+  /// Shows bottom sheet with Camera / Album / Skip options for completing a diet plan meal.
+  void _showCompleteOptions() {
     final planKeys = const ['breakfast', 'lunch', 'snack', 'dinner'];
-    final planKey = planKeys[_mealType]; // maps selector index to plan key
+    final planKey = planKeys[_mealType];
     final meal = _todayPlanMeals?[planKey] as Map<String, dynamic>?;
     if (meal == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.line,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text('Log ${_mealTypes[_mealType].label}',
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.ink)),
+            const SizedBox(height: 4),
+            const Text('How would you like to complete this meal?',
+                style: TextStyle(fontSize: 12, color: AppColors.inkSoft)),
+            const SizedBox(height: 20),
+            Row(children: [
+              Expanded(
+                child: _CompleteOption(
+                  icon: Symbols.photo_camera_rounded,
+                  label: 'Camera',
+                  subtitle: 'Take a photo',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _completeMealWithPhoto(ImageSource.camera);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _CompleteOption(
+                  icon: Symbols.image_rounded,
+                  label: 'Album',
+                  subtitle: 'Pick a photo',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _completeMealWithPhoto(ImageSource.gallery);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _CompleteOption(
+                  icon: Symbols.skip_next_rounded,
+                  label: 'Skip',
+                  subtitle: 'No photo',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _completeMealOnly();
+                  },
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// Complete meal with a photo — pick image, analyze, log to meals, complete diet plan.
+  Future<void> _completeMealWithPhoto(ImageSource source) async {
+    final planKeys = const ['breakfast', 'lunch', 'snack', 'dinner'];
+    final planKey = planKeys[_mealType];
+
+    Uint8List? bytes;
+    String mime = 'image/jpeg';
+
+    if (kIsWeb && source == ImageSource.camera) {
+      final (b, m) = await captureImageFromCamera();
+      if (b == null) return;
+      bytes = b; mime = m;
+    } else {
+      final x = await ImagePicker().pickImage(
+          source: source, imageQuality: 30, maxWidth: 480);
+      if (x == null) return;
+      bytes = await x.readAsBytes();
+      mime = x.mimeType?.isNotEmpty == true ? x.mimeType! : 'image/jpeg';
+    }
+
+    setState(() {
+      _photoBytes = bytes;
+      _photoVersion++;
+      _analyzing = true;
+      _result = null;
+      _analysisError = null;
+      _followingPlan = true;
+    });
+
+    // Analyze the photo
+    await _analyzeBytes(bytes!, mime);
+    if (!mounted) return;
+
+    // After analysis, save the meal log + complete the diet plan
+    final r = _result;
+    final selectedType = _mealTypes[_mealType].label;
+    final api = ref.read(apiClientProvider);
+
+    try {
+      // Save meal to log
+      await api.postJson('/meals', {
+        'meal_type': selectedType,
+        'items': r?.items,
+        'calories': r?.calories,
+        'carbs': r?.carbs,
+        'protein': r?.protein,
+        'fat': r?.fat,
+      });
+      // Complete diet plan
+      await api.postJson('/diet-plan/complete', {'meal_type': planKey});
+
+      if (!mounted) return;
+      ref.read(mealStatsProvider.notifier).addMealType(selectedType);
+      ref.invalidate(tasksProvider);
+      setState(() {
+        _followingPlan = false;
+        _photoBytes = null;
+        _result = null;
+        _analysisError = null;
+        _loadingHistory = true;
+      });
+      await _loadHistory();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$selectedType logged with photo +15 XP'),
+            backgroundColor: AppColors.coral,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _followingPlan = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not log meal. Try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Complete meal without a photo — just marks the diet plan meal as done.
+  Future<void> _completeMealOnly() async {
+    if (_followingPlan) return;
+    final planKeys = const ['breakfast', 'lunch', 'snack', 'dinner'];
+    final planKey = planKeys[_mealType];
 
     setState(() => _followingPlan = true);
     try {
@@ -230,7 +388,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${_mealTypes[_mealType].label} logged from diet plan'),
+            content: Text('${_mealTypes[_mealType].label} completed +15 XP'),
             backgroundColor: AppColors.coral,
             behavior: SnackBarBehavior.floating,
           ),
@@ -1254,7 +1412,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
             ])
           else
             GestureDetector(
-              onTap: _followingPlan ? null : _followPlan,
+              onTap: _followingPlan ? null : _showCompleteOptions,
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 13),
@@ -1270,7 +1428,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                     const Icon(Symbols.check_circle_rounded, color: Colors.white, size: 18),
                   const SizedBox(width: 8),
                   Text(
-                    _followingPlan ? 'Saving...' : 'I followed this plan  +15 XP',
+                    _followingPlan ? 'Logging...' : 'Complete Meal  +15 XP',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
                   ),
                 ]),
@@ -1563,6 +1721,52 @@ class _PickPrompt extends StatelessWidget {
             ),
           ]),
         ],
+      ),
+    );
+  }
+}
+
+// ── Complete option (bottom sheet tile) ────────────────────────────────────
+
+class _CompleteOption extends StatelessWidget {
+  const _CompleteOption({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label, subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: AppColors.bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.coral.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: AppColors.coral, size: 22, fill: 1),
+          ),
+          const SizedBox(height: 8),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink)),
+          const SizedBox(height: 2),
+          Text(subtitle,
+              style: const TextStyle(fontSize: 10, color: AppColors.inkSoft)),
+        ]),
       ),
     );
   }

@@ -380,19 +380,50 @@ router.post('/generate', async (req, res) => {
   try {
     if (process.env.ANTHROPIC_API_KEY) {
       const client = new Anthropic();
-      const prompt = `Create a 7-day Indian meal plan for:
-Food preference: ${profile.food_pref || 'vegetarian'}
-Goal: ${profile.goal || 'lose weight'}
-Medical conditions: ${profile.medical_conditions || 'none'}
-Current weight: ${profile.start_weight || '?'} kg, Target: ${profile.target_weight || '?'} kg
 
-Return JSON: { "title": "...", "meals": [ { "day": 1, "breakfast": {"items":[{"name":"...","qty":"..."}],"cal":300}, "lunch": {...}, "snack": {...}, "dinner": {...} } ... ] }
-Each item must include "name" and "qty" (exact quantity e.g. "1 cup (80g)", "2 pieces (60g each)").
-Focus on Indian foods: dal, sabzi, roti, rice, idli, poha, upma, paneer etc.`;
+      // Calculate calorie target based on weight loss goal
+      const currentWt = parseFloat(profile.start_weight) || 75;
+      const targetWt = parseFloat(profile.target_weight) || 65;
+      const weightToLose = Math.max(currentWt - targetWt, 0);
+      // Safe deficit: ~500 kcal/day for ~0.5 kg/week loss
+      // BMR estimate (Mifflin-St Jeor, assuming avg height 165cm, age 30)
+      const heightCm = parseFloat(profile.height) || 165;
+      const bmrBase = 10 * currentWt + 6.25 * heightCm - 5 * 30; // age approx 30
+      const bmr = (profile.gender === 'female' || profile.gender === 'Female') ? bmrBase - 161 : bmrBase + 5;
+      const activityMultiplier = (profile.activity || '').toLowerCase().includes('active') ? 1.55 : 1.3;
+      const tdee = Math.round(bmr * activityMultiplier);
+      const calorieTarget = weightToLose > 0 ? Math.max(tdee - 500, 1200) : tdee;
+      const calRange = `${calorieTarget - 100}-${calorieTarget + 100}`;
+
+      const prompt = `You are a certified Indian nutritionist specializing in sustainable weight loss.
+
+Create a 7-day meal plan for this person:
+- Food preference: ${profile.food_pref || 'vegetarian'}
+- Goal: ${profile.goal || 'lose weight'} (current: ${currentWt}kg → target: ${targetWt}kg, ${weightToLose > 0 ? weightToLose + 'kg to lose' : 'maintain'})
+- Daily calorie target: ${calRange} kcal (TDEE: ~${tdee} kcal with 500 kcal deficit)
+- Medical conditions: ${profile.medical_conditions || 'none'}
+- Height: ${heightCm}cm
+
+WEIGHT LOSS PRINCIPLES to follow:
+1. High protein (25-30% of calories) to preserve muscle and increase satiety
+2. High fiber foods (vegetables, dal, whole grains) for fullness
+3. Controlled portions with EXACT gram/ml measurements
+4. Balanced macros: ~30% protein, ~40% carbs, ~30% fat
+5. No fried foods, minimal oil (1-2 tsp per meal max)
+6. Include thermogenic foods (green tea, spices, ginger)
+7. Each day should be DIFFERENT — no repeating the same meals across days
+8. Use practical, affordable Indian ingredients available in local markets
+9. Include a variety of regional Indian cuisines (South Indian, North Indian, etc.)
+10. Evening snack should be light and protein-rich
+
+Return ONLY valid JSON (no markdown, no explanation):
+{ "title": "7-Day Weight Loss Plan (${calRange} kcal/day)", "meals": [ { "day": 1, "breakfast": {"items":[{"name":"Food name","qty":"exact portion e.g. 1 cup (80g)"}],"cal":300}, "lunch": {"items":[...],"cal":450}, "snack": {"items":[...],"cal":120}, "dinner": {"items":[...],"cal":380} } ... for all 7 days ] }
+
+IMPORTANT: Each item MUST have "name" and "qty" with exact measurements in grams/ml. Daily total must be within ${calRange} kcal.`;
 
       const msg = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [{ role: 'user', content: prompt }],
       });
       const text = msg.content[0]?.text || '';
