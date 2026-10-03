@@ -155,10 +155,17 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
   String? _historyError;
   int _visibleGroups = 2; // today + yesterday shown by default
 
+  // Diet plan
+  Map<String, dynamic>? _todayPlanMeals; // {breakfast: {items, cal}, lunch: ...}
+  bool _loadingPlan = true;
+  bool _followingPlan = false;
+  bool _generatingPlan = false;
+
   @override
   void initState() {
     super.initState();
     _loadHistory();
+    _loadDietPlan();
   }
 
   Future<void> _loadHistory() async {
@@ -184,6 +191,90 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       if (mounted) setState(() { _history = entries; _loadingHistory = false; });
     } catch (_) {
       if (mounted) setState(() { _loadingHistory = false; _historyError = 'Could not load history. Check your connection.'; });
+    }
+  }
+
+  Future<void> _loadDietPlan() async {
+    try {
+      final d = await ref.read(apiClientProvider).getJson('/diet-plan');
+      if (mounted) setState(() {
+        _todayPlanMeals = d['today_meals'] as Map<String, dynamic>?;
+        _loadingPlan = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingPlan = false);
+    }
+  }
+
+  /// "I followed the plan" — logs the diet plan's meal data into the meals table.
+  Future<void> _followPlan() async {
+    if (_followingPlan) return;
+    final planKeys = const ['breakfast', 'lunch', 'snack', 'dinner'];
+    final planKey = planKeys[_mealType]; // maps selector index to plan key
+    final meal = _todayPlanMeals?[planKey] as Map<String, dynamic>?;
+    if (meal == null) return;
+
+    setState(() => _followingPlan = true);
+    try {
+      await ref.read(apiClientProvider).postJson('/diet-plan/complete', {
+        'meal_type': planKey,
+      });
+      if (!mounted) return;
+      ref.read(mealStatsProvider.notifier).addMealType(_mealTypes[_mealType].label);
+      ref.invalidate(tasksProvider);
+      setState(() {
+        _followingPlan = false;
+        _loadingHistory = true;
+      });
+      await _loadHistory();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_mealTypes[_mealType].label} logged from diet plan'),
+            backgroundColor: AppColors.coral,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _followingPlan = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not log meal. Try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _generatePlan() async {
+    setState(() => _generatingPlan = true);
+    try {
+      await ref.read(apiClientProvider).postJson('/diet-plan/generate', {});
+      await _loadDietPlan();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Diet plan generated!'),
+            backgroundColor: AppColors.coral,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not generate plan. Try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPlan = false);
     }
   }
 
@@ -653,17 +744,38 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Log meal',
+                        const Text('Meals',
                             style: TextStyle(
                                 color: AppColors.ink,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900)),
-                        const Text('Snap a photo to analyze nutrition',
+                        const Text('Diet plan + meal logging',
                             style: TextStyle(
                                 color: AppColors.inkSoft, fontSize: 12)),
                       ],
                     ),
                   ),
+                  if (_todayPlanMeals != null)
+                    Tooltip(
+                      message: 'Regenerate diet plan',
+                      child: GestureDetector(
+                        onTap: _generatingPlan ? null : _generatePlan,
+                        child: Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.coral.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: _generatingPlan
+                              ? const Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.coral))
+                              : const Icon(Symbols.auto_awesome_rounded,
+                                  color: AppColors.coral, size: 20),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 8),
                   Container(
                     width: 36, height: 36,
                     decoration: BoxDecoration(
@@ -830,8 +942,12 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
               ),
               const SizedBox(height: 24),
 
+              // ── Diet plan suggestion for selected meal type ──
+              _buildPlanSuggestion(context, mealStats),
+              const SizedBox(height: 24),
+
               // ── Photo / preview ──
-              Text('SNAP YOUR MEAL', style: T.section(context)),
+              Text('OR SNAP YOUR MEAL', style: T.section(context)),
               const SizedBox(height: 10),
               AspectRatio(
                 aspectRatio: 16 / 10,
@@ -980,6 +1096,187 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlanSuggestion(BuildContext context, MealStats mealStats) {
+    if (_loadingPlan) return const SizedBox.shrink();
+
+    final planKeys = const ['breakfast', 'lunch', 'snack', 'dinner'];
+    final planKey = planKeys[_mealType];
+    final meal = _todayPlanMeals?[planKey] as Map<String, dynamic>?;
+    final selectedLabel = _mealTypes[_mealType].label;
+    final alreadyLogged = mealStats.has(selectedLabel);
+
+    // No diet plan at all — show generate prompt
+    if (_todayPlanMeals == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.line),
+        ),
+        child: Column(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.coral.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Symbols.menu_book_rounded,
+                size: 20, color: AppColors.coral, fill: 1),
+          ),
+          const SizedBox(height: 10),
+          Text('No diet plan yet', style: T.body(context)),
+          const SizedBox(height: 4),
+          Text('Generate a personalized plan to see meal suggestions',
+              style: T.small(context), textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _generatingPlan ? null : _generatePlan,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.coral,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: _generatingPlan
+                  ? const SizedBox(width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Generate Plan',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
+            ),
+          ),
+        ]),
+      );
+    }
+
+    // Plan exists but no meal for this slot (e.g. plan doesn't have snack)
+    if (meal == null) return const SizedBox.shrink();
+
+    final items = meal['items'] as List? ?? [];
+    final cal = (meal['cal'] as num?)?.toInt() ?? 0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border(left: BorderSide(color: AppColors.coral, width: 4)),
+        boxShadow: [
+          BoxShadow(color: AppColors.shadowDark.withValues(alpha: 0.5),
+              blurRadius: 8, offset: const Offset(3, 3)),
+          const BoxShadow(color: AppColors.shadowLight,
+              blurRadius: 8, offset: Offset(-3, -3)),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.coralSoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(_mealTypes[_mealType].icon,
+                  color: AppColors.coral, size: 20, fill: 1),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('DIET PLAN · $selectedLabel',
+                  style: T.section(context)),
+              const Text('Your recommended meal',
+                  style: TextStyle(color: AppColors.inkSoft, fontSize: 11)),
+            ])),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.coralSoft,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('$cal kcal',
+                  style: const TextStyle(color: AppColors.coral,
+                      fontWeight: FontWeight.w800, fontSize: 13)),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          Container(height: 1, color: AppColors.line),
+          const SizedBox(height: 12),
+          // Food items
+          ...items.map((item) {
+            final name = item is Map ? (item['name'] as String? ?? '') : item.toString();
+            final qty = item is Map ? (item['qty'] as String? ?? '') : '';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 5),
+                  child: Container(
+                    width: 6, height: 6,
+                    decoration: const BoxDecoration(
+                        color: AppColors.coral, shape: BoxShape.circle),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(name,
+                      style: T.body(context).copyWith(fontSize: 13, fontWeight: FontWeight.w600)),
+                  if (qty.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(qty,
+                          style: T.small(context).copyWith(color: AppColors.inkSoft, fontSize: 11)),
+                    ),
+                ])),
+              ]),
+            );
+          }),
+          const SizedBox(height: 4),
+          Container(height: 1, color: AppColors.line),
+          const SizedBox(height: 12),
+          // Action button
+          if (alreadyLogged)
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: AppColors.coralSoft, shape: BoxShape.circle),
+                child: const Icon(Symbols.check_rounded, color: AppColors.coral, size: 16, fill: 1),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('$selectedLabel logged!',
+                    style: const TextStyle(color: AppColors.coral, fontWeight: FontWeight.w800, fontSize: 13)),
+                Text('+15 XP earned', style: T.small(context).copyWith(color: AppColors.coral)),
+              ])),
+            ])
+          else
+            GestureDetector(
+              onTap: _followingPlan ? null : _followPlan,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                decoration: BoxDecoration(
+                  color: AppColors.coral,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  if (_followingPlan)
+                    const SizedBox(width: 14, height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  else
+                    const Icon(Symbols.check_circle_rounded, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    _followingPlan ? 'Saving...' : 'I followed this plan  +15 XP',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ]),
+              ),
+            ),
+        ]),
       ),
     );
   }

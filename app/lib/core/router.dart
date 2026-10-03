@@ -33,7 +33,6 @@ import '../features/tracking/measurements_screen.dart';
 import '../features/gamification/gamification_screen.dart';
 import '../features/gamification/points_store_screen.dart';
 import '../features/challenge/weekly_challenge_screen.dart';
-import '../features/meal/diet_plan_screen.dart';
 import '../features/learning/recipe_library_screen.dart';
 import '../features/movement/exercise_library_screen.dart';
 import '../features/referral/referral_screen.dart';
@@ -237,7 +236,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     GoRoute(
         path: Routes.dietPlan,
         parentNavigatorKey: _rootKey,
-        builder: (_, __) => const DietPlanScreen()),
+        redirect: (_, __) => Routes.meal),
     GoRoute(
         path: Routes.recipes,
         parentNavigatorKey: _rootKey,

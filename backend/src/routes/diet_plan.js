@@ -3,6 +3,7 @@ import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
 import Anthropic from '@anthropic-ai/sdk';
 import { updateUserLevel } from './gamification.js';
+import { markTasksDoneByIcon } from '../tasks.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -249,16 +250,18 @@ router.get('/', async (req, res) => {
       }
     }
 
-    // Fetch today's meal completions
+    // Fetch today's meal completions from meals table (unified tracking)
     const completionRows = (await q(
-      `SELECT meal_type, xp_awarded FROM diet_completions WHERE user_id=$1 AND date=$2`,
+      `SELECT meal_type FROM meals WHERE user_id=$1 AND created_at::date=$2`,
       [uid(req), today]
     )).rows;
     const completions = {};
     let totalXpEarned = 0;
+    const mealTypeReverseMap = { 'Breakfast': 'breakfast', 'Lunch': 'lunch', 'Snacks': 'snack', 'Dinner': 'dinner' };
     for (const row of completionRows) {
-      completions[row.meal_type] = true;
-      totalXpEarned += Number(row.xp_awarded);
+      const key = mealTypeReverseMap[row.meal_type] || row.meal_type.toLowerCase();
+      completions[key] = true;
+      totalXpEarned += MEAL_XP;
     }
 
     res.json({ plan, today_nutrition: todayNutrition, today_day: todayDay, today_week: todayWeek, day_in_week: dayInWeek, today_meals: todayMeals, completions, total_xp_earned: totalXpEarned });
@@ -268,34 +271,77 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Mark a meal as completed for today and award XP
+// Mark a diet plan meal as completed — inserts into unified meals table
 router.post('/complete', async (req, res) => {
   const { meal_type } = req.body || {};
   if (!['breakfast', 'lunch', 'snack', 'dinner'].includes(meal_type)) {
     return res.status(400).json({ message: 'Invalid meal_type' });
   }
+
+  // Map diet plan keys to meals table convention
+  const mealTypeMap = { breakfast: 'Breakfast', lunch: 'Lunch', snack: 'Snacks', dinner: 'Dinner' };
+  const mealTypeForDb = mealTypeMap[meal_type] || meal_type;
   const today = new Date().toISOString().slice(0, 10);
+
   try {
+    // Check if already logged in meals table today
     const existing = (await q(
-      `SELECT id FROM diet_completions WHERE user_id=$1 AND date=$2 AND meal_type=$3`,
-      [uid(req), today, meal_type]
+      `SELECT id FROM meals WHERE user_id=$1 AND DATE(created_at)=$2 AND meal_type=$3 LIMIT 1`,
+      [uid(req), today, mealTypeForDb]
     )).rows[0];
     if (existing) return res.json({ already_completed: true, xp: 0 });
 
+    // Get active plan and extract today's meal data
     const plan = (await q(
-      `SELECT id FROM diet_plans WHERE user_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 1`,
+      `SELECT meals FROM diet_plans WHERE user_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 1`,
       [uid(req)]
     )).rows[0];
 
-    await q(
-      `INSERT INTO diet_completions (user_id, plan_id, date, meal_type, xp_awarded) VALUES ($1,$2,$3,$4,$5)`,
-      [uid(req), plan?.id || null, today, meal_type, MEAL_XP]
+    let items = [], calories = 0, carbs = 50, protein = 25, fat = 25;
+    if (plan) {
+      const uRow = (await q(`SELECT created_at FROM users WHERE id=$1`, [uid(req)])).rows[0];
+      const userCreatedAt = uRow?.created_at ? new Date(uRow.created_at) : new Date();
+      const nowDate = new Date();
+      const diffMs = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate()).getTime()
+                   - new Date(new Date(userCreatedAt).getFullYear(), new Date(userCreatedAt).getMonth(), new Date(userCreatedAt).getDate()).getTime();
+      const programDay = Math.min(Math.max(Math.floor(diffMs / 86400000) + 1, 1), 84);
+      const dayInWeek = ((programDay - 1) % 7) + 1;
+
+      const planMeals = Array.isArray(plan.meals) ? plan.meals : [];
+      const dayPlan = planMeals.find(m => m.day === dayInWeek) || planMeals[dayInWeek - 1];
+      if (dayPlan && dayPlan[meal_type]) {
+        const mealData = dayPlan[meal_type];
+        items = (mealData.items || []).map(i => typeof i === 'object' ? i.name : String(i));
+        calories = mealData.cal || 0;
+        carbs = mealData.carbs || 50;
+        protein = mealData.protein || 25;
+        fat = mealData.fat || 25;
+      }
+    }
+
+    // Insert into meals table (unified with log meal)
+    const r = await q(
+      `INSERT INTO meals (user_id, meal_type, items, calories, carbs, protein, fat)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [uid(req), mealTypeForDb, JSON.stringify(items), calories, carbs, protein, fat]
     );
+
+    // Award XP
     await q(`UPDATE users SET xp=xp+$1, total_xp=total_xp+$1 WHERE id=$2`, [MEAL_XP, uid(req)]);
     await q(`UPDATE group_members SET weekly_xp=weekly_xp+$1 WHERE user_id=$2`, [MEAL_XP, uid(req)]).catch(() => {});
     await updateUserLevel(uid(req));
 
-    res.json({ completed: true, xp: MEAL_XP });
+    // Check if all main meals logged → mark task done
+    const todayMeals = await q(
+      `SELECT DISTINCT meal_type FROM meals WHERE user_id=$1 AND DATE(created_at)=$2`,
+      [uid(req), today]
+    );
+    const types = todayMeals.rows.map(m => m.meal_type);
+    if (['Breakfast', 'Lunch', 'Dinner'].every(t => types.includes(t))) {
+      await markTasksDoneByIcon(uid(req), ['restaurant']);
+    }
+
+    res.json({ completed: true, xp: MEAL_XP, meal_id: r.rows[0].id });
   } catch (e) {
     console.error('[diet_plan POST /complete]', e.message);
     res.status(500).json({ message: e.message });

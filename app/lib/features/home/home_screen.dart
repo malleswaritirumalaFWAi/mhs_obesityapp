@@ -292,19 +292,12 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(child: _QuickAction(
                     icon: Symbols.restaurant_rounded,
-                    label: 'Log Meal',
+                    label: 'Meals',
                     accent: AppColors.coral,
                     onTap: () async {
                       await context.push(Routes.meal);
                       ref.read(tasksProvider.notifier).fetch();
                     },
-                  )),
-                  const SizedBox(width: 10),
-                  Expanded(child: _QuickAction(
-                    icon: Symbols.menu_book_rounded,
-                    label: 'Diet Plan',
-                    accent: AppColors.coral,
-                    onTap: () => context.push(Routes.dietPlan),
                   )),
                 ]),
               ]),
