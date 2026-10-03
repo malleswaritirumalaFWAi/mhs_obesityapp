@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/api/api_client.dart';
@@ -31,6 +34,7 @@ class _Post {
     required this.createdAt,
     this.coachPick = false,
     this.emoji,
+    this.imageUrl,
   });
   final int id;
   final int userId;
@@ -42,6 +46,7 @@ class _Post {
   final DateTime createdAt;
   final bool coachPick;
   final String? emoji;
+  final String? imageUrl;
   bool liked = false;
 
   String get timeAgo {
@@ -115,6 +120,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                 .toLocal(),
             coachPick: m['coach_pick'] == true,
             emoji: m['emoji'] as String?,
+            imageUrl: m['image_url'] as String?,
           );
           post.liked = m['user_liked'] == true;
           return post;
@@ -157,6 +163,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
               .toLocal(),
           coachPick: m['coach_pick'] == true,
           emoji: m['emoji'] as String?,
+          imageUrl: m['image_url'] as String?,
         );
         post.liked = m['user_liked'] == true;
         return post;
@@ -196,52 +203,109 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
 
   Future<void> _showCompose() async {
     final bodyCtrl = TextEditingController();
-    final emojiCtrl = TextEditingController();
+    String? pickedImageBase64;
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Share with your group'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-            controller: bodyCtrl,
-            maxLines: 4,
-            autofocus: true,
-            decoration: const InputDecoration(
-                hintText: "What's on your mind?",
-                border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: emojiCtrl,
-            decoration: const InputDecoration(
-                hintText: 'Emoji (optional)',
-                border: OutlineInputBorder()),
-          ),
-        ]),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
-          TextButton(
-              onPressed: () {
-                final b = bodyCtrl.text.trim();
-                if (b.isEmpty) return;
-                Navigator.pop(
-                    ctx, {'body': b, 'emoji': emojiCtrl.text.trim()});
-              },
-              child: const Text('Post')),
-        ],
-      ),
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setDialogState) {
+          Future<void> pickImage(ImageSource source) async {
+            final file = await ImagePicker().pickImage(
+              source: source,
+              maxWidth: 800,
+              maxHeight: 800,
+              imageQuality: 70,
+            );
+            if (file == null) return;
+            final bytes = await file.readAsBytes();
+            setDialogState(() {
+              pickedImageBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+            });
+          }
+
+          return AlertDialog(
+            title: const Text('Share with your group'),
+            content: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(
+                  controller: bodyCtrl,
+                  maxLines: 4,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                      hintText: "What's on your mind?",
+                      border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                if (pickedImageBase64 != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(children: [
+                      Image.memory(
+                        base64Decode(pickedImageBase64!.split(',').last),
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => setDialogState(() => pickedImageBase64 = null),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                                color: Colors.black54, shape: BoxShape.circle),
+                            child: const Icon(Icons.close,
+                                color: Colors.white, size: 16),
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                Row(children: [
+                  IconButton(
+                    onPressed: () => pickImage(ImageSource.gallery),
+                    icon: const Icon(Symbols.photo_library_rounded,
+                        color: AppColors.coral),
+                    tooltip: 'Pick from gallery',
+                  ),
+                  IconButton(
+                    onPressed: () => pickImage(ImageSource.camera),
+                    icon: const Icon(Symbols.photo_camera_rounded,
+                        color: AppColors.coral),
+                    tooltip: 'Take a photo',
+                  ),
+                ]),
+              ]),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel')),
+              TextButton(
+                  onPressed: () {
+                    final b = bodyCtrl.text.trim();
+                    if (b.isEmpty) return;
+                    Navigator.pop(ctx, {
+                      'body': b,
+                      if (pickedImageBase64 != null) 'image_url': pickedImageBase64!,
+                    });
+                  },
+                  child: const Text('Post')),
+            ],
+          );
+        });
+      },
     );
     bodyCtrl.dispose();
-    emojiCtrl.dispose();
     if (result == null || (result['body'] ?? '').isEmpty) return;
     if (!mounted) return;
     setState(() => _posting = true);
     try {
       await ref.read(apiClientProvider).postJson('/posts', {
         'body': result['body'],
-        if ((result['emoji'] ?? '').isNotEmpty) 'emoji': result['emoji'],
+        if ((result['image_url'] ?? '').isNotEmpty) 'image_url': result['image_url'],
       });
       await _loadPosts();
     } catch (e) {
@@ -701,6 +765,23 @@ class _PostCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(post.body,
                 style: T.body(context).copyWith(color: AppColors.ink)),
+            if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: post.imageUrl!.startsWith('data:')
+                    ? Image.memory(
+                        base64Decode(post.imageUrl!.split(',').last),
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.network(
+                        post.imageUrl!,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+              ),
+            ],
             if (post.emoji != null && post.emoji!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(

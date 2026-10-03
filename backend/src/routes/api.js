@@ -549,7 +549,7 @@ router.get('/posts', async (req, res) => {
     const gid = await groupId(uid(req));
     const r = await q(
       `SELECT p.id, p.user_id, COALESCE(u.name,'Member') AS author, p.body, p.emoji,
-              p.coach_pick, p.likes, p.fires, p.comments, p.created_at,
+              p.image_url, p.coach_pick, p.likes, p.fires, p.comments, p.created_at,
               (EXISTS (SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.user_id=$2)) AS user_liked
        FROM posts p JOIN users u ON u.id=p.user_id
        WHERE ($1::bigint IS NULL OR p.group_id = $1)

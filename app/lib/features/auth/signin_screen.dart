@@ -79,10 +79,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       color: AppColors.inkMid, size: 24),
                 ),
                 const SizedBox(height: 20),
-                const Text('👋', style: TextStyle(fontSize: 40)),
-                const SizedBox(height: 12),
                 const Text(
-                  'Welcome Back',
+                  'Welcome Back 👋',
                   style: TextStyle(
                       color: AppColors.ink,
                       fontSize: 30,

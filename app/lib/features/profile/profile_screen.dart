@@ -84,54 +84,14 @@ class ProfileScreen extends ConsumerWidget {
           depth: 0.5,
           padding: const EdgeInsets.all(20),
           child: Column(children: [
+            // ── Top row: avatar + name + action buttons ──
             Row(children: [
               _buildProfileAvatar(initial, profilePhotoUrl, 54),
               const SizedBox(width: 14),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name, style: T.title(context).copyWith(fontSize: 18)),
-                    const SizedBox(height: 6),
-                    Row(children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.coralSoft,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Symbols.local_fire_department_rounded,
-                                size: 13, color: AppColors.coral),
-                            const SizedBox(width: 3),
-                            Text('$streak day streak',
-                                style: const TextStyle(
-                                    color: AppColors.coral,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.coralSoft,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(levelLabel,
-                            style: const TextStyle(
-                                color: AppColors.coral,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11)),
-                      ),
-                    ]),
-                  ],
-                ),
+                child: Text(name,
+                    style: T.title(context).copyWith(fontSize: 18),
+                    overflow: TextOverflow.ellipsis),
               ),
               GestureDetector(
                 onTap: () async {
@@ -164,6 +124,46 @@ class ProfileScreen extends ConsumerWidget {
                   child: const Icon(Symbols.settings_rounded,
                       color: AppColors.inkMid, size: 20),
                 ),
+              ),
+            ]),
+            // ── Badges row below ──
+            const SizedBox(height: 10),
+            Row(children: [
+              const SizedBox(width: 68), // align with name (avatar 54 + gap 14)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.coralSoft,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Symbols.local_fire_department_rounded,
+                        size: 13, color: AppColors.coral),
+                    const SizedBox(width: 3),
+                    Text('$streak day streak',
+                        style: const TextStyle(
+                            color: AppColors.coral,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.coralSoft,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(levelLabel,
+                    style: const TextStyle(
+                        color: AppColors.coral,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11)),
               ),
             ]),
           ]),
