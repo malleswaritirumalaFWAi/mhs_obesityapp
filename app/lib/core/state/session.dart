@@ -71,7 +71,15 @@ class SessionController extends StateNotifier<SessionState> {
   final Ref _ref;
 
   Future<void> _bootstrap() async {
-    final token = await _api.readToken();
+    String? token;
+    try {
+      token = await _api.readToken();
+    } catch (_) {
+      // Secure storage failure (e.g. R8 stripped crypto classes) — treat as
+      // signed out so the app doesn't hang on the splash screen forever.
+      state = state.copyWith(status: AuthStatus.signedOut, onboarded: false);
+      return;
+    }
     if (token == null) {
       state = state.copyWith(status: AuthStatus.signedOut, onboarded: false);
       return;
@@ -120,6 +128,8 @@ class SessionController extends StateNotifier<SessionState> {
       } else {
         state = state.copyWith(busy: false, error: _msg(e));
       }
+    } catch (_) {
+      state = state.copyWith(busy: false, error: 'Something went wrong. Please try again.');
     }
   }
 
@@ -147,6 +157,9 @@ class SessionController extends StateNotifier<SessionState> {
         return true;
       }
       state = state.copyWith(busy: false, error: _msg(e));
+      return false;
+    } catch (_) {
+      state = state.copyWith(busy: false, error: 'Something went wrong. Please try again.');
       return false;
     }
   }
@@ -189,6 +202,9 @@ class SessionController extends StateNotifier<SessionState> {
       }
       state = state.copyWith(busy: false, error: _msg(e));
       return false;
+    } catch (_) {
+      state = state.copyWith(busy: false, error: 'Something went wrong. Please try again.');
+      return false;
     }
   }
 
@@ -224,6 +240,9 @@ class SessionController extends StateNotifier<SessionState> {
         return true;
       }
       state = state.copyWith(busy: false, error: _msg(e));
+      return false;
+    } catch (_) {
+      state = state.copyWith(busy: false, error: 'Something went wrong. Please try again.');
       return false;
     }
   }

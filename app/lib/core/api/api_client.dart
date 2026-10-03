@@ -8,20 +8,26 @@ class ApiClient {
   ApiClient(this._storage) {
     _dio = Dio(BaseOptions(
       baseUrl: AppConfig.apiBase, // resolved at runtime (web vs Android)
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 60),
-      sendTimeout: const Duration(seconds: 60),
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
     ));
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await _storage.read(key: _tokenKey);
-        if (token != null) options.headers['Authorization'] = 'Bearer $token';
+        try {
+          final token = await _storage.read(key: _tokenKey);
+          if (token != null) options.headers['Authorization'] = 'Bearer $token';
+        } catch (_) {
+          // Secure-storage read failed — proceed without auth header.
+        }
         handler.next(options);
       },
       onError: (error, handler) async {
         if (error.response?.statusCode == 401) {
-          await clearToken();
+          try {
+            await clearToken();
+          } catch (_) {}
           onUnauthorized?.call();
         }
         handler.next(error);

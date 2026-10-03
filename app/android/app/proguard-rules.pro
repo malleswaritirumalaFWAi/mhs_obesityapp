@@ -18,6 +18,19 @@
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.android.gms.**
 
+# Flutter Secure Storage — Tink crypto + AndroidX security (used via reflection)
+-keep class com.google.crypto.tink.** { *; }
+-dontwarn com.google.crypto.tink.**
+-keep class androidx.security.crypto.** { *; }
+-keep class com.it_nomads.fluttersecurestorage.** { *; }
+
+# Health plugin
+-keep class androidx.health.connect.** { *; }
+-dontwarn androidx.health.connect.**
+
+# Pedometer
+-keep class com.example.pedometer_2.** { *; }
+
 # Flutter Play Store deferred components (not used, suppress R8 warnings)
 -dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication
 -dontwarn com.google.android.play.core.splitinstall.SplitInstallException
