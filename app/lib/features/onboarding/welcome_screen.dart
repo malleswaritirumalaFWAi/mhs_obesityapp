@@ -18,7 +18,7 @@ class WelcomeScreen extends StatelessWidget {
         children: [
           // ── Hero section ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 64, 24, 16),
+            padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 24, 24, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [

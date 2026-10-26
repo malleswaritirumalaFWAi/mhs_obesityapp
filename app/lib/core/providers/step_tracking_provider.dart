@@ -72,7 +72,7 @@ class StepTrackingNotifier extends StateNotifier<StepTrackingState> {
   Future<void> _restoreState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final wasEnabled = prefs.getBool(_kTrackingEnabled) ?? false;
+      final wasEnabled = prefs.getBool(_kTrackingEnabled) ?? true;
       if (wasEnabled) {
         await startTracking();
       }

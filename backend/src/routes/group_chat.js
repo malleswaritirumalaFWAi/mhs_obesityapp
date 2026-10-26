@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
 import { updateUserLevel } from './gamification.js';
+import { moderateWithAI } from '../moderation.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -34,6 +35,15 @@ router.get('/group/chat', async (req, res) => {
 router.post('/group/chat', async (req, res) => {
   const { text } = req.body || {};
   if (!text?.trim()) return res.status(400).json({ message: 'text required' });
+
+  // AI-powered content moderation (~2s max)
+  try {
+    const mod = await moderateWithAI(text.trim());
+    if (!mod.allowed) {
+      return res.status(422).json({ message: mod.reason || 'Message not allowed.', moderation: true });
+    }
+  } catch { /* fail-open: allow message if moderation crashes */ }
+
   const gid = await groupId(uid(req));
   const userRow = (await q(`SELECT role FROM users WHERE id=$1`, [uid(req)])).rows[0];
   const type = ['coach', 'admin'].includes(userRow?.role) ? 'coach' : 'user';

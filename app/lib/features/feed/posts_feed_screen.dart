@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,14 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
+
+/// Extract human-readable message from DioException (e.g. moderation rejection).
+String? _extractErrorMessage(dynamic e) {
+  if (e is DioException && e.response?.data is Map) {
+    return (e.response!.data as Map)['message'] as String?;
+  }
+  return null;
+}
 
 // Safe int parser — handles both num and String from PostgreSQL BIGINT fields
 int _asInt(dynamic v, [int fallback = 0]) {
@@ -199,8 +208,10 @@ class _PostsFeedScreenState extends ConsumerState<PostsFeedScreen> {
       await _loadPosts();
     } catch (e) {
       if (mounted) {
+        // Show moderation feedback if the server rejected content
+        final msg = _extractErrorMessage(e) ?? 'Failed to post';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to post: $e'), backgroundColor: AppColors.coral),
+          SnackBar(content: Text(msg), backgroundColor: AppColors.coral),
         );
       }
     }
@@ -622,8 +633,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     } catch (e) {
       debugPrint('Comments: send failed: $e');
       if (mounted) {
+        final msg = _extractErrorMessage(e) ?? 'Failed to post comment. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to post comment. Please try again.')),
+          SnackBar(content: Text(msg)),
         );
       }
     }

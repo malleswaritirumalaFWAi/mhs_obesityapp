@@ -354,7 +354,7 @@ class _TodayPlanScreenState extends ConsumerState<TodayPlanScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 80),
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 80),
                 ],
               ),
       ),

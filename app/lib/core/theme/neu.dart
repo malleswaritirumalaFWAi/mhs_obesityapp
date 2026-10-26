@@ -49,6 +49,7 @@ class Neu {
       BoxDecoration(
         color: color ?? AppColors.surface,
         borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: AppColors.line.withValues(alpha: 0.5), width: 0.5),
         boxShadow: raised(depth: depth),
       );
 

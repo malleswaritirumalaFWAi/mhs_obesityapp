@@ -9,6 +9,7 @@ import '../../core/providers/meal_stats_provider.dart';
 import '../../core/providers/notifications_provider.dart';
 import '../../core/providers/tasks_provider.dart';
 import '../../core/providers/user_provider.dart';
+import '../../core/services/sound_service.dart';
 import '../../features/group/leaderboard_provider.dart';
 import '../../core/router.dart';
 import '../../core/state/session.dart';
@@ -383,7 +384,7 @@ class HomeScreen extends ConsumerWidget {
                   child: NeuCard(
                     onTap: () => context.go(Routes.group),
                     padding: const EdgeInsets.all(18),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
                       Container(
                         width: 40, height: 40,
                         decoration: BoxDecoration(
@@ -409,7 +410,7 @@ class HomeScreen extends ConsumerWidget {
                   child: NeuCard(
                     onTap: () => context.push(Routes.weeklyProgress),
                     padding: const EdgeInsets.all(18),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
                       Container(
                         width: 40, height: 40,
                         decoration: BoxDecoration(
@@ -514,7 +515,7 @@ class HomeScreen extends ConsumerWidget {
                 )),
               ]),
             ),
-            const SizedBox(height: 100),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 80),
           ],
         ),
       ),
@@ -687,7 +688,10 @@ class _WaterSheetState extends ConsumerState<_WaterSheet> {
           children: List.generate(8, (i) {
             final filled = i < _glasses;
             return GestureDetector(
-              onTap: () => setState(() => _glasses = i + 1),
+              onTap: () {
+                setState(() => _glasses = i + 1);
+                SoundService.instance.playWaterDrip();
+              },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Icon(
@@ -750,7 +754,7 @@ class _StatTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: Neu.card(radius: 20, depth: 0.5),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(

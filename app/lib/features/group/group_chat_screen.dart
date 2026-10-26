@@ -31,9 +31,19 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
   Future<void> _send() async {
     final text = _ctrl.text.trim();
     if (text.isEmpty) return;
+    final savedText = text;
     _ctrl.clear();
     await ref.read(groupChatProvider.notifier).send(text);
-    _scrollToBottom();
+    // If moderation blocked the message, restore text and show feedback
+    final modError = ref.read(groupChatProvider).moderationError;
+    if (modError != null && mounted) {
+      _ctrl.text = savedText;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(modError), backgroundColor: AppColors.coral),
+      );
+    } else {
+      _scrollToBottom();
+    }
   }
 
   @override

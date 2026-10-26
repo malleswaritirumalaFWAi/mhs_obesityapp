@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
+import '../services/notification_service.dart';
 import '../state/session.dart';
 
 class FastingStats {
@@ -124,14 +125,18 @@ class FastingNotifier extends StateNotifier<FastingState> {
     try {
       final d = await _api.postJson('/fasting/start', {'target_hours': targetHours});
       final s = d['session'] as Map<String, dynamic>?;
+      final now = DateTime.now();
       state = FastingState(
         active: true,
         sessionId: (s?['id'] as num?)?.toInt(),
-        startedAt: DateTime.now(),
+        startedAt: now,
         targetHours: targetHours,
         history: state.history,
       );
       _startTicker();
+      // Schedule hourly progress notifications
+      NotificationService.instance.scheduleFastingReminders(
+        startedAt: now, targetHours: targetHours);
     } catch (_) {}
   }
 
@@ -142,6 +147,8 @@ class FastingNotifier extends StateNotifier<FastingState> {
       _ticker?.cancel();
       _stoppedAt = DateTime.now();
       state = FastingState(history: state.history);
+      // Cancel pending fasting notifications
+      NotificationService.instance.cancelFastingReminders();
       load();
       return d;
     } catch (_) { return {}; }

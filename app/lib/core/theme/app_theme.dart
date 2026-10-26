@@ -47,9 +47,9 @@ class T {
   static TextStyle body(BuildContext c) => GoogleFonts.plusJakartaSans(
       fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.inkMid, height: 1.4);
   static TextStyle label(BuildContext c) => GoogleFonts.plusJakartaSans(
-      fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.inkSoft, letterSpacing: 0.8);
+      fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.inkMid, letterSpacing: 0.8);
   static TextStyle small(BuildContext c) => GoogleFonts.plusJakartaSans(
-      fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.inkSoft);
+      fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.inkMid);
   /// Uppercase section header like "TODAY'S GOAL", "THIS WEEK"
   static TextStyle section(BuildContext c) => GoogleFonts.plusJakartaSans(
       fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.inkSoft,

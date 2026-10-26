@@ -11,6 +11,7 @@ import '../../core/theme/neu.dart';
 import '../../core/widgets/neu_button.dart';
 import '../../core/widgets/neu_card.dart';
 import '../../core/widgets/neu_misc.dart';
+import '../../core/widgets/voice_input_button.dart';
 
 const _moods = [
   (icon: Symbols.sentiment_very_dissatisfied_rounded, label: 'Low',   color: Color(0xFFE57373)),
@@ -586,6 +587,7 @@ class _WeighInScreenState extends ConsumerState<WeighInScreen> {
                 controller: _notesCtrl,
                 hint: 'Feeling lighter, skipped dinner...',
                 maxLines: 3,
+                suffix: VoiceInputButton(controller: _notesCtrl),
               ),
               const SizedBox(height: 24),
 

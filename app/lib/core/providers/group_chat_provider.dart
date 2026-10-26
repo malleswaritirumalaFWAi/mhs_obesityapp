@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
@@ -12,9 +13,10 @@ class ChatMessage {
 }
 
 class GroupChatState {
-  const GroupChatState({this.messages = const [], this.loading = false, this.sending = false});
+  const GroupChatState({this.messages = const [], this.loading = false, this.sending = false, this.moderationError});
   final List<ChatMessage> messages;
   final bool loading, sending;
+  final String? moderationError;
 }
 
 class GroupChatNotifier extends StateNotifier<GroupChatState> {
@@ -53,8 +55,12 @@ class GroupChatNotifier extends StateNotifier<GroupChatState> {
     try {
       await _api.postJson('/group/chat', {'text': text});
       await load();
-    } catch (_) {
-      state = GroupChatState(messages: state.messages);
+    } catch (e) {
+      String? modError;
+      if (e is DioException && e.response?.statusCode == 422) {
+        modError = (e.response?.data as Map?)?['message'] as String?;
+      }
+      state = GroupChatState(messages: state.messages, moderationError: modError);
     }
   }
 }

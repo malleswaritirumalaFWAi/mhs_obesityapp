@@ -28,10 +28,10 @@ class AppColors {
   static const berrySoft = Color(0xFFEFE3F7);
   static const berryDark = Color(0xFF7B4FA0);
 
-  // Ink (text)
+  // Ink (text) — tuned for WCAG AA contrast on cream bg (#F2EFE9)
   static const ink = Color(0xFF2B2A28);
-  static const inkMid = Color(0xFF4B4945);
-  static const inkSoft = Color(0xFF6B6863);
+  static const inkMid = Color(0xFF3D3B38);
+  static const inkSoft = Color(0xFF57534E);
 
   // Legacy aliases — mapped to v2 coral so existing references stay warm
   static const orange = coral;

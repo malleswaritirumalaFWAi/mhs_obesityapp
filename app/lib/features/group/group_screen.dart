@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/router.dart';
@@ -651,33 +653,144 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
     ]);
   }
 
-  Widget _coachUpdates(BuildContext context) => Column(children: [
-        NeuCard(
-          depth: 0.5,
-          child: Row(children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                  color: AppColors.coralSoft, shape: BoxShape.circle),
-              alignment: Alignment.center,
-              child: const Icon(Symbols.support_agent_rounded,
-                  color: AppColors.coral, size: 22, fill: 1),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
+  Widget _coachUpdates(BuildContext context) => const _CoachMotivation();
+}
+
+// ── Dynamic coach motivation ─────────────────────────────────────────────────
+
+const _motivationalMessages = [
+  'Every small step counts. Keep showing up for yourself!',
+  "Progress isn't about perfection. It's about being consistent.",
+  "You've started your journey. Today is another chance to get stronger!",
+  'Your daily habits shape your future. Make today count!',
+  "Celebrate how far you've come, and keep moving forward!",
+  "One healthy choice at a time. You've got this!",
+  'Stay patient, trust the process, and keep going!',
+  'Your effort matters, even on the days when progress feels slow.',
+  'Remember: weigh-in every morning before water. Consistency wins!',
+  "Drink at least 8 glasses of water today. You'll feel the difference!",
+  'A 20-minute walk today does more than a perfect plan tomorrow.',
+  'Sleep is your superpower. Aim for 7-8 hours tonight.',
+  "Don't compare your day 1 to someone else's day 100.",
+  'The best diet is the one you can stick to. Keep it sustainable!',
+  'Track your meals — awareness is the first step to change.',
+  'Your body is working hard for you. Fuel it with good food today.',
+];
+
+class _CoachMotivation extends StatefulWidget {
+  const _CoachMotivation();
+
+  @override
+  State<_CoachMotivation> createState() => _CoachMotivationState();
+}
+
+class _CoachMotivationState extends State<_CoachMotivation> {
+  String _message = '';
+  bool _dismissed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pickMessage();
+  }
+
+  Future<void> _pickMessage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final lastDate = prefs.getString('coach_motivation_date') ?? '';
+    final lastIndex = prefs.getInt('coach_motivation_index') ?? -1;
+    final dismissed = prefs.getString('coach_motivation_dismissed') == today;
+
+    if (dismissed) {
+      if (mounted) setState(() => _dismissed = true);
+      return;
+    }
+
+    int index;
+    if (lastDate == today && lastIndex >= 0) {
+      index = lastIndex;
+    } else {
+      // Pick a new random message different from last time
+      final rand = Random();
+      do {
+        index = rand.nextInt(_motivationalMessages.length);
+      } while (index == lastIndex && _motivationalMessages.length > 1);
+      await prefs.setString('coach_motivation_date', today);
+      await prefs.setInt('coach_motivation_index', index);
+    }
+
+    if (mounted) setState(() => _message = _motivationalMessages[index]);
+  }
+
+  Future<void> _dismiss() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    await prefs.setString('coach_motivation_dismissed', today);
+    if (mounted) setState(() => _dismissed = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_dismissed || _message.isEmpty) return const SizedBox.shrink();
+
+    return Column(children: [
+      NeuCard(
+        depth: 0.5,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                    color: AppColors.coralSoft, shape: BoxShape.circle),
+                alignment: Alignment.center,
+                child: const Icon(Symbols.support_agent_rounded,
+                    color: AppColors.coral, size: 22, fill: 1),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text('AI Coach Priya · 1h ago', style: T.small(context)),
-                  const SizedBox(height: 4),
-                  Text(
-                      'Reminder: weigh-in every morning before water. Consistency wins!',
-                      style: T.body(context)),
-                ])),
-          ]),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('AI Coach Priya', style: T.title(context).copyWith(fontSize: 15)),
+                    Text("Today's motivation", style: T.small(context)),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: _dismiss,
+                child: const Icon(Symbols.close_rounded,
+                    size: 20, color: AppColors.inkSoft),
+              ),
+            ]),
+            const SizedBox(height: 14),
+            Text(_message, style: T.body(context).copyWith(
+              color: AppColors.ink, fontWeight: FontWeight.w600, fontSize: 15, height: 1.5)),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: GestureDetector(
+                onTap: _dismiss,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.coralSoft,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text("Got it, let's go!",
+                      style: T.title(context).copyWith(
+                          fontSize: 14, color: AppColors.coral)),
+                ),
+              ),
+            ),
+          ],
         ),
-      ]);
+      ),
+    ]);
+  }
 }
 
 // ── Post card ─────────────────────────────────────────────────────────────────

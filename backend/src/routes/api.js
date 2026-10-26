@@ -4,6 +4,7 @@ import { authMiddleware } from '../auth.js';
 import { ensureTasksForDay, ensureTasksForToday, TASK_TEMPLATES, markTasksDoneByIcon } from '../tasks.js';
 import { updateUserLevel } from './gamification.js';
 import { sendPush } from '../push.js';
+import { moderateContent } from '../moderation.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -566,6 +567,11 @@ router.post('/posts', async (req, res) => {
   try {
     const { body, emoji, image_url, post_type } = req.body || {};
     if (!body?.trim()) return res.status(400).json({ message: 'post body is required' });
+
+    // Content moderation
+    const mod = moderateContent(body);
+    if (!mod.allowed) return res.status(422).json({ message: mod.reason, moderation: true });
+
     const gid = await groupId(uid(req));
     const r = await q(
       `INSERT INTO posts (group_id, user_id, body, emoji, image_url, post_type) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
@@ -598,6 +604,11 @@ router.put('/posts/:id', async (req, res) => {
   try {
     const { body } = req.body || {};
     if (!body?.trim()) return res.status(400).json({ message: 'body is required' });
+
+    // Content moderation
+    const mod = moderateContent(body);
+    if (!mod.allowed) return res.status(422).json({ message: mod.reason, moderation: true });
+
     const r = await q(
       `UPDATE posts SET body=$1 WHERE id=$2 AND user_id=$3 RETURNING id`,
       [body, req.params.id, uid(req)]
@@ -675,6 +686,10 @@ router.post('/posts/:id/comments', async (req, res) => {
   try {
     const { body } = req.body || {};
     if (!body?.trim()) return res.status(400).json({ message: 'body is required' });
+
+    // Content moderation
+    const mod = moderateContent(body);
+    if (!mod.allowed) return res.status(422).json({ message: mod.reason, moderation: true });
     const commenterId = uid(req);
     await q(
       `INSERT INTO post_comments (post_id, user_id, body) VALUES ($1,$2,$3)`,

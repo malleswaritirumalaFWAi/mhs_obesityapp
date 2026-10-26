@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../core/api/api_client.dart';
 import '../../core/providers/daily_stats_provider.dart';
 import '../../core/providers/tasks_provider.dart';
+import '../../core/services/sound_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/neu_button.dart';
@@ -68,6 +69,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
       _glasses = cached;
       _loading = false;
     }
+    SoundService.instance.init();
     _loadGlasses();
     _loadHistory();
   }
@@ -125,6 +127,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
       if (mounted) {
         setState(() { _glasses = newGlasses; _adding = false; });
         _bounceCtrl.forward(from: 0);
+        SoundService.instance.playWaterDrip();
         if (newGlasses >= _goal) {
           ref.invalidate(tasksProvider);
           _showGoalReached();
@@ -137,6 +140,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen>
       if (mounted) {
         setState(() { _glasses = next; _adding = false; });
         _bounceCtrl.forward(from: 0);
+        SoundService.instance.playWaterDrip();
         if (next >= _goal) {
           ref.invalidate(tasksProvider);
           _showGoalReached();

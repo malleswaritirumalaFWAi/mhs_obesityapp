@@ -47,6 +47,15 @@ dependencies:
   pedometer_2: 5.0.4
   permission_handler: 11.3.1
 
+  # Audio feedback
+  audioplayers: ^6.1.0
+
+  # Speech-to-text (voice notes)
+  speech_to_text: ^7.0.0
+
+  # Timezone (for scheduled local notifications)
+  timezone: ^0.10.0
+
   # Misc
   intl: ^0.19.0
   health: ^13.3.1
@@ -58,3 +67,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/sounds/

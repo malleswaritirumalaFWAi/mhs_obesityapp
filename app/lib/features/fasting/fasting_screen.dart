@@ -195,15 +195,17 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
             ],
 
             // ── Timer ring ──────────────────────────────────────────────────
-            Center(
-              child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CustomPaint(
-                      size: const Size(240, 240),
+            LayoutBuilder(builder: (context, constraints) {
+              final ringSize = (constraints.maxWidth - 48).clamp(180.0, 240.0);
+              return Center(
+                child: SizedBox(
+                  width: ringSize,
+                  height: ringSize,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: Size(ringSize, ringSize),
                       painter: _RingPainter(
                         progress: f.active ? f.progress : 0,
                         targetHours: f.active ? f.targetHours : _targetHours,
@@ -243,10 +245,11 @@ class _FastingScreenState extends ConsumerState<FastingScreen> {
                         Text('Not fasting', style: T.body(context)),
                       ],
                     ]),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            }),
             const SizedBox(height: 24),
 
             // ── Break-fast end time (active only) ───────────────────────────
