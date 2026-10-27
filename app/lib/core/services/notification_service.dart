@@ -172,6 +172,7 @@ class NotificationService {
             iOS: const DarwinNotificationDetails(),
           ),
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: null,
         );
       } catch (_) {
