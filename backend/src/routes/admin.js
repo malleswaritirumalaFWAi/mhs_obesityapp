@@ -117,13 +117,16 @@ router.get('/revenue', async (req, res) => {
 
 router.post('/content/lesson', async (req, res) => {
   if (!await requireAdmin(req, res)) return;
-  const { title, content, week_number, lesson_type = 'article', video_url, quiz_questions } = req.body || {};
-  const r = await q(
-    `INSERT INTO lessons (title,content,week_number,lesson_type,video_url,quiz_questions)
-     VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-    [title, content, week_number, lesson_type, video_url || null, quiz_questions ? JSON.stringify(quiz_questions) : null]
-  );
-  res.json({ lesson: r.rows[0] });
+  try {
+    const { title, content, week_number, lesson_type = 'article', video_url, quiz_questions, author, minutes, xp = 50, week_name } = req.body || {};
+    if (!title || !week_number) return res.status(400).json({ message: 'title and week_number are required' });
+    const r = await q(
+      `INSERT INTO lessons (week, title, author, minutes, xp, week_name, lesson_type, video_url, content, quiz_questions)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [week_number, title, author || null, minutes || null, xp, week_name || null, lesson_type, video_url || null, content || null, quiz_questions ? JSON.stringify(quiz_questions) : null]
+    );
+    res.json({ lesson: r.rows[0] });
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
 router.post('/users/:id/role', async (req, res) => {

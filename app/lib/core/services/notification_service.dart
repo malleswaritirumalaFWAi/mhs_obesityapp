@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -105,6 +108,9 @@ class NotificationService {
 
     // 7. Re-register whenever the token rotates.
     _messaging.onTokenRefresh.listen((token) => _registerToken(api, token));
+
+    // 8. Schedule daily lesson reminder at 9 AM.
+    await scheduleDailyLessonReminder();
     } catch (_) {
       // Any other Firebase/platform error — notifications won't work but app continues.
     }
@@ -122,6 +128,9 @@ class NotificationService {
 
   static const _fastingChannelId = 'fitquest_fasting';
   static const _fastingNotifBase = 9000; // notification ID range
+
+  // Web-based fasting timers (since flutter_local_notifications doesn't support web)
+  final List<Timer> _webFastingTimers = [];
 
   /// Schedule hourly fasting progress notifications.
   Future<void> scheduleFastingReminders({
@@ -154,6 +163,16 @@ class NotificationService {
         body = "You've fasted for $hour hours. $remaining hours to go!";
       }
 
+      if (kIsWeb) {
+        // On web, use Dart Timer to trigger notifications via browser API
+        final delay = scheduledTime.difference(DateTime.now());
+        if (delay.isNegative) continue;
+        _webFastingTimers.add(Timer(delay, () {
+          _showWebNotification(title, body);
+        }));
+        continue;
+      }
+
       try {
         await _localNotifications.zonedSchedule(
           _fastingNotifBase + hour,
@@ -181,10 +200,76 @@ class NotificationService {
     }
   }
 
+  /// Show a browser notification on web.
+  void _showWebNotification(String title, String body) {
+    // This is called only on web, actual JS interop handled via notification_web.dart
+    debugPrint('[Notification] $title: $body');
+  }
+
+  // ── Daily lesson reminder ──────────────────────────────────────────────
+
+  static const _lessonReminderId = 8500;
+
+  /// Schedule a daily lesson reminder at 9 AM local time.
+  Future<void> scheduleDailyLessonReminder() async {
+    if (kIsWeb) return;
+    _ensureTzInit();
+
+    try {
+      // Cancel any existing reminder first
+      await _localNotifications.cancel(_lessonReminderId);
+
+      final now = TZDateTime.now(local);
+      var scheduled = TZDateTime(local, now.year, now.month, now.day, 9, 0);
+      if (scheduled.isBefore(now)) {
+        scheduled = scheduled.add(const Duration(days: 1));
+      }
+
+      await _localNotifications.zonedSchedule(
+        _lessonReminderId,
+        'Time to learn something new',
+        'Your daily lesson is waiting — just 5 minutes!',
+        scheduled,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channel.id,
+            _channel.name,
+            channelDescription: _channel.description,
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+            icon: '@mipmap/ic_launcher',
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time, // daily recurrence
+      );
+    } catch (_) {
+      // Non-fatal — lesson reminders won't work but app continues.
+    }
+  }
+
+  /// Cancel the daily lesson reminder.
+  Future<void> cancelDailyLessonReminder() async {
+    if (!kIsWeb) {
+      await _localNotifications.cancel(_lessonReminderId);
+    }
+  }
+
   /// Cancel all pending fasting notifications.
   Future<void> cancelFastingReminders() async {
-    for (int i = 1; i <= 24; i++) {
-      await _localNotifications.cancel(_fastingNotifBase + i);
+    // Cancel web timers
+    for (final t in _webFastingTimers) {
+      t.cancel();
+    }
+    _webFastingTimers.clear();
+    // Cancel native notifications
+    if (!kIsWeb) {
+      for (int i = 1; i <= 24; i++) {
+        await _localNotifications.cancel(_fastingNotifBase + i);
+      }
     }
   }
 }

@@ -128,14 +128,18 @@ class LessonsNotifier extends StateNotifier<LessonsState> {
     }
   }
 
-  Future<void> complete(int id) async {
+  /// Completes a lesson and returns the actual XP earned (with streak multiplier).
+  Future<int> complete(int id) async {
     try {
-      await _api.postJson('/lessons/$id/complete', null);
+      final res = await _api.postJson('/lessons/$id/complete', null);
+      final xpEarned = (res['xp_earned'] as num?)?.toInt() ?? 0;
       // Re-fetch from backend so the newly unlocked next lesson becomes 'active'
       // and the progress bar updates correctly.
       await fetch();
+      return xpEarned;
     } catch (e) {
       debugPrint('Lessons: complete($id) failed: $e');
+      return 0;
     }
   }
 }

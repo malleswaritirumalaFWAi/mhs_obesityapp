@@ -170,6 +170,7 @@ class _MovementScreenState extends ConsumerState<MovementScreen>
         ],
       ),
     );
+    if (!mounted) return;
     ctrl.dispose();
     if (result != null) _addSteps(result);
   }

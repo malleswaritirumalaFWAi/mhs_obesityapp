@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/api/api_client.dart';
 import '../../core/providers/lessons_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -131,7 +132,10 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
             Expanded(
               child: PageView.builder(
                 controller: _pageCtrl,
-                physics: const NeverScrollableScrollPhysics(),
+                // Allow free swipe for completed/review lessons; forward-only for new
+                physics: lesson.completed
+                    ? const ClampingScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
                 itemCount: totalPages,
                 onPageChanged: (i) => setState(() {
                   _page = i;
@@ -161,7 +165,20 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
                       onPressed: () async {
                         if (!_completed && !lesson.completed) {
                           setState(() => _completed = true);
-                          await ref.read(lessonsProvider.notifier).complete(lesson.id);
+                          final xpEarned = await ref.read(lessonsProvider.notifier).complete(lesson.id);
+                          if (context.mounted && xpEarned > 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  xpEarned > lesson.xpReward
+                                      ? '+$xpEarned XP earned (streak bonus!)'
+                                      : '+$xpEarned XP earned!',
+                                ),
+                                backgroundColor: AppColors.coral,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
                         }
                         if (context.mounted) Navigator.pop(context);
                       },
@@ -179,7 +196,7 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
     // Title slide
     slides.add(_TitleSlide(lesson: lesson));
 
-    // Content slides — split by double newlines into paragraphs
+    // Content slides — smart split targeting ~300 words per slide
     if (lesson.content.isNotEmpty) {
       final paragraphs = lesson.content
           .split(RegExp(r'\n{2,}'))
@@ -187,9 +204,21 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
           .where((s) => s.isNotEmpty)
           .toList();
 
-      // Group paragraphs into 2-per-slide
-      for (var i = 0; i < paragraphs.length; i += 2) {
-        final chunk = paragraphs.sublist(i, (i + 2).clamp(0, paragraphs.length));
+      const targetWords = 300;
+      var chunk = <String>[];
+      var chunkWords = 0;
+
+      for (final p in paragraphs) {
+        final pWords = p.split(RegExp(r'\s+')).length;
+        if (chunk.isNotEmpty && chunkWords + pWords > targetWords) {
+          slides.add(_ContentSlide(paragraphs: chunk));
+          chunk = <String>[];
+          chunkWords = 0;
+        }
+        chunk.add(p);
+        chunkWords += pWords;
+      }
+      if (chunk.isNotEmpty) {
         slides.add(_ContentSlide(paragraphs: chunk));
       }
     }
@@ -204,7 +233,22 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
         onAnswer: (i) {
           if (!_quizSubmitted) setState(() => _quizAnswer = i);
         },
-        onSubmit: () => setState(() => _quizSubmitted = true),
+        onSubmit: () {
+          setState(() => _quizSubmitted = true);
+          // Persist quiz result to backend
+          final correct = (quiz['correct'] as num?)?.toInt() ?? 0;
+          final score = _quizAnswer == correct ? 100.0 : 0.0;
+          ref.read(apiClientProvider).postJson(
+            '/lessons/${lesson.id}/quiz',
+            {'score': score},
+          ).catchError((_) => null);
+        },
+        onRetake: _quizSubmitted ? () {
+          setState(() {
+            _quizAnswer = null;
+            _quizSubmitted = false;
+          });
+        } : null,
       ));
     }
 
@@ -302,12 +346,14 @@ class _QuizSlide extends StatelessWidget {
     required this.submitted,
     required this.onAnswer,
     required this.onSubmit,
+    this.onRetake,
   });
   final Map<String, dynamic> quiz;
   final int? selectedAnswer;
   final bool submitted;
   final ValueChanged<int> onAnswer;
   final VoidCallback onSubmit;
+  final VoidCallback? onRetake;
 
   @override
   Widget build(BuildContext context) {
@@ -407,15 +453,46 @@ class _QuizSlide extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    selectedAnswer == correct
-                        ? 'Correct! Great job!'
-                        : 'The correct answer is: ${options[correct]}',
-                    style: T.body(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        selectedAnswer == correct
+                            ? 'Correct! Great job!'
+                            : 'The correct answer is: ${options[correct]}',
+                        style: T.body(context).copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      if (quiz['explanation'] != null && (quiz['explanation'] as String).isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          quiz['explanation'] as String,
+                          style: T.small(context).copyWith(
+                              color: AppColors.inkMid, height: 1.4),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ]),
             ),
+            if (onRetake != null && selectedAnswer != correct) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: onRetake,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Symbols.refresh_rounded,
+                        color: AppColors.coral, size: 18),
+                    const SizedBox(width: 6),
+                    Text('Try again',
+                        style: T.body(context).copyWith(
+                            color: AppColors.coral,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ],
           ],
         ],
       ),

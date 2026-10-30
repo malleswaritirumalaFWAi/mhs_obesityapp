@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:pedometer_2/pedometer_2.dart';
@@ -84,6 +84,14 @@ class StepTrackingNotifier extends StateNotifier<StepTrackingState> {
   // ── Public API ───────────────────────────────────────────────────────────
 
   Future<void> startTracking() async {
+    // Web doesn't support native step sensors — mark as tracking with 0 steps.
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kTrackingEnabled, true);
+      state = state.copyWith(isTracking: true, source: StepSource.none,
+          error: 'Step tracking requires a mobile device.');
+      return;
+    }
     // Try Health Connect first, fall back to pedometer.
     final hcStarted = await _tryHealthConnect();
     if (hcStarted) return;

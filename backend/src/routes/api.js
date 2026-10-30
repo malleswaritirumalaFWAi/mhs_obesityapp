@@ -535,12 +535,17 @@ router.get('/group/leaderboard', async (req, res) => {
   // Use users.total_xp as the authoritative XP source so all pages stay consistent.
   // group_members.weekly_xp can drift when XP-award paths miss updating it.
   const r = await q(
-    `SELECT u.id, COALESCE(u.name, 'Member') AS name, u.total_xp AS weekly_xp
+    `SELECT u.id, COALESCE(u.name, 'Member') AS name, u.total_xp AS weekly_xp,
+            (SELECT COUNT(*) FROM challenge_entries ce WHERE ce.user_id=u.id AND ce.completed) AS challenges_done
      FROM group_members gm JOIN users u ON u.id=gm.user_id
      WHERE gm.group_id=$1 ORDER BY u.total_xp DESC LIMIT 50`,
     [gid]
   );
-  const leaderboard = r.rows.map((m, i) => ({ ...m, xp: m.weekly_xp, rank: i + 1, you: String(m.id) === String(uid(req)) }));
+  const leaderboard = r.rows.map((m, i) => ({
+    ...m, xp: m.weekly_xp, rank: i + 1,
+    you: String(m.id) === String(uid(req)),
+    challenges_done: Number(m.challenges_done || 0),
+  }));
   res.json({ leaderboard, members: leaderboard }); // both keys for compatibility
 });
 
@@ -811,13 +816,49 @@ router.post('/lessons/:id/complete', async (req, res, next) => {
 
     let xpEarned = 0;
     if (inserted.rows.length > 0) {
-      xpEarned = lesson.xp || 30;
+      // Apply streak multiplier (same tiers as checkins)
+      const user = (await q(`SELECT streak FROM users WHERE id=$1`, [uid(req)])).rows[0];
+      const streak = user?.streak || 0;
+      let multiplier = 1.0;
+      if (streak >= 30) multiplier = 1.5;
+      else if (streak >= 14) multiplier = 1.2;
+      else if (streak >= 7) multiplier = 1.1;
+      xpEarned = Math.round((lesson.xp || 30) * multiplier);
       await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [uid(req), xpEarned]);
       await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [uid(req), xpEarned]);
       await updateUserLevel(uid(req));
     }
     res.json({ completed: true, xp_earned: xpEarned });
   } catch (err) { next(err); }
+});
+
+// ---- Quiz answer tracking ----
+router.post('/lessons/:id/quiz', async (req, res) => {
+  try {
+    const { score } = req.body || {};
+    if (score == null) return res.status(400).json({ message: 'score is required' });
+    const lessonId = req.params.id;
+
+    // Upsert quiz results — increment attempts, update score if higher
+    await q(
+      `INSERT INTO user_lesson_progress (user_id, lesson_id, quiz_score, quiz_attempts)
+       VALUES ($1, $2, $3, 1)
+       ON CONFLICT (user_id, lesson_id)
+       DO UPDATE SET quiz_score = GREATEST(COALESCE(user_lesson_progress.quiz_score, 0), $3),
+                     quiz_attempts = user_lesson_progress.quiz_attempts + 1`,
+      [uid(req), lessonId, score]
+    );
+
+    const row = (await q(
+      `SELECT quiz_score, quiz_attempts FROM user_lesson_progress WHERE user_id=$1 AND lesson_id=$2`,
+      [uid(req), lessonId]
+    )).rows[0];
+
+    res.json({
+      quiz_score: Number(row?.quiz_score ?? score),
+      quiz_attempts: Number(row?.quiz_attempts ?? 1),
+    });
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
 // ---- Health tip of the day ----
@@ -1005,21 +1046,13 @@ router.get('/weekly-progress', async (req, res) => {
     );
     const stars = weekScore >= 75 ? 3 : weekScore >= 45 ? 2 : 1;
 
-    const WEEK_CHALLENGES = [
-      'Log all 3 meals every day this week',
-      'Complete morning check-in 5 days in a row',
-      'Hit 8,000 steps on at least 4 days',
-      'Log your weight every evening this week',
-      'Complete all daily tasks without missing a day',
-      'Try a new healthy recipe from the library',
-      'Maintain your fasting window for 5 days',
-      'Drink 8 glasses of water daily for 5 days',
-      'Write a reflection note every evening',
-      'Earn a perfect 3-star week score',
-      'Hit your calorie goal 5 days straight',
-      'Complete all learning lessons this week',
-    ];
-    const nextWeekChallenge = WEEK_CHALLENGES[weekNum % WEEK_CHALLENGES.length];
+    // Fetch actual challenge title from weekly_challenges table
+    const nextWeekNum = Math.min(weekNum + 1, 12);
+    const wcRow = (await q(
+      `SELECT title, description FROM weekly_challenges WHERE week_number=$1 LIMIT 1`,
+      [nextWeekNum]
+    )).rows[0];
+    const nextWeekChallenge = wcRow?.title || wcRow?.description || 'Keep up your healthy habits!';
 
     res.json({
       week_number: weekNum,

@@ -354,6 +354,40 @@ router.get('/current', async (req, res) => {
             [uid(req), `You completed Week ${weekNum}: ${challenge.title}! +${challenge.xp_reward} XP`,
              JSON.stringify({ challenge_id: String(challenge.id) })]
           ).catch(() => {});
+
+          // Award milestone badges for Week 6 and Week 12
+          const milestoneBadge = { 6: 'halfway_hero', 12: 'graduate' }[weekNum];
+          if (milestoneBadge) {
+            const badge = (await q(`SELECT id FROM badges WHERE code=$1`, [milestoneBadge])).rows[0];
+            if (badge) {
+              await q(
+                `INSERT INTO user_badges (user_id, badge_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+                [uid(req), badge.id]
+              );
+            }
+          }
+        }
+      } else if (!completed && autoProgress > 0) {
+        // Progress nudge notifications at 50% and 75%
+        const pct = challenge.target > 0 ? Math.round((autoProgress / challenge.target) * 100) : 0;
+        const daysLeft = 7 - dayProgress.filter(Boolean).length;
+        const nudgeTier = pct >= 75 ? '75' : pct >= 50 ? '50' : null;
+        if (nudgeTier) {
+          const nudgeKey = `challenge_nudge_w${weekNum}_${nudgeTier}`;
+          const alreadySent = (await q(
+            `SELECT id FROM notifications WHERE user_id=$1 AND type='challenge_nudge' AND data->>'key'=$2`,
+            [uid(req), nudgeKey]
+          )).rows[0];
+          if (!alreadySent) {
+            const nudgeTitle = pct >= 75 ? 'Almost there! 💪' : 'Halfway through! 🔥';
+            const nudgeBody = pct >= 75
+              ? `You're ${pct}% done with "${challenge.title}"! ${daysLeft > 0 ? `${daysLeft} days left — finish strong!` : 'Keep it up!'}`
+              : `${pct}% of "${challenge.title}" done. ${daysLeft} days left to hit your target.`;
+            await q(
+              `INSERT INTO notifications (user_id,type,title,body,data) VALUES ($1,'challenge_nudge',$2,$3,$4)`,
+              [uid(req), nudgeTitle, nudgeBody, JSON.stringify({ key: nudgeKey, challenge_id: String(challenge.id) })]
+            ).catch(() => {});
+          }
         }
       }
     }
@@ -387,6 +421,21 @@ router.get('/current', async (req, res) => {
       [uid(req)]
     )).rows[0];
 
+    // Social proof: how many group members completed this week's challenge
+    let othersCompleted = 0;
+    if (challenge) {
+      const gid = (await q(`SELECT group_id FROM group_members WHERE user_id=$1 LIMIT 1`, [uid(req)])).rows[0]?.group_id;
+      if (gid) {
+        const socialRow = (await q(
+          `SELECT COUNT(*) AS cnt FROM challenge_entries ce
+           JOIN group_members gm ON gm.user_id = ce.user_id
+           WHERE gm.group_id=$1 AND ce.challenge_id=$2 AND ce.completed AND ce.user_id != $3`,
+          [gid, challenge.id, uid(req)]
+        )).rows[0];
+        othersCompleted = Number(socialRow?.cnt ?? 0);
+      }
+    }
+
     res.json({
       challenge,
       entry,
@@ -395,6 +444,7 @@ router.get('/current', async (req, res) => {
       all_entries: allEntries,
       day_progress: dayProgress,
       week_start: weekStart.toISOString().slice(0, 10),
+      others_completed: othersCompleted,
       // Milestone data
       start_weight: row?.start_weight ?? null,
       current_weight: latestWeightRow?.weight ?? null,
@@ -443,6 +493,41 @@ router.post('/:id/progress', async (req, res) => {
     await updateUserLevel(uid(req));
   }
   res.json({ progress: newProgress, completed, xp_earned: xpEarned });
+});
+
+// ── GET /challenge/leaderboard ─────────────────────────────────────────────────
+
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const gid = (await q(`SELECT group_id FROM group_members WHERE user_id=$1 LIMIT 1`, [uid(req)])).rows[0]?.group_id;
+    if (!gid) return res.json({ leaderboard: [] });
+
+    const rows = (await q(
+      `SELECT u.id, COALESCE(u.name,'Member') AS name,
+              COUNT(ce.id) FILTER (WHERE ce.completed) AS challenges_completed,
+              12 AS challenges_total,
+              u.total_xp
+       FROM group_members gm
+       JOIN users u ON u.id = gm.user_id
+       LEFT JOIN challenge_entries ce ON ce.user_id = u.id
+       WHERE gm.group_id = $1
+       GROUP BY u.id, u.name, u.total_xp
+       ORDER BY challenges_completed DESC, u.total_xp DESC
+       LIMIT 50`,
+      [gid]
+    )).rows;
+
+    const leaderboard = rows.map((r, i) => ({
+      ...r,
+      challenges_completed: Number(r.challenges_completed),
+      rank: i + 1,
+      you: String(r.id) === String(uid(req)),
+    }));
+
+    res.json({ leaderboard });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 });
 
 export default router;

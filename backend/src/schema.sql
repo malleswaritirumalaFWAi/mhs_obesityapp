@@ -116,12 +116,16 @@ CREATE TABLE IF NOT EXISTS posts (
   user_id    BIGINT REFERENCES users(id) ON DELETE CASCADE,
   body       TEXT,
   emoji      TEXT,
+  image_url  TEXT,
+  post_type  TEXT NOT NULL DEFAULT 'text',
   coach_pick BOOLEAN NOT NULL DEFAULT FALSE,
   likes      INTEGER NOT NULL DEFAULT 0,
   fires      INTEGER NOT NULL DEFAULT 0,
   comments   INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS post_type TEXT NOT NULL DEFAULT 'text';
 
 CREATE TABLE IF NOT EXISTS post_comments (
   id         BIGSERIAL PRIMARY KEY,
@@ -147,21 +151,35 @@ CREATE TABLE IF NOT EXISTS user_badges (
 );
 
 CREATE TABLE IF NOT EXISTS lessons (
-  id        BIGSERIAL PRIMARY KEY,
-  week      INTEGER NOT NULL,
-  title     TEXT NOT NULL,
-  author    TEXT,
-  minutes   INTEGER,
-  xp        INTEGER NOT NULL DEFAULT 0,
-  status    TEXT NOT NULL DEFAULT 'locked'   -- reference only; actual status computed per-user
+  id              BIGSERIAL PRIMARY KEY,
+  week            INTEGER NOT NULL,
+  title           TEXT NOT NULL,
+  author          TEXT,
+  minutes         INTEGER,
+  xp              INTEGER NOT NULL DEFAULT 0,
+  status          TEXT NOT NULL DEFAULT 'locked',   -- reference only; actual status computed per-user
+  week_name       TEXT,
+  lesson_type     TEXT NOT NULL DEFAULT 'article',  -- article | video | quiz
+  video_url       TEXT,
+  content         TEXT,
+  quiz_questions  JSONB
 );
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS week_name      TEXT;
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS lesson_type    TEXT NOT NULL DEFAULT 'article';
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS video_url      TEXT;
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS content        TEXT;
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS quiz_questions JSONB;
 
 CREATE TABLE IF NOT EXISTS user_lesson_progress (
-  user_id      BIGINT REFERENCES users(id) ON DELETE CASCADE,
-  lesson_id    BIGINT REFERENCES lessons(id) ON DELETE CASCADE,
-  completed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  user_id        BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  lesson_id      BIGINT REFERENCES lessons(id) ON DELETE CASCADE,
+  completed_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  quiz_score     NUMERIC(5,1),
+  quiz_attempts  INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (user_id, lesson_id)
 );
+ALTER TABLE user_lesson_progress ADD COLUMN IF NOT EXISTS quiz_score    NUMERIC(5,1);
+ALTER TABLE user_lesson_progress ADD COLUMN IF NOT EXISTS quiz_attempts INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS chat_messages (
   id         BIGSERIAL PRIMARY KEY,

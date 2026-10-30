@@ -14,60 +14,54 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Column(
-        children: [
-          // ── Hero section ──
-          Padding(
-            padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 24, 24, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.coralSoft,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(Symbols.emoji_events_rounded, color: AppColors.coral, size: 36, fill: 1),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // ── Hero section ──
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.coralSoft,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Lose Weight\nLike Playing\na Game',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.ink,
-                    height: 1.15,
-                    letterSpacing: -0.5,
-                  ),
+                child: const Icon(Symbols.emoji_events_rounded, color: AppColors.coral, size: 36, fill: 1),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Lose Weight\nLike Playing\na Game',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.ink,
+                  height: 1.15,
+                  letterSpacing: -0.5,
                 ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Real coach  -  Real science  -  Real results',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.inkMid,
-                  ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Real coach  -  Real science  -  Real results',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.inkMid,
                 ),
-              ],
-            ),
-          ),
+              ),
+              const SizedBox(height: 28),
 
-          // ── Benefits + CTAs ──
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('WHY FITQUEST',
-                      style: T.section(context)
-                          .copyWith(color: AppColors.coral)),
-                  const SizedBox(height: 24),
+              // ── Benefits ──
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('WHY FITQUEST',
+                    style: T.section(context)
+                        .copyWith(color: AppColors.coral)),
+              ),
+              const SizedBox(height: 24),
                   const _Benefit(
                     icon: Symbols.stethoscope_rounded,
                     color: AppColors.coral,
@@ -91,36 +85,32 @@ class WelcomeScreen extends StatelessWidget {
                     title: 'Win up to Rs.50,000 cash',
                     sub: 'Top performers earn rewards each batch',
                   ),
-                  const SizedBox(height: 32),
+              const SizedBox(height: 32),
 
-                  // ── Primary CTA ──
-                  NeuButton.primary(
-                    'Start my journey',
-                    onPressed: () => context.go(Routes.signup),
-                    trailing: const Icon(Symbols.arrow_forward_rounded,
-                        color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () => context.go(Routes.signin),
-                      child: Text.rich(TextSpan(children: [
-                        TextSpan(
-                            text: 'Already a member? ',
-                            style: T.small(context)),
-                        TextSpan(
-                            text: 'Sign in',
-                            style: T.small(context).copyWith(
-                                color: AppColors.coral,
-                                fontWeight: FontWeight.w800)),
-                      ])),
-                    ),
-                  ),
-                ],
+              // ── Primary CTA ──
+              NeuButton.primary(
+                'Start my journey',
+                onPressed: () => context.go(Routes.signup),
+                trailing: const Icon(Symbols.arrow_forward_rounded,
+                    color: Colors.white, size: 20),
               ),
-            ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () => context.go(Routes.signin),
+                child: Text.rich(TextSpan(children: [
+                  TextSpan(
+                      text: 'Already a member? ',
+                      style: T.small(context)),
+                  TextSpan(
+                      text: 'Sign in',
+                      style: T.small(context).copyWith(
+                          color: AppColors.coral,
+                          fontWeight: FontWeight.w800)),
+                ])),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

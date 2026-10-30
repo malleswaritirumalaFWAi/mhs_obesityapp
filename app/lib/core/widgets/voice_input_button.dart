@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -21,16 +22,23 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
 
   Future<void> _ensureInit() async {
     if (_initialised) return;
-    _available = await _speech.initialize(
-      onError: (_) {
-        if (mounted) setState(() => _listening = false);
-      },
-      onStatus: (status) {
-        if (status == 'done' || status == 'notListening') {
+    try {
+      _available = await _speech.initialize(
+        onError: (error) {
+          debugPrint('SpeechToText error: ${error.errorMsg}');
           if (mounted) setState(() => _listening = false);
-        }
-      },
-    );
+        },
+        onStatus: (status) {
+          debugPrint('SpeechToText status: $status');
+          if (status == 'done' || status == 'notListening') {
+            if (mounted) setState(() => _listening = false);
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('SpeechToText init failed: $e');
+      _available = false;
+    }
     _initialised = true;
   }
 

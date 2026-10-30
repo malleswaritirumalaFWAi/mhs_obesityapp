@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -206,22 +207,28 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
   Future<void> _showCompose() async {
     final bodyCtrl = TextEditingController();
     String? pickedImageBase64;
+    Uint8List? pickedImageBytes;
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(builder: (ctx, setDialogState) {
           Future<void> pickImage(ImageSource source) async {
-            final file = await ImagePicker().pickImage(
-              source: source,
-              maxWidth: 800,
-              maxHeight: 800,
-              imageQuality: 70,
-            );
-            if (file == null) return;
-            final bytes = await file.readAsBytes();
-            setDialogState(() {
-              pickedImageBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-            });
+            try {
+              final file = await ImagePicker().pickImage(
+                source: source,
+                maxWidth: 800,
+                maxHeight: 800,
+                imageQuality: 70,
+              );
+              if (file == null) return;
+              final bytes = await file.readAsBytes();
+              setDialogState(() {
+                pickedImageBytes = bytes;
+                pickedImageBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+              });
+            } catch (e) {
+              debugPrint('Image pick failed: $e');
+            }
           }
 
           return AlertDialog(
@@ -237,21 +244,32 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                       border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 10),
-                if (pickedImageBase64 != null) ...[
+                if (pickedImageBytes != null) ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Stack(children: [
                       Image.memory(
-                        base64Decode(pickedImageBase64!.split(',').last),
+                        pickedImageBytes!,
                         height: 150,
                         width: double.infinity,
                         fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 150,
+                          width: double.infinity,
+                          color: AppColors.coralSoft,
+                          alignment: Alignment.center,
+                          child: const Icon(Symbols.broken_image_rounded,
+                              color: AppColors.coral, size: 32),
+                        ),
                       ),
                       Positioned(
                         top: 4,
                         right: 4,
                         child: GestureDetector(
-                          onTap: () => setDialogState(() => pickedImageBase64 = null),
+                          onTap: () => setDialogState(() {
+                            pickedImageBase64 = null;
+                            pickedImageBytes = null;
+                          }),
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: const BoxDecoration(
@@ -607,6 +625,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
           name: m['name'] as String? ?? 'Member',
           xp: _asInt(m['weekly_xp']),
           isYou: m['you'] == true,
+          challengesDone: _asInt(m['challenges_done']),
         ),
       if (rest.isEmpty && _leaderboard.isEmpty)
         const Center(child: Text('No leaderboard data yet')),
@@ -878,23 +897,8 @@ class _PostCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(post.body,
                 style: T.body(context).copyWith(color: AppColors.ink)),
-            if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: post.imageUrl!.startsWith('data:')
-                    ? Image.memory(
-                        base64Decode(post.imageUrl!.split(',').last),
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      )
-                    : Image.network(
-                        post.imageUrl!,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-              ),
-            ],
+            if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+              _PostImage(imageUrl: post.imageUrl!),
             if (post.emoji != null && post.emoji!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
@@ -1129,6 +1133,57 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 }
 
+class _PostImage extends StatelessWidget {
+  const _PostImage({required this.imageUrl});
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: _buildImage(),
+      ),
+    );
+  }
+
+  Widget _buildImage() {
+    final fallback = Container(
+      height: 120,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.coralSoft,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      alignment: Alignment.center,
+      child: const Icon(Symbols.broken_image_rounded,
+          color: AppColors.coral, size: 32),
+    );
+
+    if (imageUrl.startsWith('data:')) {
+      try {
+        final bytes = base64Decode(imageUrl.split(',').last);
+        return Image.memory(
+          bytes,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => fallback,
+        );
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    return Image.network(
+      imageUrl,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => fallback,
+    );
+  }
+}
+
 class _CommentTile extends StatelessWidget {
   const _CommentTile({required this.c});
   final _Comment c;
@@ -1311,11 +1366,13 @@ class _MemberRow extends StatelessWidget {
       required this.name,
       required this.xp,
       this.isYou = false,
-      this.showLevel});
+      this.showLevel,
+      this.challengesDone});
   final int rank, xp;
   final String name;
   final bool isYou;
   final String? showLevel;
+  final int? challengesDone;
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1354,6 +1411,15 @@ class _MemberRow extends StatelessWidget {
                   Text(showLevel!,
                       style: T.small(context).copyWith(
                           fontSize: 11, color: AppColors.coral))
+                else if (challengesDone != null && challengesDone! > 0)
+                  Row(children: [
+                    Icon(Symbols.emoji_events_rounded,
+                        size: 13, color: AppColors.coral, fill: 1),
+                    const SizedBox(width: 4),
+                    Text('$challengesDone/12 challenges',
+                        style: T.small(context).copyWith(
+                            fontSize: 11, color: AppColors.coral)),
+                  ])
                 else
                   Row(
                     children: [

@@ -12,6 +12,9 @@ const PROFANITY = new Set([
   'fuck','shit','bitch','asshole','bastard','dick','pussy','cunt',
   'nigger','nigga','faggot','retard','whore','slut','damn','crap',
   'motherfucker','bullshit','jackass','dumbass','wtf','stfu','lmao',
+  'stupid','idiot','idiots','moron','morons','dumb','loser','losers',
+  'shut up','shutup','suck','sucks','screw','screwed','piss','pissed',
+  'arse','twat','wanker','bloody','bollock','bugger',
 ]);
 
 // ── PII patterns ──
@@ -85,8 +88,9 @@ export function moderateContent(text, options = {}) {
       const phrase = words[i] + ' ' + words[i + 1];
       if (RELEVANT_KEYWORDS.has(phrase)) relevantCount++;
     }
-    // If less than ~10% of words are relevant and it's a substantial message
-    if (words.length > 10 && relevantCount === 0) {
+    // If less than ~15% of words are relevant and it's a substantial message
+    const relevanceRatio = relevantCount / words.length;
+    if (words.length > 8 && relevanceRatio < 0.15) {
       return { allowed: false, reason: 'This community is focused on health, diet, and fitness. Please share content related to your wellness journey.' };
     }
   }

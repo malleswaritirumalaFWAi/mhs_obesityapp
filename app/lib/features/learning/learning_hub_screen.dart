@@ -144,6 +144,37 @@ class LearningHubScreen extends ConsumerWidget {
                 padding: EdgeInsets.symmetric(vertical: 32),
                 child: Center(child: CircularProgressIndicator()),
               )
+            else if (!state.loading && active == null && state.lessons.isNotEmpty &&
+                state.lessons.every((l) => l.completed)) ...[
+              NeuCard(
+                depth: 0.5,
+                color: AppColors.coralSoft,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 56, height: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.coral.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(Symbols.school_rounded,
+                          color: AppColors.coral, size: 28, fill: 1),
+                    ),
+                    const SizedBox(height: 14),
+                    Text('All Lessons Complete!',
+                        style: T.h2(context).copyWith(fontSize: 20)),
+                    const SizedBox(height: 6),
+                    Text(
+                      'You\'ve finished every lesson in the program. '
+                      'Tap any lesson below to review it.',
+                      style: T.small(context),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ]
             else if (active != null) ...[
               NeuCard(
                 depth: 0.5,

@@ -12,8 +12,10 @@ import '../../core/widgets/neu_misc.dart';
 
 /// Extract human-readable message from DioException (e.g. moderation rejection).
 String? _extractErrorMessage(dynamic e) {
-  if (e is DioException && e.response?.data is Map) {
-    return (e.response!.data as Map)['message'] as String?;
+  if (e is DioException) {
+    final data = e.response?.data;
+    if (data is Map) return data['message'] as String?;
+    if (data is String && data.isNotEmpty) return data;
   }
   return null;
 }

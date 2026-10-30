@@ -96,6 +96,32 @@ class _WeekMeta {
               : 'Elite';
 
   Color get difficultyColor => _phaseOf(week).color;
+
+  /// Human-readable metric description, e.g. "5000+ steps + 3 meals on 5 days"
+  String get metricLabel {
+    switch (type) {
+      case 'weight_and_meals':
+        return 'Weight + all meals on $target days';
+      case 'steps_min_days':
+        return '${minValue}+ steps on $target days';
+      case 'sleep_days':
+        return '7h+ sleep on $target days';
+      case 'morning_checkin':
+        return 'Morning check-in on $target days';
+      case 'steps_and_meals':
+        return '${minValue}+ steps + 3 meals on $target days';
+      case 'weight_daily':
+        return 'Log weight on $target days';
+      case 'meal_all_days':
+        return 'All 3 meals on $target days';
+      case 'all_tasks':
+        return '5+ tasks on $target days';
+      case 'transformation_proof':
+        return 'Weight + mood (AM & PM) on $target days';
+      default:
+        return '$target days complete';
+    }
+  }
 }
 
 const _kWeeks = [
@@ -477,6 +503,8 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                             pulseValue: _pulseAnim.value,
                             entry: _data?['entry'] as Map<String, dynamic>?,
                             allChallenges: (_data?['all_challenges'] as List?) ?? [],
+                            entriesMap: _entriesMap,
+                            othersCompleted: _safeInt(_data?['others_completed']),
                           ),
                         ),
                       ),
@@ -574,6 +602,8 @@ class _HeroBanner extends StatelessWidget {
     required this.pulseValue,
     required this.entry,
     required this.allChallenges,
+    required this.entriesMap,
+    this.othersCompleted = 0,
   });
   final int currentWeek;
   final List<bool> dayProgress;
@@ -581,6 +611,8 @@ class _HeroBanner extends StatelessWidget {
   final double pulseValue;
   final Map<String, dynamic>? entry;
   final List<dynamic> allChallenges;
+  final Map<int, Map<String, dynamic>> entriesMap;
+  final int othersCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -682,10 +714,14 @@ class _HeroBanner extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+            Text(meta.metricLabel,
+                style: const TextStyle(color: AppColors.inkMid,
+                    fontSize: 11, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 4),
             Row(children: [
-              Text('$daysCompleted / $target days complete',
-                  style: const TextStyle(color: AppColors.inkMid,
-                      fontSize: 12, fontWeight: FontWeight.w600)),
+              Text('$daysCompleted / $target done',
+                  style: const TextStyle(color: AppColors.ink,
+                      fontSize: 13, fontWeight: FontWeight.w700)),
               const Spacer(),
               if (daysRemaining > 0)
                 Text('$daysRemaining days left',
@@ -739,6 +775,58 @@ class _HeroBanner extends StatelessWidget {
                       fontSize: 12, fontWeight: FontWeight.w500, height: 1.4))),
             ]),
           ),
+
+          // Social proof
+          if (othersCompleted > 0 && !isCompleted) ...[
+            const SizedBox(height: 10),
+            Row(children: [
+              const Icon(Symbols.group_rounded,
+                  color: AppColors.inkMid, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                '$othersCompleted ${othersCompleted == 1 ? 'person' : 'others'} in your group completed this week',
+                style: const TextStyle(color: AppColors.inkMid,
+                    fontSize: 11, fontWeight: FontWeight.w500),
+              ),
+            ]),
+          ],
+
+          // Pace projection
+          if (currentWeek > 1) ...[
+            const SizedBox(height: 10),
+            Builder(builder: (_) {
+              final completed = entriesMap.values
+                  .where((e) => e['completed'] == true)
+                  .length;
+              final projected = currentWeek > 0
+                  ? (completed / currentWeek * 12).round().clamp(0, 12)
+                  : 0;
+              final paceColor = projected >= 10
+                  ? AppColors.coral
+                  : AppColors.inkMid;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: paceColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(children: [
+                  Icon(
+                    projected >= 10
+                        ? Symbols.trending_up_rounded
+                        : Symbols.trending_down_rounded,
+                    color: paceColor, size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'On pace for $projected/12 weeks (${(completed / currentWeek * 100).round()}%)',
+                    style: TextStyle(color: paceColor,
+                        fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ]),
+              );
+            }),
+          ],
         ]),
       ),
     );
@@ -1367,21 +1455,40 @@ class _ChallengeDetailSheet extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: List.generate(7, (i) {
                       final filled = i < dayProgress.length ? dayProgress[i] : false;
-                      final isFuture = isActive && !filled && i >= progress;
+                      // Count how many days have passed (today = last true or last checked day)
+                      // Find the index of the last day that has a result (true or false-but-past)
+                      int daysElapsed = 0;
+                      for (int d = 6; d >= 0; d--) {
+                        if (d < dayProgress.length && dayProgress[d]) {
+                          daysElapsed = d + 1;
+                          break;
+                        }
+                      }
+                      // If no days filled yet, use progress count as proxy
+                      if (daysElapsed == 0) daysElapsed = progress;
+                      final isFuture = isActive && !filled && i >= daysElapsed;
+                      // Past unfilled day = missed (only for active week, days before today)
+                      final isMissed = isActive && !filled && !isFuture && i < daysElapsed;
+                      final dotColor = filled
+                          ? phase.color
+                          : isMissed
+                              ? const Color(0xFFE8913A) // orange for missed
+                              : AppColors.bg;
+                      final borderColor = filled
+                          ? phase.color
+                          : isMissed
+                              ? const Color(0xFFE8913A)
+                              : AppColors.line;
                       return Column(children: [
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           width: 34, height: 34,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: filled
-                                ? phase.color
-                                : isFuture
-                                    ? AppColors.bg
-                                    : AppColors.bg,
+                            color: dotColor,
                             border: Border.all(
-                              color: filled ? phase.color : AppColors.line,
-                              width: filled ? 2 : 1,
+                              color: borderColor,
+                              width: filled || isMissed ? 2 : 1,
                             ),
                           ),
                           child: Center(
@@ -1391,16 +1498,19 @@ class _ChallengeDetailSheet extends StatelessWidget {
                                 : isCompleted
                                     ? const Icon(Symbols.check_rounded, size: 16,
                                         color: Colors.white, fill: 1, weight: 700)
-                                    : Text('${i + 1}', style: TextStyle(
-                                        color: AppColors.inkSoft,
-                                        fontSize: 11, fontWeight: FontWeight.w700)),
+                                    : isMissed
+                                        ? const Icon(Symbols.close_rounded, size: 14,
+                                            color: Colors.white, weight: 700)
+                                        : Text('${i + 1}', style: TextStyle(
+                                            color: AppColors.inkSoft,
+                                            fontSize: 11, fontWeight: FontWeight.w700)),
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(['M', 'T', 'W', 'T', 'F', 'S', 'S'][i],
                             style: TextStyle(
                               fontSize: 10,
-                              color: filled ? phase.color : AppColors.inkSoft,
+                              color: filled ? phase.color : isMissed ? const Color(0xFFE8913A) : AppColors.inkSoft,
                               fontWeight: FontWeight.w700,
                             )),
                       ]);
@@ -1726,6 +1836,64 @@ class _Week6MilestoneDialogState extends State<_Week6MilestoneDialog>
               ),
               const SizedBox(height: 20),
 
+              Row(children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pushNamed('/badge-gallery');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.line),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Symbols.military_tech_rounded,
+                              color: AppColors.coral, size: 18, fill: 1),
+                          SizedBox(width: 6),
+                          Text('View Badges', style: TextStyle(
+                              color: AppColors.ink, fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pushNamed('/feed');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.line),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Symbols.share_rounded,
+                              color: AppColors.coral, size: 18),
+                          SizedBox(width: 6),
+                          Text('Share', style: TextStyle(
+                              color: AppColors.ink, fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 10),
               GestureDetector(
                 onTap: widget.onContinue,
                 child: Container(
@@ -1952,6 +2120,64 @@ class _Week12MilestoneDialogState extends State<_Week12MilestoneDialog>
                 ),
                 const SizedBox(height: 20),
 
+                Row(children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushNamed('/badge-gallery');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.bg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.line),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Symbols.military_tech_rounded,
+                                color: AppColors.coral, size: 18, fill: 1),
+                            SizedBox(width: 6),
+                            Text('Badges', style: TextStyle(
+                                color: AppColors.ink, fontSize: 13,
+                                fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushNamed('/feed');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.bg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.line),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Symbols.share_rounded,
+                                color: AppColors.coral, size: 18),
+                            SizedBox(width: 6),
+                            Text('Share', style: TextStyle(
+                                color: AppColors.ink, fontSize: 13,
+                                fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 10),
                 GestureDetector(
                   onTap: widget.onClose,
                   child: Container(

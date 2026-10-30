@@ -261,8 +261,8 @@ async function runMigrations() {
         post_id BIGINT REFERENCES posts(id) ON DELETE CASCADE,
         PRIMARY KEY (user_id, post_id)
       )`,
-      `ALTER TABLE weekly_challenges ADD CONSTRAINT IF NOT EXISTS weekly_challenges_week_unique UNIQUE (week_number)`,
-      `ALTER TABLE challenge_entries ADD CONSTRAINT IF NOT EXISTS challenge_entries_user_challenge_unique UNIQUE (user_id, challenge_id)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS weekly_challenges_week_uniq ON weekly_challenges (week_number)`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS challenge_entries_user_challenge_uniq ON challenge_entries (user_id, challenge_id)`,
       `ALTER TABLE checkins ADD COLUMN IF NOT EXISTS evening_mood INTEGER`,
       `CREATE TABLE IF NOT EXISTS diet_completions (
         id BIGSERIAL PRIMARY KEY,
@@ -363,58 +363,231 @@ async function runMigrations() {
             xp_reward=EXCLUDED.xp_reward, phase=EXCLUDED.phase
     `).catch((e) => console.warn('[seed challenges]', e.message));
 
-    // Upsert full 12-week curriculum — idempotent via unique index on (week, title)
+    // Upsert 12-week curriculum — idempotent via unique index on (week, title)
     await client.query(`
-      INSERT INTO lessons (week, week_name, title, lesson_type, xp, status, author, minutes, content) VALUES
+      INSERT INTO lessons (week, week_name, title, lesson_type, xp, status, author, minutes, content, quiz_questions) VALUES
         (1,'Getting Started','Why small habits beat willpower','article',30,'locked','Dr. Roy',5,
-         'Willpower is a limited resource that runs out by evening. The FitQuest system works differently: we build tiny automatic behaviours that require zero willpower. A 2-minute morning weigh-in, logging one meal, a 10-minute walk — each one costs nothing but compounds into transformation. Neuroscience shows habits take 66 days on average to become automatic. Our 84-day programme gives you 18 extra days of buffer. Trust the process.'),
-        (1,'Getting Started','Week 1 foundation quiz','quiz',50,'locked',NULL,3,NULL),
+         'Willpower is a limited resource that runs out by evening. The FitQuest system works differently: we build tiny automatic behaviours that require zero willpower. A 2-minute morning weigh-in, logging one meal, a 10-minute walk — each one costs nothing but compounds into transformation.
+
+Neuroscience shows habits take 66 days on average to become automatic. Our 84-day programme gives you 18 extra days of buffer. The key is starting so small that failure is impossible.
+
+The Habit Stacking Method
+
+Attach a new habit to an existing one: "After I brush my teeth, I will step on the scale." After I pour my morning chai, I will open FitQuest and check in. This piggybacks on neural pathways your brain already has.
+
+Why This Programme Is Different
+
+Most diets rely on motivation — which fades. FitQuest builds systems: daily check-ins, meal photos, step tracking. Each action takes under 2 minutes but sends a signal to your brain: I am someone who takes care of my health. That identity shift is what makes change permanent.',
+         ''[{"question":"How long does research say it takes to form an automatic habit?","options":["21 days","45 days","66 days on average","Exactly 84 days"],"correct":2,"explanation":"University College London research found the average is 66 days, not the commonly cited 21 days."},{"question":"What is habit stacking?","options":["Doing all habits at once","Attaching a new habit to an existing routine","Stacking food on your plate","Doing habits only on weekends"],"correct":1,"explanation":"Habit stacking piggybacks new behaviours on existing neural pathways, making adoption much easier."}]''::jsonb),
+
         (2,'Nutrition','Reading your plate','article',30,'locked','Dr. Roy',5,
-         'The simplest nutrition rule: fill half your plate with non-starchy vegetables, a quarter with lean protein, and a quarter with complex carbs. For Indian meals this means: 2 cups sabzi + 1 cup dal + 1-2 rotis. This naturally gives you 400-500 kcal with fibre that keeps you full for 4+ hours. No calorie counting needed — just rearrange what is already on your thali.'),
-        (2,'Nutrition','Nutrition quiz','quiz',50,'locked',NULL,3,NULL),
+         'The simplest nutrition rule: fill half your plate with non-starchy vegetables, a quarter with lean protein, and a quarter with complex carbs. No calorie counting needed — just rearrange what is already on your plate.
+
+The Indian Plate Method
+
+For Indian meals this means: 2 cups sabzi (vegetables) + 1 cup dal or paneer + 1-2 rotis or a small serving of rice. This naturally gives you 400-500 kcal with fibre that keeps you full for 4+ hours.
+
+Why Portion Arrangement Works
+
+A 2019 study in the British Medical Journal found that people who used the plate method lost an average of 3.2 kg more than those counting calories over 12 weeks. The visual simplicity removes decision fatigue.
+
+Common Mistakes to Avoid
+
+1. Drowning vegetables in oil or ghee — this can triple the calories
+2. Eating multiple rotis with small amounts of sabzi — flip the ratio
+3. Skipping protein — you will be hungry again in 2 hours
+4. Drinking calories — one glass of packaged juice has as many calories as a roti',
+         ''[{"question":"What is the recommended plate ratio?","options":["All protein, no carbs","Half vegetables, quarter protein, quarter carbs","Equal thirds of everything","Mostly rice with some dal"],"correct":1,"explanation":"Half non-starchy vegetables, a quarter lean protein, and a quarter complex carbs gives optimal nutrition and satiety."},{"question":"Why does the plate method outperform calorie counting?","options":["It burns more calories","Visual simplicity removes decision fatigue","It allows unlimited eating","It only works for Indian food"],"correct":1,"explanation":"Research shows the visual plate method reduces decision fatigue and leads to more sustainable weight loss than calorie counting."}]''::jsonb),
+
         (3,'Movement','The science of 8,000 steps','article',30,'locked','Dr. Roy',5,
-         'A landmark 2021 JAMA study of 2,110 adults found 8,000 steps/day cut all-cause mortality by 51% vs 4,000 steps. You do not need a gym. A 45-minute brisk walk burns 250-300 calories, improves insulin sensitivity for 24 hours, and releases BDNF — the brain''s growth hormone — which reduces food cravings. Your best fat-burning tool costs nothing and requires no equipment.'),
-        (3,'Movement','Movement quiz','quiz',50,'locked',NULL,3,NULL),
+         'A landmark 2021 JAMA study of 2,110 adults found 8,000 steps/day cut all-cause mortality by 51% vs 4,000 steps. You do not need a gym — walking is the most powerful exercise for weight loss.
+
+Why Walking Beats Running for Fat Loss
+
+A 45-minute brisk walk burns 250-300 calories, improves insulin sensitivity for 24 hours, and releases BDNF — the brain''s growth hormone — which reduces food cravings. Unlike running, walking doesn''t spike hunger hormones afterward.
+
+The NEAT Advantage
+
+Non-Exercise Activity Thermogenesis (NEAT) accounts for 15-30% of your daily calorie burn. Walking, taking stairs, standing — these add up to more calories than a gym session. Increasing NEAT by 2,000 steps burns an extra 100 calories daily.
+
+How to Hit 8,000 Steps Easily
+
+Walk 10 minutes after each meal (3,000 steps). Take phone calls while walking (1,000 steps). Park farther from entrances. Take stairs. These tiny choices compound into 8,000+ steps without a dedicated workout.',
+         ''[{"question":"By how much did 8,000 daily steps reduce mortality in the JAMA study?","options":["10%","25%","51%","75%"],"correct":2,"explanation":"The 2021 JAMA study found 8,000 steps/day cut all-cause mortality by 51% compared to 4,000 steps."},{"question":"What is NEAT?","options":["A type of exercise class","Non-Exercise Activity Thermogenesis — daily movement outside workouts","A nutritional supplement","A sleep technique"],"correct":1,"explanation":"NEAT accounts for 15-30% of daily calorie burn through walking, standing, fidgeting, and other non-exercise movement."}]''::jsonb),
+
         (4,'Sleep','Sleep & fat loss — the missing link','article',30,'locked','Dr. Roy',6,
-         'Sleep deprivation of even one night raises ghrelin (hunger hormone) by 24% and cuts leptin (fullness hormone) by 18%. You wake up hungrier and need 300 extra calories to feel satisfied. A 2010 Annals of Internal Medicine study found that dieters sleeping 5.5 hrs lost 55% less fat than those sleeping 8.5 hrs on the same diet. Optimising sleep is the highest-leverage action you can take for fat loss.'),
-        (4,'Sleep','Sleep quiz','quiz',50,'locked',NULL,3,NULL),
+         'Sleep deprivation of even one night raises ghrelin (hunger hormone) by 24% and cuts leptin (fullness hormone) by 18%. You wake up hungrier and need 300 extra calories to feel satisfied.
+
+The Research Is Clear
+
+A 2010 Annals of Internal Medicine study found that dieters sleeping 5.5 hours lost 55% less fat than those sleeping 8.5 hours — on the exact same diet. The difference was entirely due to sleep.
+
+How Poor Sleep Sabotages Weight Loss
+
+1. Increased cravings for sugary, high-fat foods (prefrontal cortex impaired)
+2. Higher cortisol levels promoting belly fat storage
+3. Reduced motivation to exercise
+4. Impaired muscle recovery after workouts
+5. Slower metabolism — your body conserves energy when tired
+
+Your Sleep Action Plan
+
+Set a consistent bedtime alarm. No screens 30 minutes before bed. Keep your room at 18-20°C. No caffeine after 2 PM. Use the FitQuest bedtime reminder to build this habit. Treat sleep as a non-negotiable part of your fitness programme.',
+         ''[{"question":"How much less fat did sleep-deprived dieters lose in the study?","options":["10% less","25% less","55% less","No difference"],"correct":2,"explanation":"Dieters sleeping 5.5 hours lost 55% less fat than those sleeping 8.5 hours on the exact same diet."},{"question":"What happens to hunger hormones with poor sleep?","options":["Both increase","Both decrease","Ghrelin rises, leptin falls","Ghrelin falls, leptin rises"],"correct":2,"explanation":"Sleep deprivation raises ghrelin (hunger) by 24% and lowers leptin (fullness) by 18%, making you hungrier."}]''::jsonb),
+
         (5,'Strength','Why muscle burns fat while you sleep','article',30,'locked','Coach Priya',5,
-         'One kilogram of muscle burns an extra 13 kcal per day at rest. Add 3 kg of muscle — common in 12 weeks of consistent training — and you burn 39 extra kcal/day effortlessly. Muscle also acts as a glucose sink: it absorbs blood sugar rapidly, reducing insulin spikes. You do not need a gym; three 20-minute bodyweight sessions per week (squats, push-ups, lunges) are enough to build meaningful metabolic muscle.'),
-        (5,'Strength','Strength quiz','quiz',50,'locked',NULL,3,NULL),
+         'One kilogram of muscle burns an extra 13 kcal per day at rest. Add 3 kg of muscle — common in 12 weeks of consistent training — and you burn 39 extra kcal/day effortlessly, even while sleeping.
+
+Muscle as a Glucose Sink
+
+Muscle tissue absorbs blood sugar rapidly, reducing insulin spikes after meals. More muscle means better blood sugar control, fewer cravings, and less fat storage. This is why strength training is essential for weight loss.
+
+You Don''t Need a Gym
+
+Three 20-minute bodyweight sessions per week are enough to build meaningful metabolic muscle. Start with these four exercises: squats (3×10), push-ups (3×8), lunges (2×8 per leg), and planks (3×20 seconds). Progress by adding 2 reps per week.
+
+The Afterburn Effect
+
+Strength training creates an "afterburn" — your metabolism stays elevated for 24-48 hours post-workout as your body repairs muscle fibres. A single bodyweight session can burn an extra 100 calories through this effect alone.',
+         ''[{"question":"How many extra calories does 1 kg of muscle burn per day at rest?","options":["3 kcal","13 kcal","30 kcal","100 kcal"],"correct":1,"explanation":"Each kilogram of muscle burns approximately 13 extra kcal per day at rest, adding up significantly over time."},{"question":"What is the afterburn effect?","options":["Burning calories while sleeping","Elevated metabolism for 24-48 hours after strength training","A type of cardio exercise","Eating after a workout"],"correct":1,"explanation":"After strength training, your metabolism stays elevated for 24-48 hours as your body repairs muscle fibres."}]''::jsonb),
+
         (6,'Mindful Eating','Breaking emotional eating cycles','article',40,'locked','Dr. Roy',6,
-         'Emotional eating is triggered by stress, boredom, or loneliness — not true hunger. The H.A.L.T. method stops the cycle: before eating, ask Am I Hungry, Angry, Lonely, or Tired? True hunger builds slowly; emotional hunger is sudden and craves specific foods. Technique: when a craving hits, set a 10-minute timer and drink water. 70% of cravings pass in that window. For the other 30%, choose a small, satisfying portion and eat mindfully without screens.'),
-        (6,'Mindful Eating','Mindful eating quiz','quiz',40,'locked',NULL,3,NULL),
+         'Emotional eating is triggered by stress, boredom, or loneliness — not true hunger. Learning to tell the difference is one of the most powerful skills for lasting weight loss.
+
+The H.A.L.T. Method
+
+Before eating, ask: Am I Hungry, Angry, Lonely, or Tired? True hunger builds slowly and any food sounds good. Emotional hunger is sudden, craves specific comfort foods, and doesn''t go away after eating.
+
+The 10-Minute Rule
+
+When a craving hits, set a 10-minute timer and drink a glass of water. Research shows 70% of cravings pass in that window. For the other 30%, choose a small satisfying portion and eat it mindfully without screens.
+
+Building Your Craving Toolkit
+
+Replace emotional eating with alternative responses: stressed → 5-minute box breathing. Bored → take a short walk or call a friend. Lonely → post in your FitQuest group. Tired → take a 20-minute nap instead of reaching for sugar. The craving is real — but food isn''t always the answer.',
+         ''[{"question":"What does H.A.L.T. stand for?","options":["Happy, Active, Lively, Thankful","Hungry, Angry, Lonely, Tired","Healthy, Aware, Light, Trim","None of the above"],"correct":1,"explanation":"H.A.L.T. helps you identify whether you are truly Hungry, or just Angry, Lonely, or Tired — emotional states that mimic hunger."},{"question":"What percentage of cravings pass within 10 minutes?","options":["30%","50%","70%","100%"],"correct":2,"explanation":"Research shows that 70% of food cravings pass within a 10-minute window if you delay and drink water."}]''::jsonb),
+
         (7,'Hydration','Water, metabolism & fat burning','article',30,'locked','Coach Priya',5,
-         'Your liver converts stored fat into usable energy — but only when it is not busy doing the kidneys'' job. Dehydration forces the liver to step in, slowing fat metabolism by up to 30%. Drinking 500 ml of cold water raises metabolic rate by 24-30% for 60 minutes (Journal of Clinical Endocrinology, 2003). Target: 35 ml per kg of body weight daily. For a 70 kg person: 2.45 litres. Spread across 8-9 glasses. Start each morning with 500 ml before tea or coffee.'),
-        (7,'Hydration','Hydration quiz','quiz',30,'locked',NULL,3,NULL),
+         'Your liver converts stored fat into usable energy — but only when it is not busy doing the kidneys'' job. Dehydration forces the liver to step in, slowing fat metabolism by up to 30%.
+
+The Metabolic Boost
+
+Drinking 500 ml of cold water raises metabolic rate by 24-30% for 60 minutes (Journal of Clinical Endocrinology, 2003). Over a day, drinking 2 litres of extra water burns roughly 100 additional calories.
+
+Your Personal Water Target
+
+Target 35 ml per kg of body weight daily. For a 70 kg person: 2.45 litres — roughly 8-9 glasses. Spread intake throughout the day rather than chugging large amounts at once.
+
+Practical Hydration Habits
+
+Start each morning with 500 ml before tea or coffee. Drink a full glass before every meal — this also reduces calorie intake by 75 calories per meal. Keep a water bottle visible on your desk. Use the FitQuest hydration tracker to build the habit. If plain water bores you, add lemon, cucumber, or mint.',
+         ''[{"question":"By how much does dehydration slow fat metabolism?","options":["5%","15%","30%","50%"],"correct":2,"explanation":"When dehydrated, the liver takes over kidney functions, slowing fat metabolism by up to 30%."},{"question":"How much does 500 ml of cold water boost metabolic rate?","options":["5-10%","12-15%","24-30%","50%"],"correct":2,"explanation":"Research published in the Journal of Clinical Endocrinology found 500 ml of cold water raises metabolic rate by 24-30% for 60 minutes."}]''::jsonb),
+
         (8,'Stress & Cortisol','Stress, cortisol & belly fat','article',40,'locked','Dr. Roy',7,
-         'Cortisol — the stress hormone — directly signals fat cells in your abdomen to store more fat. Chronic stress keeps cortisol elevated all day. Three evidence-based cortisol reducers: (1) 5 minutes of box breathing (inhale 4s, hold 4s, exhale 4s, hold 4s) drops cortisol by 23% within 30 minutes. (2) A 20-minute walk in nature reduces cortisol by 21%. (3) Laughing for 10 minutes lowers cortisol by 37-70% (Loma Linda University). Stress management is fat loss strategy.'),
-        (8,'Stress & Cortisol','Stress management quiz','quiz',50,'locked',NULL,3,NULL),
+         'Cortisol — the stress hormone — directly signals fat cells in your abdomen to store more fat. Chronic stress keeps cortisol elevated all day, creating a vicious cycle of belly fat accumulation.
+
+The Cortisol-Fat Connection
+
+Under stress, your body enters survival mode. Cortisol tells your body to store energy (as fat) in the most accessible location — your abdomen. This is why stressed people often gain belly fat even without eating more.
+
+Three Evidence-Based Cortisol Reducers
+
+1. Box breathing (inhale 4s, hold 4s, exhale 4s, hold 4s) — drops cortisol by 23% within 30 minutes
+2. A 20-minute walk in nature — reduces cortisol by 21% (Frontiers in Psychology, 2019)
+3. Laughing for 10 minutes — lowers cortisol by 37-70% (Loma Linda University)
+
+Stress Management IS Fat Loss Strategy
+
+You can eat perfectly and exercise daily, but if cortisol stays elevated, your body will resist losing belly fat. Prioritise one stress-reduction technique daily. The FitQuest evening reflection is designed to help you decompress before sleep.',
+         ''[{"question":"Where does cortisol primarily direct fat storage?","options":["Arms and legs","Abdomen","Face","Evenly throughout the body"],"correct":1,"explanation":"Cortisol specifically signals fat cells in the abdomen to store more fat, which is why chronic stress leads to belly fat."},{"question":"How much does box breathing reduce cortisol?","options":["5%","23%","50%","It has no effect"],"correct":1,"explanation":"Box breathing (inhale 4s, hold 4s, exhale 4s, hold 4s) drops cortisol levels by 23% within 30 minutes."}]''::jsonb),
+
         (9,'Progress Tracking','Tracking without obsessing','article',30,'locked','Coach Priya',5,
-         'Weekly weigh-ins outperform daily weigh-ins. Weight fluctuates 1-2 kg daily from water, food volume, and hormones — daily weighing creates anxiety without signal. The true signal is the 4-week trend. Photo comparisons every 4 weeks reveal fat loss that the scale misses (especially when building muscle). Track three numbers: weekly average weight, waist circumference (monthly), and how your reference outfit fits. These three give you the complete picture.'),
-        (9,'Progress Tracking','Progress quiz','quiz',30,'locked',NULL,3,NULL),
+         'The scale is one data point, not the whole picture. Weight fluctuates 1-2 kg daily from water, food volume, and hormones. The true signal is the 4-week trend, not yesterday''s number.
+
+The Three Numbers That Matter
+
+1. Weekly average weight — weigh daily but only look at the weekly average
+2. Waist circumference — measure monthly; this catches fat loss the scale misses
+3. How your reference outfit fits — pick one outfit and try it on every 2 weeks
+
+Why Photo Comparisons Work
+
+Take a progress photo every 4 weeks in the same outfit, same lighting, same pose. Photos reveal fat loss and body composition changes that the scale completely misses — especially when you''re building muscle while losing fat.
+
+Tracking Without Anxiety
+
+Log your data in FitQuest and let the app show you trends. Don''t react to single-day spikes. A good week followed by a 1 kg "gain" is usually water retention and resolves within 48 hours. Trust the process and focus on consistency, not daily fluctuations.',
+         ''[{"question":"What is the best timeframe for evaluating weight loss trends?","options":["Daily","Every other day","4-week trends","6 months"],"correct":2,"explanation":"Weight fluctuates 1-2 kg daily from water and food volume. The true signal emerges over 4-week trends, not daily readings."},{"question":"Why do progress photos work better than the scale alone?","options":["Photos are more accurate than scales","Photos reveal body composition changes the scale misses","Photos motivate you to eat less","Photos replace the need for weighing"],"correct":1,"explanation":"Progress photos catch fat loss and muscle gain that the scale misses, especially during body recomposition."}]''::jsonb),
+
         (10,'Plateaus','Breaking through weight plateaus','article',40,'locked','Dr. Roy',6,
-         'A weight plateau after 4+ weeks signals metabolic adaptation — your body has recalculated maintenance calories at your new lower weight. Three plateau breakers: (1) Add 2,000 steps/day. (2) Increase protein to 1.6g per kg body weight (reduces muscle loss during deficit). (3) Take a 1-week diet break at maintenance calories — this resets leptin and hunger hormones, making the next deficit phase more effective. Plateaus are biology, not failure. They require strategy, not punishment.'),
-        (10,'Plateaus','Plateau-breaking quiz','quiz',50,'locked',NULL,3,NULL),
+         'A weight plateau after 4+ weeks signals metabolic adaptation — your body has recalculated maintenance calories at your new lower weight. Plateaus are biology, not failure.
+
+Why Plateaus Happen
+
+As you lose weight, your body needs fewer calories to maintain itself. A person who lost 5 kg now burns roughly 150-200 fewer calories per day. Your previous deficit has become your new maintenance.
+
+Three Evidence-Based Plateau Breakers
+
+1. Add 2,000 steps per day — this alone can create a 100-calorie deficit
+2. Increase protein to 1.6g per kg body weight — reduces muscle loss and boosts metabolism
+3. Take a 1-week diet break at maintenance calories — this resets leptin and hunger hormones, making the next deficit phase more effective
+
+What NOT to Do
+
+Don''t slash calories dramatically — this triggers further metabolic slowdown. Don''t exercise excessively — this increases cortisol and water retention. Don''t panic — plateaus typically break within 1-3 weeks if you stay consistent with your habits.',
+         ''[{"question":"What causes a weight loss plateau?","options":["Not exercising enough","Your body recalculates maintenance calories at your new lower weight","Eating too much protein","Drinking too much water"],"correct":1,"explanation":"As you lose weight, your body needs fewer calories. Your previous deficit becomes your new maintenance, causing the plateau."},{"question":"What is a diet break and why does it help?","options":["Stopping the diet permanently","Eating at maintenance for 1 week to reset hunger hormones","Fasting for a week","Eating whatever you want"],"correct":1,"explanation":"A 1-week diet break at maintenance calories resets leptin and hunger hormones, making the next deficit phase more effective."}]''::jsonb),
+
         (11,'Sustainable Habits','Eating out & social eating','article',30,'locked','Coach Priya',5,
-         'Social events are the biggest compliance killer. Strategies that work: (1) Eat a protein-rich snack before the event so you arrive not starving. (2) Use the "one-plate rule" — choose your plate thoughtfully, eat it slowly, and stop. (3) For restaurants: order protein + salad first; decide whether the dessert is truly worth it before it arrives. (4) Alcohol: each drink adds 100-150 empty calories and lowers inhibitions around food. Club soda with lime tastes social and costs zero calories.'),
-        (11,'Sustainable Habits','Sustainable habits quiz','quiz',30,'locked',NULL,3,NULL),
+         'Social events are the biggest compliance killer. But you don''t need to avoid them — you need strategies that work in the real world.
+
+The Pre-Event Strategy
+
+Eat a protein-rich snack 30 minutes before the event. Arriving not starving gives you the clarity to make conscious choices instead of grabbing the nearest samosa.
+
+Restaurant Rules That Work
+
+1. Order protein + salad or vegetables first
+2. Use the "one-plate rule" — choose your plate thoughtfully, eat it slowly, and stop
+3. Decide whether dessert is truly worth it before it arrives — not after you see the menu
+4. Ask for dressing and sauces on the side
+
+The Alcohol Truth
+
+Each drink adds 100-150 empty calories AND lowers your inhibitions around food. Two drinks can easily add 500+ calories to your evening (alcohol + the extra food you eat because of it). Club soda with lime tastes social and costs zero calories.
+
+The 80/20 Rule
+
+Eat well 80% of the time. The other 20% is for life — birthdays, festivals, dinners out. This ratio sustains results without making you miserable.',
+         ''[{"question":"Why should you eat a protein snack before social events?","options":["Protein tastes better","Arriving not starving helps you make conscious food choices","It cancels out party food calories","Protein prevents alcohol absorption"],"correct":1,"explanation":"A protein-rich snack before the event gives you clarity to choose consciously instead of grabbing whatever is available."},{"question":"How many extra calories can 2 alcoholic drinks add to an evening?","options":["50 calories","200 calories","500+ calories including extra food","No calories"],"correct":2,"explanation":"Two drinks add 200-300 calories directly, plus alcohol lowers food inhibitions, easily totalling 500+ extra calories."}]''::jsonb),
+
         (12,'Maintenance','Life after the programme','article',50,'locked','Dr. Roy',8,
-         'Maintaining weight loss requires slightly fewer calories than maintaining your original weight — about 150-200 kcal/day less. Your new maintenance is your goal. The habits that got you here (daily steps, protein at every meal, sleep hygiene, stress management) are permanent now — not temporary tools. Research shows that people who maintain weight loss long-term share four behaviours: they weigh themselves regularly, they exercise daily, they eat breakfast, and they limit screen time during meals. You have practised all four. Congratulations on completing the FitQuest programme.')
-        ,
-        (12,'Maintenance','Final graduation quiz','quiz',100,'locked',NULL,5,NULL),
-        (13,'Beyond 12 Weeks','Making it permanent — the identity shift','article',40,'locked','Dr. Roy',6,
-         'The most powerful thing that happened in the last 12 weeks is not the weight you lost — it is the identity you built. You are now someone who checks in daily, moves their body, eats mindfully, and manages stress. Research shows identity-based habits stick at 3× the rate of outcome-based habits. Instead of "I want to lose weight," your new story is "I am someone who takes care of their body." Protect that identity in year two the same way you built it in the first 84 days: one small daily action at a time.'),
-        (13,'Beyond 12 Weeks','Long-term maintenance quiz','quiz',50,'locked',NULL,3,NULL),
-        (14,'Advanced Nutrition','Personalising your macro targets','article',40,'locked','Coach Priya',7,
-         'Now that your habits are solid, it is time to fine-tune your macros. Protein: 1.6-2.2 g per kg body weight preserves muscle during a cut and maximises muscle gain during a build phase. Carbohydrates: time your largest carb serving around your workout (within 1 hour before or after) for best energy and recovery. Fat: keep healthy fats (nuts, avocado, ghee in moderation) at 25-35% of total calories for hormone health. Track for 2 weeks, adjust based on energy and scale movement, then step back — you now have the data to self-coach.'),
-        (14,'Advanced Nutrition','Advanced nutrition quiz','quiz',50,'locked',NULL,3,NULL)
+         'Maintaining weight loss requires slightly fewer calories than maintaining your original weight — about 150-200 kcal/day less. Your new maintenance is your goal, and the habits you''ve built are your tools.
+
+The Four Behaviours of Successful Maintainers
+
+Research from the National Weight Control Registry (tracking 10,000+ people who kept weight off for 5+ years) found four common behaviours:
+1. They weigh themselves regularly
+2. They exercise daily (mostly walking)
+3. They eat breakfast
+4. They limit screen time during meals
+
+You have practised all four during this programme.
+
+Your Maintenance Toolkit
+
+The habits that got you here are permanent now — not temporary tools. Daily check-ins, meal awareness, movement, and sleep hygiene. If weight creeps up by 2 kg, don''t panic — return to tracking for one week and the trend will reverse.
+
+The Identity Shift
+
+The most powerful change is invisible: you are now someone who takes care of their health. Protect that identity. One small daily action at a time. Congratulations on completing the FitQuest programme.',
+         ''[{"question":"How many fewer daily calories does maintenance require compared to your original weight?","options":["50 kcal","150-200 kcal","500 kcal","No difference"],"correct":1,"explanation":"Maintaining a lower weight requires about 150-200 fewer daily calories than maintaining your original weight."},{"question":"What do successful weight maintainers have in common?","options":["They never eat carbs","They exercise 3 hours daily","They weigh regularly, exercise daily, eat breakfast, and limit screen time during meals","They follow strict diets forever"],"correct":2,"explanation":"The National Weight Control Registry found these four behaviours are shared by 10,000+ people who kept weight off long-term."}]''::jsonb)
       ON CONFLICT (week, title) DO UPDATE
         SET content = EXCLUDED.content,
             xp      = EXCLUDED.xp,
             minutes = EXCLUDED.minutes,
             week_name = EXCLUDED.week_name,
-            author  = EXCLUDED.author
+            author  = EXCLUDED.author,
+            quiz_questions = COALESCE(EXCLUDED.quiz_questions, lessons.quiz_questions)
     `).catch(e => console.warn('Lessons upsert error:', e.message));
 
     await client.query(`
