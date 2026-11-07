@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'url';
+import path from 'path';
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
@@ -663,13 +665,22 @@ The most powerful change is invisible: you are now someone who takes care of the
 runMigrations();
 
 const app = express();
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://mhs-backend.vercel.app,http://localhost:8080,http://localhost:4000').split(',');
 app.use(cors({
-  origin: '*',
+  origin: (origin, cb) => {
+    // Allow requests with no origin (mobile apps, curl) and whitelisted origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.options('*', cors());
 app.use(express.json({ limit: '12mb' }));
+
+// Serve uploaded files (videos, images) as static assets
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'fitquest', ts: Date.now() }));
 app.use('/',              migrateRoutes);     // one-time DB setup: GET /migrate?key=...
@@ -696,7 +707,8 @@ app.use('/',              apiRoutes);
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error(err);
-  res.status(500).json({ message: err.message || 'Server error' });
+  const isDev = process.env.NODE_ENV !== 'production';
+  res.status(500).json({ message: isDev ? err.message : 'Internal server error' });
 });
 
 // Weekly XP reset + winners every Sunday at midnight

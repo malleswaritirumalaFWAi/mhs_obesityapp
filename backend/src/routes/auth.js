@@ -178,29 +178,43 @@ router.post('/signup', signupLimiter, async (req, res) => {
 // POST /auth/admin-login { email, password }
 // Validates hardcoded admin credentials, upserts admin user in DB, returns JWT.
 // No authMiddleware on this route — it IS the auth step.
-router.post('/admin-login', async (req, res) => {
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => req.ip || 'unknown',
+  message: { message: 'Too many admin login attempts. Please wait 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/admin-login', adminLoginLimiter, async (req, res) => {
   const { email, password } = req.body || {};
-  if (
-    email?.toLowerCase().trim() !== 'admin@gmail.com' ||
-    password !== 'Admin@123'
-  ) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+
+  if (!adminEmail || !adminPasswordHash) {
+    return res.status(503).json({ message: 'Admin login not configured' });
+  }
+
+  if (!email || !password || email.toLowerCase().trim() !== adminEmail.toLowerCase().trim()) {
     return res.status(401).json({ message: 'Invalid admin credentials' });
   }
+
+  const validPassword = await bcrypt.compare(password, adminPasswordHash);
+  if (!validPassword) {
+    return res.status(401).json({ message: 'Invalid admin credentials' });
+  }
+
   try {
     // Find existing admin user by email
-    let user = (await q(`SELECT id, phone FROM users WHERE email='admin@gmail.com'`)).rows[0];
-    if (!user) {
-      // Try by reserved phone
-      user = (await q(`SELECT id, phone FROM users WHERE phone='+919999999999'`)).rows[0];
-    }
+    let user = (await q(`SELECT id, phone FROM users WHERE email=$1`, [adminEmail])).rows[0];
     if (!user) {
       // Create admin user
-      const hash = await bcrypt.hash('Admin@123', 10);
       const r = await q(
         `INSERT INTO users (phone, email, name, password_hash, onboarded, role)
-         VALUES ('+919999999999', 'admin@gmail.com', 'Admin', $1, TRUE, 'admin')
+         VALUES ($1, $2, 'Admin', $3, TRUE, 'admin')
          RETURNING id, phone`,
-        [hash]
+        [process.env.ADMIN_PHONE || '+910000000000', adminEmail, adminPasswordHash]
       );
       user = r.rows[0];
     } else {
@@ -209,7 +223,7 @@ router.post('/admin-login', async (req, res) => {
     }
     res.json({ token: signToken(user) });
   } catch (e) {
-    console.error('[admin-login]', e.message);
+    console.error('[admin-login] failed');
     res.status(500).json({ message: 'Admin login failed. Please try again.' });
   }
 });

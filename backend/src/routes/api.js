@@ -431,8 +431,8 @@ router.post('/checkins', async (req, res, next) => {
         badgeEarned = true;
         badge = { emoji: b.rows[0].emoji, name: b.rows[0].name, xp: b.rows[0].xp, streak };
         await q(
-          `INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'badge','${b.rows[0].emoji} Badge Unlocked!','You earned the ${b.rows[0].name} badge!')`,
-          [uid(req)]
+          `INSERT INTO notifications (user_id, type, title, body) VALUES ($1,'badge',$2,$3)`,
+          [uid(req), `${b.rows[0].emoji} Badge Unlocked!`, `You earned the ${b.rows[0].name} badge!`]
         );
       }
     }

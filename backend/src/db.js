@@ -14,7 +14,7 @@ const useSsl = ['require', 'true', '1'].includes((process.env.DB_SSL || '').toLo
 export const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   options: '-c search_path=fitquest',
-  ssl: useSsl ? { rejectUnauthorized: false } : false,
+  ssl: useSsl ? { rejectUnauthorized: true } : false,
 });
 
 export const q = (text, params) => pool.query(text, params);

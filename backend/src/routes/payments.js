@@ -36,15 +36,29 @@ router.post('/order', async (req, res) => {
 // POST /payments/verify { order_id, payment_id, signature }
 router.post('/verify', async (req, res) => {
   const { order_id, payment_id, signature } = req.body || {};
+  if (!order_id || !payment_id || !signature) {
+    return res.status(400).json({ message: 'order_id, payment_id, and signature are required' });
+  }
+
   const secret = process.env.RAZORPAY_KEY_SECRET;
   if (!secret) return res.status(503).json({ message: 'Payments not configured' });
+
+  // Verify the order belongs to this user
+  const orderRow = await q(
+    `SELECT user_id FROM payments WHERE order_id=$1`, [order_id]
+  );
+  if (!orderRow.rows[0] || orderRow.rows[0].user_id !== req.user.uid) {
+    return res.status(403).json({ message: 'Order not found' });
+  }
 
   const expected = crypto
     .createHmac('sha256', secret)
     .update(`${order_id}|${payment_id}`)
     .digest('hex');
 
-  if (expected !== signature) {
+  // Use timing-safe comparison to prevent timing attacks
+  if (expected.length !== signature.length ||
+      !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) {
     await q(`UPDATE payments SET status='failed' WHERE order_id=$1`, [order_id]);
     return res.status(400).json({ message: 'Signature verification failed' });
   }

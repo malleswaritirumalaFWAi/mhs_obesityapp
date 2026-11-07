@@ -271,7 +271,7 @@ router.post('/', async (req, res) => {
       await q(`UPDATE users SET xp=xp+$2, total_xp=total_xp+$2 WHERE id=$1`, [req.user.uid, bonusXp]);
       await q(`UPDATE group_members SET weekly_xp=weekly_xp+$2 WHERE user_id=$1`, [req.user.uid, bonusXp]);
       await updateUserLevel(req.user.uid);
-      await q(`INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'combo_bonus','🍽️ Combo Bonus!','All 4 meals logged today! +${bonusXp} bonus XP')`, [req.user.uid]);
+      await q(`INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'combo_bonus',$2,$3)`, [req.user.uid, '🍽️ Combo Bonus!', `All 4 meals logged today! +${bonusXp} bonus XP`]);
     }
   }
 

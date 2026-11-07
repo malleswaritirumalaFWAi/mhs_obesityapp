@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
 import { q } from '../db.js';
 import { authMiddleware } from '../auth.js';
 
@@ -32,8 +35,8 @@ export async function runWeeklyReset() {
       ).catch(() => {});
       // Notify winner
       await q(
-        `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'weekly_winner','You are a weekly winner!','Congratulations! You finished #${i + 1} this week!')`,
-        [u.user_id]
+        `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'weekly_winner',$2,$3)`,
+        [u.user_id, 'You are a weekly winner!', `Congratulations! You finished #${i + 1} this week!`]
       ).catch(() => {});
     }
   }
@@ -45,8 +48,8 @@ export async function runWeeklyReset() {
   for (const u of streakUsers) {
     await q(`UPDATE users SET streak_freezes=streak_freezes+1 WHERE id=$1`, [u.id]);
     await q(
-      `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'streak_freeze','Streak freeze earned!','Your ${u.streak}-day streak earned you a freeze!')`,
-      [u.id]
+      `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'streak_freeze',$2,$3)`,
+      [u.id, 'Streak freeze earned!', `Your ${u.streak}-day streak earned you a freeze!`]
     ).catch(() => {});
   }
 
@@ -126,6 +129,31 @@ router.post('/content/lesson', async (req, res) => {
       [week_number, title, author || null, minutes || null, xp, week_name || null, lesson_type, video_url || null, content || null, quiz_questions ? JSON.stringify(quiz_questions) : null]
     );
     res.json({ lesson: r.rows[0] });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// Video upload — accepts base64 video in body, stores to uploads/ directory
+router.post('/upload/video', async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+  try {
+    const { video_base64, filename, mime_type = 'video/mp4' } = req.body || {};
+    if (!video_base64) return res.status(400).json({ message: 'video_base64 required' });
+
+    const ext = (mime_type.split('/')[1] || 'mp4').replace('quicktime', 'mov');
+    const safeName = (filename || `video_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const finalName = `${safeName}_${Date.now()}.${ext}`;
+
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+    const buffer = Buffer.from(video_base64, 'base64');
+    fs.writeFileSync(path.join(uploadsDir, finalName), buffer);
+
+    const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const videoUrl = `${baseUrl}/uploads/${finalName}`;
+
+    res.json({ ok: true, video_url: videoUrl, filename: finalName });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 

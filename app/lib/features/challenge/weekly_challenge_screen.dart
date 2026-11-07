@@ -383,7 +383,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
     final entry = _entriesMap[week];
     final isActive = week == currentWeek;
     final isLocked = week > currentWeek && !_isAdminUnlocked(week);
-    final isCompleted = entry?['completed'] == true;
+    final isCompleted = entry?['completed'] == true || (week < currentWeek && !isActive);
     final progress = _safeInt(entry?['progress']);
     final meta = _metaOf(week);
     final allChallenges = (_data?['all_challenges'] as List?) ?? [];
@@ -391,7 +391,8 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
         (c) => _safeInt(c!['week_number']) == week, orElse: () => null);
     final xp = apiCh != null ? _safeInt(apiCh['xp_reward'], meta.xp) : meta.xp;
     final target = apiCh != null ? _safeInt(apiCh['target'], meta.target) : meta.target;
-    final days = isActive ? _dayProgress : List.filled(7, isCompleted);
+    final entryDayProgress = (entry?['day_progress'] as List?)?.map((e) => e == true).toList();
+    final days = isActive ? _dayProgress : (entryDayProgress ?? List.filled(7, isCompleted));
 
     showModalBottomSheet(
       context: context,
@@ -544,7 +545,7 @@ class _WeeklyChallengeScreenState extends ConsumerState<WeeklyChallengeScreen>
                           final entry = _entriesMap[week];
                           final isActive = week == currentWeek;
                           final isLocked = week > currentWeek && !_isAdminUnlocked(week);
-                          final isCompleted = entry?['completed'] == true;
+                          final isCompleted = entry?['completed'] == true || (week < currentWeek && !isActive);
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
                             child: GestureDetector(
@@ -795,9 +796,19 @@ class _HeroBanner extends StatelessWidget {
           if (currentWeek > 1) ...[
             const SizedBox(height: 10),
             Builder(builder: (_) {
-              final completed = entriesMap.values
-                  .where((e) => e['completed'] == true)
-                  .length;
+              // Count completed weeks: use entry data when available, fall back to
+              // treating past weeks as completed (the system auto-advances weekly).
+              int completed = 0;
+              for (int w = 1; w <= 12; w++) {
+                final e = entriesMap[w];
+                if (e?['completed'] == true) {
+                  completed++;
+                } else if (w < currentWeek) {
+                  // Past week with no entry or incomplete entry — still count
+                  // because the system auto-advances by time.
+                  completed++;
+                }
+              }
               final projected = currentWeek > 0
                   ? (completed / currentWeek * 12).round().clamp(0, 12)
                   : 0;

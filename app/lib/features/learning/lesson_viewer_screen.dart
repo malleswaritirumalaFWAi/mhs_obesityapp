@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/providers/lessons_provider.dart';
@@ -196,9 +197,17 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
     // Title slide
     slides.add(_TitleSlide(lesson: lesson));
 
+    // Video slide — if this is a video lesson with a URL
+    if (lesson.videoUrl != null && lesson.videoUrl!.isNotEmpty) {
+      slides.add(_VideoSlide(videoUrl: lesson.videoUrl!));
+    }
+
     // Content slides — smart split targeting ~300 words per slide
     if (lesson.content.isNotEmpty) {
-      final paragraphs = lesson.content
+      // Normalize escaped \n sequences to real newlines before splitting
+      final normalized = lesson.content
+          .replaceAll(r'\n', '\n');
+      final paragraphs = normalized
           .split(RegExp(r'\n{2,}'))
           .map((s) => s.trim())
           .where((s) => s.isNotEmpty)
@@ -497,5 +506,147 @@ class _QuizSlide extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ── Video Slide ──────────────────────────────────────────────────────────────
+
+class _VideoSlide extends StatefulWidget {
+  const _VideoSlide({required this.videoUrl});
+  final String videoUrl;
+
+  @override
+  State<_VideoSlide> createState() => _VideoSlideState();
+}
+
+class _VideoSlideState extends State<_VideoSlide> {
+  late VideoPlayerController _ctrl;
+  bool _initialized = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+      ..initialize().then((_) {
+        if (mounted) setState(() => _initialized = true);
+      }).catchError((_) {
+        if (mounted) setState(() => _hasError = true);
+      });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: NeuCard(
+        depth: 0.5,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('VIDEO', style: T.section(context)),
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: AspectRatio(
+                aspectRatio: _initialized ? _ctrl.value.aspectRatio : 16 / 9,
+                child: _hasError
+                    ? Container(
+                        color: AppColors.bg,
+                        child: const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Symbols.error_rounded,
+                                  color: AppColors.coral, size: 36),
+                              SizedBox(height: 8),
+                              Text('Failed to load video',
+                                  style: TextStyle(color: AppColors.inkMid)),
+                            ],
+                          ),
+                        ),
+                      )
+                    : !_initialized
+                        ? Container(
+                            color: AppColors.bg,
+                            child: const Center(
+                                child: CircularProgressIndicator(
+                                    color: AppColors.coral)),
+                          )
+                        : GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _ctrl.value.isPlaying
+                                    ? _ctrl.pause()
+                                    : _ctrl.play();
+                              });
+                            },
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                VideoPlayer(_ctrl),
+                                if (!_ctrl.value.isPlaying)
+                                  Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black45,
+                                      borderRadius: BorderRadius.circular(32),
+                                    ),
+                                    child: const Icon(Symbols.play_arrow_rounded,
+                                        color: Colors.white, size: 36, fill: 1),
+                                  ),
+                              ],
+                            ),
+                          ),
+              ),
+            ),
+            if (_initialized) ...[
+              const SizedBox(height: 12),
+              ValueListenableBuilder<VideoPlayerValue>(
+                valueListenable: _ctrl,
+                builder: (_, value, __) {
+                  final pos = value.position.inMilliseconds;
+                  final dur = value.duration.inMilliseconds;
+                  return Column(children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: dur > 0 ? pos / dur : 0,
+                        minHeight: 4,
+                        backgroundColor: AppColors.line,
+                        valueColor:
+                            const AlwaysStoppedAnimation(AppColors.coral),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      Text(_formatDuration(value.position),
+                          style: T.small(context)),
+                      const Spacer(),
+                      Text(_formatDuration(value.duration),
+                          style: T.small(context)),
+                    ]),
+                  ]);
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 }

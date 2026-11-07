@@ -59,8 +59,8 @@ router.post('/meal/:id/feedback', async (req, res) => {
   const meal = (await q(`SELECT user_id FROM meals WHERE id=$1`, [req.params.id])).rows[0];
   if (meal) {
     await q(
-      `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'meal_feedback','Coach reviewed your meal','${approved ? 'Great choice!' : 'Your coach left feedback on your meal.'}')`,
-      [meal.user_id]
+      `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'meal_feedback',$2,$3)`,
+      [meal.user_id, 'Coach reviewed your meal', approved ? 'Great choice!' : 'Your coach left feedback on your meal.']
     ).catch(() => {});
   }
   res.json({ ok: true });
@@ -102,8 +102,8 @@ router.post('/broadcast', async (req, res) => {
   // Notify all users
   for (const m of members) {
     await q(
-      `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'coach_message','Message from Coach','${text.trim().slice(0, 100)}')`,
-      [m.user_id]
+      `INSERT INTO notifications (user_id,type,title,body) VALUES ($1,'coach_message',$2,$3)`,
+      [m.user_id, 'Message from Coach', text.trim().slice(0, 100)]
     ).catch(() => {});
   }
   res.json({ ok: true, sent_to: members.length });

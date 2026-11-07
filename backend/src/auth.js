@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET = process.env.JWT_SECRET || 'dev-secret';
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) throw new Error('JWT_SECRET environment variable is required');
 
 export function signToken(user) {
-  return jwt.sign({ uid: Number(user.id), phone: user.phone }, SECRET, { expiresIn: '60d' });
+  return jwt.sign({ uid: Number(user.id), phone: user.phone }, SECRET, { expiresIn: '14d' });
 }
 
 export function authMiddleware(req, res, next) {
