@@ -668,8 +668,8 @@ const app = express();
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://mhs-backend.vercel.app,http://localhost:8080,http://localhost:4000').split(',');
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow requests with no origin (mobile apps, curl) and whitelisted origins
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    // Allow requests with no origin (mobile apps, curl), localhost on any port, and whitelisted origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || /^https?:\/\/localhost(:\d+)?$/.test(origin)) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
