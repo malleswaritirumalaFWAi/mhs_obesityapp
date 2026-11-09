@@ -15,6 +15,7 @@ const otpRequestLimiter = rateLimit({
   message: { message: 'Too many OTP requests. Please wait 15 minutes and try again.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
 });
 
 // 10 verify attempts per phone per 15 min — locks out brute-force
@@ -25,6 +26,7 @@ const otpVerifyLimiter = rateLimit({
   message: { message: 'Too many verification attempts. Please wait 15 minutes and try again.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
 });
 
 // 5 signup attempts per IP per hour — prevents spam account creation
@@ -35,6 +37,7 @@ const signupLimiter = rateLimit({
   message: { message: 'Too many sign-up attempts. Please try again in an hour.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
 });
 
 // 10 signin attempts per email per 15 min — prevents password brute-force
@@ -45,6 +48,7 @@ const signinLimiter = rateLimit({
   message: { message: 'Too many sign-in attempts. Please wait 15 minutes and try again.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
 });
 
 function genCode() {
@@ -185,6 +189,7 @@ const adminLoginLimiter = rateLimit({
   message: { message: 'Too many admin login attempts. Please wait 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
 });
 
 router.post('/admin-login', adminLoginLimiter, async (req, res) => {
